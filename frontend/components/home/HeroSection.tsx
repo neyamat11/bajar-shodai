@@ -47,9 +47,9 @@ function BannerSlide({
     <>
       {b.mobileImageUrl ? (
         <>
-          {/* Mobile view (< md): Small screen optimized image */}
+          {/* Mobile view (< md): Prefer high-quality uncropped banner without artificial top margin */}
           <Image
-            src={b.mobileImageUrl}
+            src={b.imageUrl || b.mobileImageUrl}
             alt={b.title ?? t("bannerAlt")}
             fill
             priority={priority}
@@ -661,7 +661,7 @@ export default function HeroSection({
         }}
         aria-hidden="true"
       />
-      <div className="relative mx-auto max-w-[1440px] px-4 pb-16 pt-6 md:px-8 lg:pb-20 lg:pt-8">
+      <div className="relative mx-auto max-w-[1440px] px-4 pb-12 pt-3 md:pb-16 md:pt-6 md:px-8 lg:pb-20 lg:pt-8">
         {activeMain.length > 0 ? (
           isSliderOnly ? (
             <div className="w-full">

@@ -1,8 +1,7 @@
-import React from 'react';
-import { View } from 'react-native';
 import { BannerCarousel, BannerItem } from '@/components/home/BannerCarousel';
-import { BannerItemData } from '../types';
 import { openAppUrl } from '@/navigation/linking';
+import { View } from 'react-native';
+import { BannerItemData } from '../types';
 
 export interface HeroSliderSectionProps {
   banners: BannerItemData[];
@@ -22,7 +21,7 @@ export function HeroSliderSection({ banners, className = '' }: HeroSliderSection
   const formattedBanners: BannerItem[] = mainBanners.map((b) => ({
     id: b.id,
     title: b.title || '',
-    imageUrl: b.mobileImageUrl || b.imageUrl,
+    imageUrl: b.imageUrl || b.mobileImageUrl || '',
     linkUrl: b.linkUrl || undefined,
   }));
 
@@ -33,7 +32,7 @@ export function HeroSliderSection({ banners, className = '' }: HeroSliderSection
   };
 
   return (
-    <View className={`my-3 ${className}`}>
+    <View className={`mb-3 ${className}`}>
       <BannerCarousel banners={formattedBanners} onBannerPress={handleBannerPress} />
     </View>
   );

@@ -70,12 +70,12 @@ export function BannerCarousel({
         ref={flatListRef}
         data={banners}
         horizontal
-        pagingEnabled
         showsHorizontalScrollIndicator={false}
         onScroll={handleScroll}
         scrollEventThrottle={16}
-        snapToInterval={bannerWidth}
+        snapToInterval={bannerWidth + 8}
         decelerationRate="fast"
+        contentContainerStyle={styles.listContent}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <TouchableOpacity
@@ -83,7 +83,12 @@ export function BannerCarousel({
             onPress={() => onBannerPress?.(item)}
             style={{ width: bannerWidth, marginRight: 8 }}
           >
-            <AppImage source={item.imageUrl} aspectRatio={2.2} borderRadius={Radius.brand} />
+            <AppImage
+              source={item.imageUrl}
+              aspectRatio={16 / 9}
+              contentFit="cover"
+              borderRadius={Radius.brand}
+            />
           </TouchableOpacity>
         )}
       />
@@ -104,6 +109,9 @@ export function BannerCarousel({
 }
 
 const styles = StyleSheet.create({
+  listContent: {
+    paddingHorizontal: 16,
+  },
   paginationDots: {
     flexDirection: 'row',
     alignItems: 'center',
