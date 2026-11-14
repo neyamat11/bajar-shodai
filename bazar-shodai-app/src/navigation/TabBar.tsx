@@ -41,7 +41,7 @@ export function TabBar({ state, descriptors, navigateToTab, emitter }: BottomTab
   const cartItemCount = useCartStore((s) => s.items.reduce((sum, item) => sum + item.quantity, 0));
 
   // Active tab spring animator (runs 100% on Native Driver)
-  const [activeAnim] = useState(() => new Animated.Value(state?.index ?? 0));
+  const [activeAnim] = useState(() => new Animated.Value(state?.index ?? 2));
 
   useEffect(() => {
     if (typeof state?.index === 'number') {
@@ -84,11 +84,12 @@ export function TabBar({ state, descriptors, navigateToTab, emitter }: BottomTab
     }
   };
 
-  // Dimensions for SVG notch
+  // Dimensions for SVG notch & safe insets
   const SVG_WIDTH = safeWidth * 3;
   const C = safeWidth;
   const bottomInset = insets?.bottom ?? 0;
-  const totalBarHeight = BAR_HEIGHT + Math.max(bottomInset, Platform.OS === 'android' ? 8 : 12);
+  const effectiveBottomInset = Math.max(bottomInset, Platform.OS === 'android' ? 12 : 16);
+  const totalBarHeight = BAR_HEIGHT + effectiveBottomInset;
 
   // Exact cubic bezier curved notch matching reference design
   const notchPath = `
@@ -97,8 +98,8 @@ export function TabBar({ state, descriptors, navigateToTab, emitter }: BottomTab
     C ${C - 28} 0, ${C - 22} 28, ${C} 28
     C ${C + 22} 28, ${C + 28} 0, ${C + 44} 0
     L ${SVG_WIDTH} 0
-    L ${SVG_WIDTH} ${totalBarHeight + 20}
-    L 0 ${totalBarHeight + 20}
+    L ${SVG_WIDTH} ${totalBarHeight + 40}
+    L 0 ${totalBarHeight + 40}
     Z
   `;
 
@@ -163,7 +164,8 @@ export function TabBar({ state, descriptors, navigateToTab, emitter }: BottomTab
         style={[
           styles.tabsRow,
           {
-            paddingBottom: Math.max(insets.bottom, Platform.OS === 'android' ? 8 : 12),
+            height: totalBarHeight,
+            paddingBottom: effectiveBottomInset,
           },
         ]}
       >
@@ -289,8 +291,7 @@ const styles = StyleSheet.create({
   tabsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: BAR_HEIGHT + 14,
-    paddingTop: 8,
+    paddingTop: 6,
   },
   tabButton: {
     alignItems: 'center',
@@ -322,8 +323,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   label: {
-    fontSize: 9.5,
-    marginTop: 3,
+    fontSize: 10,
+    lineHeight: 14,
+    marginTop: 2,
     letterSpacing: 0.1,
+    textAlign: 'center',
   },
 });

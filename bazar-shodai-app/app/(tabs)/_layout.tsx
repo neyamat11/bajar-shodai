@@ -16,13 +16,6 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarAccessibilityLabel: 'Home Tab',
-        }}
-      />
-      <Tabs.Screen
         name="categories"
         options={{
           title: 'Shop',
@@ -30,17 +23,24 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="cart"
-        options={{
-          title: 'Cart',
-          tabBarAccessibilityLabel: 'Cart Tab',
-        }}
-      />
-      <Tabs.Screen
         name="wishlist"
         options={{
           title: 'Wishlist',
           tabBarAccessibilityLabel: 'Wishlist Tab',
+        }}
+      />
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Home',
+          tabBarAccessibilityLabel: 'Home Tab',
+        }}
+      />
+      <Tabs.Screen
+        name="cart"
+        options={{
+          title: 'Cart',
+          tabBarAccessibilityLabel: 'Cart Tab',
         }}
       />
       <Tabs.Screen
