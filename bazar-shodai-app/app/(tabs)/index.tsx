@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, ScrollView, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { HomeHeader } from '@/features/home/components/HomeHeader';
 import { HeroSliderSection } from '@/features/home/components/HeroSliderSection';
 import { CategoryGridSection } from '@/features/home/components/CategoryGridSection';
@@ -9,7 +10,6 @@ import { BestSellersSection } from '@/features/home/components/BestSellersSectio
 import { BrandShowcaseSection } from '@/features/home/components/BrandShowcaseSection';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Button } from '@/components/ui/Button';
-import { toast } from '@/store/useToastStore';
 import { haptics } from '@/services/haptics';
 import { useRootDoubleTapToExit } from '@/hooks/useHardwareBack';
 import { useHomeData } from '@/features/home/api/useHomeData';
@@ -41,6 +41,7 @@ function HomeSkeleton() {
 }
 
 export default function HomeScreen() {
+  const router = useRouter();
   // Double-tap back exit protection on root tab
   useRootDoubleTapToExit(true);
 
@@ -59,7 +60,6 @@ export default function HomeScreen() {
     haptics.light();
     await refetchAll();
     haptics.success();
-    toast.info('Refreshed', 'Feed updated with live products and prices');
   };
 
   return (
@@ -69,8 +69,16 @@ export default function HomeScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
+        overScrollMode="never"
         contentContainerStyle={{ paddingBottom: 40 }}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={handleRefresh} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={handleRefresh}
+            colors={['#0b6234']}
+            progressBackgroundColor="#ffffff"
+          />
+        }
       >
         {isLoading && !isRefetching ? (
           <HomeSkeleton />
@@ -93,14 +101,14 @@ export default function HomeScreen() {
                     ⚡ ৩০-৬০ মিনিট এক্সপ্রেস ডেলিভারি
                   </Text>
                   <Text className="text-xs text-muted-foreground leading-relaxed">
-                    শাহরাস্তি সদরের যে কোনো প্রান্তে দ্রুত তাজা বাজার পৌঁছে যাবে আপনার ঠিকানায়।
+                    শাহরাস্তি থানার ভেতরে যে কোনো প্রান্তে দ্রুত তাজা বাজার পৌঁছে যাবে আপনার ঠিকানায়।
                   </Text>
                 </View>
                 <Button
                   title="অর্ডার করুন"
                   size="sm"
                   variant="primary"
-                  onPress={() => toast.success('Cart', 'Explore fresh items today!')}
+                  onPress={() => router.push('/(tabs)/categories')}
                 />
               </View>
             </View>

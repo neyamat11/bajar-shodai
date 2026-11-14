@@ -5,6 +5,7 @@ import { ProductCardData } from '../types';
 import { useCartStore } from '@/store/useCartStore';
 import { useQuickViewStore } from '@/store/useQuickViewStore';
 import { toast } from '@/store/useToastStore';
+import { useTranslation } from '@/i18n';
 
 export interface BestSellersSectionProps {
   products: ProductCardData[];
@@ -12,6 +13,7 @@ export interface BestSellersSectionProps {
 }
 
 export function BestSellersSection({ products, className = '' }: BestSellersSectionProps) {
+  const { isBn } = useTranslation();
   const openQuickView = useQuickViewStore((s) => s.openQuickView);
   const addItem = useCartStore((s) => s.addItem);
   const updateQuantity = useCartStore((s) => s.updateQuantity);
@@ -30,13 +32,19 @@ export function BestSellersSection({ products, className = '' }: BestSellersSect
       <View className="flex-row items-center justify-between mb-3">
         <View>
           <View className="flex-row items-center gap-1.5">
-            <Text className="text-base font-bold text-foreground">বেশি বিক্রিত পণ্য</Text>
-            <View className="px-1.5 py-0.5 rounded bg-carrot/15">
-              <Text className="text-[10px] font-bold text-carrot">BEST SELLERS</Text>
-            </View>
+            <Text className="text-base font-bold text-foreground">
+              {isBn ? 'বেশি বিক্রিত পণ্য' : 'Best Selling Products'}
+            </Text>
+            {!isBn && (
+              <View className="px-1.5 py-0.5 rounded bg-carrot/15">
+                <Text className="text-[10px] font-bold text-carrot">BEST SELLERS</Text>
+              </View>
+            )}
           </View>
-          <Text className="text-[11px] text-muted-foreground">
-            Most frequently purchased kitchen essentials
+          <Text className="text-[11px] text-muted-foreground mt-0.5">
+            {isBn
+              ? 'যেসব পণ্য আমাদের ক্রেতারা বারবার কিনছেন'
+              : 'Most frequently purchased kitchen essentials'}
           </Text>
         </View>
       </View>

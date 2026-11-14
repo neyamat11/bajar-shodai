@@ -10,6 +10,7 @@ import { Radius } from '@/constants/layout';
 export interface HomeHeaderProps {
   location?: string;
   deliveryTimeEstimate?: string;
+  showLocation?: boolean;
   onLocationPress?: () => void;
   onSearchPress?: () => void;
   onNotificationPress?: () => void;
@@ -18,6 +19,7 @@ export interface HomeHeaderProps {
 export function HomeHeader({
   location = 'Shahrasti Sadar, Chandpur',
   deliveryTimeEstimate = '৩০-৬০ মিনিট ডেলিভারি',
+  showLocation = false,
   onLocationPress,
   onSearchPress,
   onNotificationPress,
@@ -59,7 +61,7 @@ export function HomeHeader({
     >
       {/* Top Identity & Action Row */}
       <View style={styles.topRow}>
-        {/* Brand Logo & Location Column */}
+        {/* Brand Logo & Optional Location Column */}
         <View style={styles.leftCol}>
           <TouchableOpacity
             onPress={() => router.push('/(tabs)')}
@@ -70,30 +72,33 @@ export function HomeHeader({
               source={require('../../../../assets/images/logo-wide.webp')}
               style={styles.logoImage}
               contentFit="contain"
+              contentPosition="left"
               accessibilityLabel="Bazar Shodai Logo"
             />
           </TouchableOpacity>
 
-          {/* Delivery Zone Pill */}
-          <TouchableOpacity
-            onPress={handleLocationPress}
-            activeOpacity={0.7}
-            style={styles.locationPill}
-            accessibilityRole="button"
-            accessibilityLabel={`Delivering to ${location}`}
-          >
-            <Icon name="MapPin" size={11} color="#e53e3e" />
-            <Text
-              className="text-[11px] font-semibold text-foreground ml-1 mr-0.5"
-              numberOfLines={1}
+          {/* Delivery Zone Pill (Hidden by default under logo per design) */}
+          {showLocation && (
+            <TouchableOpacity
+              onPress={handleLocationPress}
+              activeOpacity={0.7}
+              style={styles.locationPill}
+              accessibilityRole="button"
+              accessibilityLabel={`Delivering to ${location}`}
             >
-              {location}
-            </Text>
-            <Text className="text-[10px] text-brand-fresh font-medium mr-0.5">
-              • {deliveryTimeEstimate}
-            </Text>
-            <Icon name="ChevronDown" size={12} color="#94a3b8" />
-          </TouchableOpacity>
+              <Icon name="MapPin" size={11} color="#e53e3e" />
+              <Text
+                className="text-[11px] font-semibold text-foreground ml-1 mr-0.5"
+                numberOfLines={1}
+              >
+                {location}
+              </Text>
+              <Text className="text-[10px] text-brand-fresh font-medium mr-0.5">
+                • {deliveryTimeEstimate}
+              </Text>
+              <Icon name="ChevronDown" size={12} color="#94a3b8" />
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Right Header Buttons: Notification Bell (No duplicate cart icon) */}
@@ -138,6 +143,8 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
     paddingBottom: 10,
+    elevation: 0,
+    shadowOpacity: 0,
   },
   topRow: {
     flexDirection: 'row',
@@ -148,11 +155,15 @@ const styles = StyleSheet.create({
   leftCol: {
     flex: 1,
     marginRight: 8,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
   },
   logoWrapper: {
-    height: 30,
-    width: 130,
+    height: 32,
+    width: 140,
     justifyContent: 'center',
+    alignItems: 'flex-start',
+    marginLeft: -4,
   },
   logoImage: {
     width: '100%',

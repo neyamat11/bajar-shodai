@@ -435,7 +435,7 @@ function QuickViewSheetContent({ product, onClose }: QuickViewSheetContentProps)
             </TouchableOpacity>
           </View>
 
-          {/* Add to Cart Button */}
+          {/* Add to Cart Button (Icon only) */}
           <TouchableOpacity
             activeOpacity={0.85}
             onPress={handleAddToCart}
@@ -449,21 +449,28 @@ function QuickViewSheetContent({ product, onClose }: QuickViewSheetContentProps)
           >
             <Icon
               name="ShoppingCart"
-              size={18}
+              size={20}
               color={isOutOfStock ? '#94a3b8' : '#ffffff'}
             />
-            <Text
-              style={[
-                styles.addToCartText,
-                isOutOfStock && styles.addToCartTextDisabled,
-              ]}
-              numberOfLines={1}
-            >
-              {isOutOfStock
-                ? t('quickView.stockOut') || (isBn ? 'স্টক শেষ' : 'Out of Stock')
-                : `${t('quickView.addToCart') || (isBn ? 'ব্যাগে যোগ করুন' : 'Add to Bag')} • ${formatBdt(product.price * quantity)}`}
-            </Text>
           </TouchableOpacity>
+
+          {/* WhatsApp Direct Order Button (Icon only) */}
+          <WhatsAppOrderButton
+            variant="icon"
+            productName={displayTitle}
+            productSlug={product.slug}
+            productPrice={product.price}
+            style={styles.actionChatBtn}
+          />
+
+          {/* Messenger Direct Order Button (Icon only) */}
+          <MessengerOrderButton
+            variant="icon"
+            productName={displayTitle}
+            productSlug={product.slug}
+            productPrice={product.price}
+            style={styles.actionChatBtn}
+          />
 
           {/* Wishlist Button */}
           <TouchableOpacity
@@ -486,22 +493,6 @@ function QuickViewSheetContent({ product, onClose }: QuickViewSheetContentProps)
               fill={isWishlisted ? '#dc2626' : 'none'}
             />
           </TouchableOpacity>
-        </View>
-
-        {/* ── Direct Chat Order Buttons (WhatsApp & Messenger) ── */}
-        <View style={styles.chatOrderRow}>
-          <WhatsAppOrderButton
-            productName={displayTitle}
-            productSlug={product.slug}
-            productPrice={product.price}
-            style={styles.halfOrderBtn}
-          />
-          <MessengerOrderButton
-            productName={displayTitle}
-            productSlug={product.slug}
-            productPrice={product.price}
-            style={styles.halfOrderBtn}
-          />
         </View>
 
         {/* ── Prominent "View Full Details" Action Card (Click 2) ── */}
@@ -893,7 +884,7 @@ const styles = StyleSheet.create({
   actionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
     marginTop: 4,
     marginBottom: 12,
   },
@@ -903,19 +894,19 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     height: 48,
-    paddingHorizontal: 4,
+    paddingHorizontal: 2,
   },
   stepperBtn: {
-    width: 34,
+    width: 28,
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
   stepperValueBox: {
-    minWidth: 32,
+    minWidth: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 4,
+    paddingHorizontal: 2,
   },
   stepperValue: {
     fontSize: 15,
@@ -923,14 +914,11 @@ const styles = StyleSheet.create({
   },
   addToCartBtn: {
     flex: 1,
-    flexDirection: 'row',
+    height: 48,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#0b6234',
-    height: 48,
     borderRadius: 12,
-    paddingHorizontal: 12,
-    gap: 8,
     shadowColor: '#0b6234',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
@@ -942,31 +930,20 @@ const styles = StyleSheet.create({
     shadowOpacity: 0,
     elevation: 0,
   },
-  addToCartText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  addToCartTextDisabled: {
-    color: '#94a3b8',
+  actionChatBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   wishlistBtn: {
-    width: 48,
+    flex: 1,
     height: 48,
     borderRadius: 12,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  chatOrderRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 10,
-    width: '100%',
-  },
-  halfOrderBtn: {
-    flex: 1,
-    paddingHorizontal: 8,
   },
   fullDetailsCard: {
     flexDirection: 'row',
