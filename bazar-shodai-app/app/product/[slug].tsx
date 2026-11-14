@@ -373,15 +373,17 @@ export default function ProductDetailScreen() {
             <Price amount={price} originalAmount={regularPrice} unit={unitCode} size="lg" />
           </View>
 
-          {/* ── Direct Chat Order Buttons (WhatsApp & Messenger) ── */}
+          {/* ── Direct Chat Order Buttons (WhatsApp & Messenger Soft Tinted) ── */}
           <View style={styles.chatOrderRow}>
             <WhatsAppOrderButton
+              variant="soft"
               productName={isBn ? nameBn || name : name}
               productSlug={product?.slug || (slug as string)}
               productPrice={price}
               style={styles.chatOrderBtn}
             />
             <MessengerOrderButton
+              variant="soft"
               productName={isBn ? nameBn || name : name}
               productSlug={product?.slug || (slug as string)}
               productPrice={price}
@@ -421,10 +423,10 @@ export default function ProductDetailScreen() {
             ratingBreakdown={reviewsData?.ratingBreakdown}
             onOpenWriteReview={() => setIsWriteReviewOpen(true)}
           />
-
-          {/* Related Products Carousel */}
-          {relatedGridItems.length > 0 && <RelatedProducts products={relatedGridItems} />}
         </View>
+
+        {/* Related Products Carousel (Full screen width with edge-to-edge scroll) */}
+        {relatedGridItems.length > 0 && <RelatedProducts products={relatedGridItems} />}
       </ScrollView>
 
       {/* Sticky Bottom Action Bar */}
@@ -600,7 +602,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   scrollContent: {
-    paddingBottom: 110,
+    paddingBottom: 16,
   },
   mainInfo: {
     paddingHorizontal: 16,
@@ -639,13 +641,12 @@ const styles = StyleSheet.create({
   },
   chatOrderRow: {
     flexDirection: 'row',
-    gap: 8,
-    marginTop: 8,
-    marginBottom: 14,
+    gap: 10,
+    marginTop: 10,
+    marginBottom: 16,
   },
   chatOrderBtn: {
     flex: 1,
-    paddingHorizontal: 8,
   },
   notifyBtn: {
     flexDirection: 'row',

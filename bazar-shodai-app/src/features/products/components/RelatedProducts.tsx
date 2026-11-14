@@ -4,16 +4,20 @@ import { ProductGridCard, ProductGridItem } from '@/components/product/ProductGr
 import { useCartStore } from '@/store/useCartStore';
 import { useQuickViewStore } from '@/store/useQuickViewStore';
 import { toast } from '@/store/useToastStore';
+import { useTranslation } from '@/i18n';
 
 export interface RelatedProductsProps {
   products?: ProductGridItem[];
   title?: string;
+  subtitle?: string;
 }
 
 export function RelatedProducts({
   products = [],
-  title = 'Frequently Bought Together',
+  title,
+  subtitle,
 }: RelatedProductsProps) {
+  const { isBn } = useTranslation();
   const openQuickView = useQuickViewStore((s) => s.openQuickView);
   const { items, addItem, updateQuantity, removeItem } = useCartStore();
 
@@ -21,11 +25,14 @@ export function RelatedProducts({
     return null;
   }
 
+  const displayTitle = title || (isBn ? 'একসাথে কেনা হয়' : 'Frequently Bought Together');
+  const displaySubtitle = subtitle || (isBn ? 'ক্রেতারা আরও যা কিনছেন' : 'Customers also bought');
+
   return (
     <View style={styles.container}>
       <View style={styles.headerRow}>
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.subtitle}>ক্রেতারা আরও যা কিনছেন</Text>
+        <Text style={styles.title}>{displayTitle}</Text>
+        <Text style={styles.subtitle}>{displaySubtitle}</Text>
       </View>
 
       <ScrollView
@@ -77,7 +84,8 @@ export function RelatedProducts({
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 14,
+    marginTop: 14,
+    marginBottom: 6,
   },
   headerRow: {
     paddingHorizontal: 16,

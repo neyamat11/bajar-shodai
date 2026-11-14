@@ -17,7 +17,9 @@ export interface WhatsAppOrderButtonProps {
   productName: string;
   productSlug: string;
   productPrice: number;
-  variant?: 'full' | 'compact' | 'icon';
+  variant?: 'full' | 'compact' | 'icon' | 'soft';
+  label?: string;
+  iconSize?: number;
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
   whatsappNumber?: string | null;
@@ -40,6 +42,8 @@ export function WhatsAppOrderButton({
   productSlug,
   productPrice,
   variant = 'full',
+  label: customLabel,
+  iconSize,
   style,
   textStyle,
   whatsappNumber: propNumber,
@@ -64,7 +68,7 @@ export function WhatsAppOrderButton({
     });
   };
 
-  const label = isBn ? 'হোয়াটসঅ্যাপে অর্ডার' : 'Order on WhatsApp';
+  const label = customLabel || (isBn ? 'হোয়াটসঅ্যাপ অর্ডার' : 'WhatsApp Order');
 
   if (variant === 'icon') {
     return (
@@ -75,7 +79,29 @@ export function WhatsAppOrderButton({
         accessibilityRole="button"
         accessibilityLabel={label}
       >
-        <WhatsAppIcon size={18} color="#ffffff" />
+        <WhatsAppIcon size={iconSize || 20} color="#ffffff" />
+      </TouchableOpacity>
+    );
+  }
+
+  if (variant === 'soft') {
+    return (
+      <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={handlePress}
+        style={[styles.softBtn, style]}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+      >
+        <WhatsAppIcon size={iconSize || 18} color="#16a34a" />
+        <Text
+          style={[styles.softText, textStyle]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.75}
+        >
+          {label}
+        </Text>
       </TouchableOpacity>
     );
   }
@@ -89,8 +115,13 @@ export function WhatsAppOrderButton({
         accessibilityRole="button"
         accessibilityLabel={label}
       >
-        <WhatsAppIcon size={16} color="#ffffff" />
-        <Text style={[styles.compactText, textStyle]} numberOfLines={1}>
+        <WhatsAppIcon size={iconSize || 16} color="#ffffff" />
+        <Text
+          style={[styles.compactText, textStyle]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.8}
+        >
           {label}
         </Text>
       </TouchableOpacity>
@@ -105,8 +136,13 @@ export function WhatsAppOrderButton({
       accessibilityRole="button"
       accessibilityLabel={label}
     >
-      <WhatsAppIcon size={20} color="#ffffff" />
-      <Text style={[styles.fullText, textStyle]} numberOfLines={1} adjustsFontSizeToFit>
+      <WhatsAppIcon size={iconSize || 18} color="#ffffff" />
+      <Text
+        style={[styles.fullText, textStyle]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.75}
+      >
         {label}
       </Text>
     </TouchableOpacity>
@@ -114,24 +150,42 @@ export function WhatsAppOrderButton({
 }
 
 const styles = StyleSheet.create({
+  softBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 44,
+    backgroundColor: '#ecfdf5',
+    borderWidth: 1.5,
+    borderColor: '#10b981',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    gap: 6,
+  },
+  softText: {
+    color: '#065f46',
+    fontSize: 13,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
   fullBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#25D366',
+    height: 44,
+    backgroundColor: '#16a34a',
     borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    gap: 8,
-    shadowColor: '#25D366',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 3,
+    paddingHorizontal: 8,
+    gap: 6,
+    shadowColor: '#16a34a',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 2,
   },
   fullText: {
     color: '#ffffff',
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '700',
     textAlign: 'center',
   },
@@ -139,16 +193,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#25D366',
+    height: 36,
+    backgroundColor: '#16a34a',
     borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     gap: 6,
-    shadowColor: '#25D366',
+    shadowColor: '#16a34a',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.15,
     shadowRadius: 2,
-    elevation: 2,
+    elevation: 1,
   },
   compactText: {
     color: '#ffffff',
@@ -156,15 +210,15 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   iconBtn: {
-    width: 38,
-    height: 38,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#25D366',
-    borderRadius: 8,
-    shadowColor: '#25D366',
+    backgroundColor: '#16a34a',
+    borderRadius: 12,
+    shadowColor: '#16a34a',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.15,
     shadowRadius: 2,
     elevation: 2,
   },

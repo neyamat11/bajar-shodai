@@ -17,7 +17,9 @@ export interface MessengerOrderButtonProps {
   productName: string;
   productSlug: string;
   productPrice: number;
-  variant?: 'full' | 'compact' | 'icon';
+  variant?: 'full' | 'compact' | 'icon' | 'soft';
+  label?: string;
+  iconSize?: number;
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
   messengerUsername?: string | null;
@@ -40,6 +42,8 @@ export function MessengerOrderButton({
   productSlug,
   productPrice,
   variant = 'full',
+  label: customLabel,
+  iconSize,
   style,
   textStyle,
   messengerUsername: propUsername,
@@ -73,7 +77,7 @@ export function MessengerOrderButton({
     });
   };
 
-  const label = isBn ? 'মেসেঞ্জারে অর্ডার' : 'Order on Messenger';
+  const label = customLabel || (isBn ? 'মেসেঞ্জার অর্ডার' : 'Messenger Order');
 
   if (variant === 'icon') {
     return (
@@ -84,7 +88,29 @@ export function MessengerOrderButton({
         accessibilityRole="button"
         accessibilityLabel={label}
       >
-        <MessengerIcon size={18} color="#ffffff" />
+        <MessengerIcon size={iconSize || 20} color="#ffffff" />
+      </TouchableOpacity>
+    );
+  }
+
+  if (variant === 'soft') {
+    return (
+      <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={handlePress}
+        style={[styles.softBtn, style]}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+      >
+        <MessengerIcon size={iconSize || 18} color="#0084FF" />
+        <Text
+          style={[styles.softText, textStyle]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.75}
+        >
+          {label}
+        </Text>
       </TouchableOpacity>
     );
   }
@@ -98,8 +124,13 @@ export function MessengerOrderButton({
         accessibilityRole="button"
         accessibilityLabel={label}
       >
-        <MessengerIcon size={16} color="#ffffff" />
-        <Text style={[styles.compactText, textStyle]} numberOfLines={1}>
+        <MessengerIcon size={iconSize || 16} color="#ffffff" />
+        <Text
+          style={[styles.compactText, textStyle]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.8}
+        >
           {label}
         </Text>
       </TouchableOpacity>
@@ -114,8 +145,13 @@ export function MessengerOrderButton({
       accessibilityRole="button"
       accessibilityLabel={label}
     >
-      <MessengerIcon size={20} color="#ffffff" />
-      <Text style={[styles.fullText, textStyle]} numberOfLines={1} adjustsFontSizeToFit>
+      <MessengerIcon size={iconSize || 18} color="#ffffff" />
+      <Text
+        style={[styles.fullText, textStyle]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.75}
+      >
         {label}
       </Text>
     </TouchableOpacity>
@@ -123,24 +159,42 @@ export function MessengerOrderButton({
 }
 
 const styles = StyleSheet.create({
+  softBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 44,
+    backgroundColor: '#eff6ff',
+    borderWidth: 1.5,
+    borderColor: '#3b82f6',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    gap: 6,
+  },
+  softText: {
+    color: '#1e40af',
+    fontSize: 13,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
   fullBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    height: 44,
     backgroundColor: '#0084FF',
     borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    gap: 8,
+    paddingHorizontal: 8,
+    gap: 6,
     shadowColor: '#0084FF',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 2,
   },
   fullText: {
     color: '#ffffff',
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '700',
     textAlign: 'center',
   },
@@ -148,16 +202,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    height: 36,
     backgroundColor: '#0084FF',
     borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     gap: 6,
     shadowColor: '#0084FF',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.15,
     shadowRadius: 2,
-    elevation: 2,
+    elevation: 1,
   },
   compactText: {
     color: '#ffffff',
@@ -165,15 +219,15 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   iconBtn: {
-    width: 38,
-    height: 38,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#0084FF',
-    borderRadius: 8,
+    borderRadius: 12,
     shadowColor: '#0084FF',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.15,
     shadowRadius: 2,
     elevation: 2,
   },
