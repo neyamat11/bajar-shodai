@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { Icon } from '@/components/ui/Icon';
 import { Button } from '@/components/ui/Button';
 import { PhoneInput } from '@/components/ui/PhoneInput';
+import { BrandLogo } from '@/components/ui/BrandLogo';
 import { toast } from '@/store/useToastStore';
 import { haptics } from '@/services/haptics';
 import { registerApi } from '@/features/auth/api/register';
@@ -105,12 +106,9 @@ export default function RegisterScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 20 }} keyboardShouldPersistTaps="handled">
-        <View className="items-center my-4">
-          <View className="w-14 h-14 rounded-full bg-brand-fresh/15 items-center justify-center mb-2">
-            <Icon name="UserPlus" size={28} color="#0b6234" />
-          </View>
-          <Text className="text-xl font-bold text-foreground">Register with Bazar Shodai</Text>
-          <Text className="text-xs text-muted-foreground mt-0.5 text-center">
+        <View className="items-center my-5">
+          <BrandLogo size="xl" />
+          <Text className="text-xs text-muted-foreground mt-2 text-center">
             Fresh groceries delivered directly to your home in Shahrasti
           </Text>
         </View>

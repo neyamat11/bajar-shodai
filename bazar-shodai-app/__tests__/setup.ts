@@ -7,6 +7,13 @@ jest.mock('expo-secure-store', () => ({
   deleteItemAsync: jest.fn().mockResolvedValue(undefined),
 }));
 
+jest.mock('expo-image', () => {
+  const React = require('react');
+  return {
+    Image: (props: any) => React.createElement('Image', props),
+  };
+});
+
 jest.mock('react-native', () => ({
   Platform: {
     OS: 'android',

@@ -8,12 +8,14 @@ export default function BrandLogo({
   tagline = false,
   asLink = true,
   tone = "default",
+  logoUrl,
 }: {
   size?: "sm" | "md" | "lg" | "xl";
   tagline?: boolean;
   asLink?: boolean;
   /** "onDark" is for surfaces that stay dark in both themes (footer, auth panel) */
   tone?: "default" | "onDark";
+  logoUrl?: string | null;
 }) {
   const dims = {
     sm: { img: "h-9", tag: "text-[8px]" },
@@ -23,13 +25,15 @@ export default function BrandLogo({
   }[size];
   const onDark = tone === "onDark";
 
+  const src = logoUrl?.trim() || "/logo-wide.webp";
+
   const body = (
     <span className="group flex flex-col items-start">
       <span className={`flex items-center rounded ${onDark ? "bg-white px-2 py-1" : "dark:bg-white dark:px-2 dark:py-1"}`}>
         {/* the artwork is 2800x840: multiply melts its white background into the page in light mode */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/logo-wide.webp"
+          src={src}
           alt="Bazar Shodai"
           width={1400}
           height={420}

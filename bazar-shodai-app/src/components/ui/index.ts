@@ -11,3 +11,4 @@ export * from './Toast';
 export * from './Card';
 export * from './EmptyState';
 export * from './NetworkBanner';
+export * from './BrandLogo';

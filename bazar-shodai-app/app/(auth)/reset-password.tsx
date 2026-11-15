@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Icon } from '@/components/ui/Icon';
 import { Button } from '@/components/ui/Button';
+import { BrandLogo } from '@/components/ui/BrandLogo';
 import { toast } from '@/store/useToastStore';
 import { haptics } from '@/services/haptics';
 import { resetPasswordApi } from '@/features/auth/api/resetPassword';
@@ -83,11 +84,9 @@ export default function ResetPasswordScreen() {
 
       <ScrollView contentContainerStyle={{ padding: 20 }} keyboardShouldPersistTaps="handled">
         <View className="items-center my-6">
-          <View className="w-16 h-16 rounded-full bg-brand-fresh/15 items-center justify-center mb-3">
-            <Icon name="ShieldCheck" size={32} color="#0b6234" />
-          </View>
-          <Text className="text-2xl font-bold text-foreground">Create New Password</Text>
-          <Text className="text-xs text-muted-foreground mt-1 text-center">
+          <BrandLogo size="lg" />
+          <Text className="text-xl font-bold text-foreground mt-3">Create New Password</Text>
+          <Text className="text-xs text-muted-foreground mt-1 text-center max-w-[280px]">
             Enter your verification token and choose a secure new password
           </Text>
         </View>

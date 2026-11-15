@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Image } from 'expo-image';
+import { BrandLogo } from '@/components/ui/BrandLogo';
 import { Icon } from '@/components/ui/Icon';
 import { useAppTheme } from '@/components/theme/ThemeProvider';
 import { haptics } from '@/services/haptics';
@@ -65,18 +65,14 @@ export function AppHeader({
       <View style={styles.topRow}>
         {/* Left: Brand Identity with official logo */}
         <View style={styles.brandContainer}>
-          <TouchableOpacity
-            onPress={() => router.push('/(tabs)')}
-            activeOpacity={0.8}
-            style={styles.logoWrapper}
-          >
-            <Image
-              source={require('../../../assets/images/logo-wide.webp')}
-              style={styles.logoImage}
-              contentFit="contain"
-              accessibilityLabel="Bazar Shodai Logo"
+          <View style={styles.logoWrapper}>
+            <BrandLogo
+              width={140}
+              height={32}
+              contentPosition="left"
+              onPress={() => router.push('/(tabs)')}
             />
-          </TouchableOpacity>
+          </View>
 
           {/* Delivery Location Pill */}
           <TouchableOpacity

@@ -43,7 +43,7 @@ export default async function SiteFooter({
           <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-12 lg:gap-0">
             {/* brand */}
             <div data-reveal="up" className="flex flex-col gap-5 sm:col-span-2 lg:col-span-4 lg:pr-8">
-              <BrandLogo size="lg" tone="onDark" />
+              <BrandLogo size="lg" tone="onDark" logoUrl={settings.site.logoUrl} />
               <p className="max-w-xs text-sm leading-relaxed text-white/70">
                 {t("about")}
               </p>

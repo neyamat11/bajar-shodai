@@ -8,6 +8,7 @@ import { useDebouncedSearch } from "@/lib/hooks/use-debounced-search";
 import { useSearchHistory } from "@/lib/hooks/use-search-history";
 import { useWishlist } from "@/lib/hooks/use-wishlist";
 import { searchProducts } from "@/lib/services/products.service";
+import { getSiteSettings } from "@/lib/services/site.service";
 import type { Product } from "@/lib/types";
 import { useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
@@ -29,6 +30,21 @@ export default function SiteHeader() {
   const { openAuth } = useAuthModal();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    getSiteSettings()
+      .then((s) => {
+        if (alive && s?.site?.logoUrl) {
+          setLogoUrl(s.site.logoUrl);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   // every search box uses useDebouncedSearch: typing stays instant, requests wait for a pause
   const { input: searchQuery, setInput: setSearchQuery, query: debouncedQuery } = useDebouncedSearch(300);
@@ -207,7 +223,7 @@ export default function SiteHeader() {
         <div className="flex flex-wrap items-center gap-x-3 gap-y-3 py-3 lg:flex-nowrap lg:gap-10 lg:py-4">
           {/* Brand Logo */}
           <div className="order-1 min-w-0 flex-shrink-0">
-            <BrandLogo />
+            <BrandLogo logoUrl={logoUrl} />
           </div>
 
           {/* Search Bar */}

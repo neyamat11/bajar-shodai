@@ -5,6 +5,8 @@ export interface MobileSiteSettings {
   site?: {
     storeName?: string;
     tagline?: string;
+    logoUrl?: string | null;
+    faviconUrl?: string | null;
     hotline?: string | null;
     whatsapp?: string | null;
     whatsappOrderTemplate?: string | null;
