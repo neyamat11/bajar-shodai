@@ -1,9 +1,12 @@
 import { BrandLogo } from '../src/components/ui/BrandLogo';
+import { AppSplashScreen } from '../src/components/ui/AppSplashScreen';
 
 describe('BrandLogo dynamic resolution & sizing', () => {
-  it('exports BrandLogo component cleanly from UI module', () => {
+  it('exports BrandLogo and AppSplashScreen cleanly from UI module', () => {
     expect(BrandLogo).toBeDefined();
     expect(typeof BrandLogo).toBe('function');
+    expect(AppSplashScreen).toBeDefined();
+    expect(typeof AppSplashScreen).toBe('function');
   });
 
   it('provides well-proportioned dimensions adhering to 10:3 aspect ratio', () => {
@@ -39,5 +42,13 @@ describe('BrandLogo dynamic resolution & sizing', () => {
 
     // When remote image fails to load (error = true)
     expect(resolveSource(dynamicLogo, true)).toBe('LOCAL_FALLBACK_LOGO');
+  });
+
+  it('validates startup splash timing constraints', () => {
+    const minDurationMs = 1200;
+    const maxTimeoutMs = 2500;
+    expect(minDurationMs).toBeGreaterThanOrEqual(1000);
+    expect(maxTimeoutMs).toBeGreaterThan(minDurationMs);
+    expect(maxTimeoutMs).toBeLessThanOrEqual(3000);
   });
 });

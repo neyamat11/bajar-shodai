@@ -12,3 +12,4 @@ export * from './Card';
 export * from './EmptyState';
 export * from './NetworkBanner';
 export * from './BrandLogo';
+export * from './AppSplashScreen';

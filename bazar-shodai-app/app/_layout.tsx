@@ -11,6 +11,7 @@ import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { ToastContainer } from '@/components/ui/Toast';
 import { NetworkBanner } from '@/components/ui/NetworkBanner';
 import { ProductQuickViewModal } from '@/components/product/ProductQuickViewModal';
+import { AppSplashScreen } from '@/components/ui/AppSplashScreen';
 import { useAppFonts } from '@/hooks/useFonts';
 import { hideSplashScreen } from '@/utils/splash';
 import { getOrCreateGuestToken } from '@/utils/guestToken';
@@ -293,6 +294,7 @@ function RootNavigationLayout() {
         />
       </Stack>
       <ProductQuickViewModal />
+      <AppSplashScreen />
     </View>
   );
 }
