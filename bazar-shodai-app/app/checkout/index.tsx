@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   TextInput,
   ActivityIndicator,
   StyleSheet,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -22,30 +23,50 @@ import { useCartStore } from '@/store/useCartStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { CustomerAddress, PaymentMethod } from '@/features/checkout/types';
 import { AddressSelector } from '@/features/checkout/components/AddressSelector';
+import { CheckoutStepIndicator } from '@/features/checkout/components/CheckoutStepIndicator';
 import { DeliverySlotPicker } from '@/features/checkout/components/DeliverySlotPicker';
 import { PaymentMethodSelector } from '@/features/checkout/components/PaymentMethodSelector';
 import { MobileBankingForm } from '@/features/checkout/components/MobileBankingForm';
+import { CheckoutOrderSummary, CheckoutSummaryData } from '@/features/checkout/components/CheckoutOrderSummary';
 import { CheckoutMapView } from '@/components/map/CheckoutMapView';
 import { useSubmitOrder } from '@/features/checkout/api/useSubmitOrder';
 import { shareLocationApi } from '@/features/location/api/myLocation';
 import { getCurrentCoordinates } from '@/services/location';
 import { toast } from '@/store/useToastStore';
 import { haptics } from '@/services/haptics';
+import { useSiteSettings } from '@/services/siteService';
+import { fetchCheckoutSummaryApi, applyCouponApi, CheckoutSummaryResponse } from '@/features/checkout/api/checkoutSummary';
 
+const BD_PHONE_REGEX = /^(\+?88)?01[3-9]\d{8}$/;
+
+/**
+ * Mobile Order Checkout — 100% FEATURE & UX PARITY WITH PUBLIC SITE:
+ * 1. Step 1: Shipping Details (who & which house, saved addresses, address book)
+ * 2. Step 2: Location & Slot (interactive map based on admin settings, GPS locate, skip/abroad, dynamic slot pills)
+ * 3. Step 3: Payment (COD / bKash / Nagad / Rocket with live admin accounts, copy button, instructions, sender/TrxID)
+ * 4. Step 4: Order Review (full summary breakdown, line-item preview, notes, confirm order)
+ * Along with live backend-calculated pricing, coupon apply/remove, and loyalty points redemption.
+ */
 export default function CheckoutScreen() {
   const router = useRouter();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
-  const { items, subtotal, coupon, deliveryCharge, freeDeliveryThreshold } =
-    useCartStore();
+  const { items, subtotal, coupon, deliveryCharge, freeDeliveryThreshold, setCoupon } = useCartStore();
+  const { data: siteSettings } = useSiteSettings();
 
-  // Guest details state
-  const [guestName, setGuestName] = useState('');
-  const [guestPhone, setGuestPhone] = useState('');
-  const [guestAddress, setGuestAddress] = useState('');
-  const [guestCity, setGuestCity] = useState('Shahrasti');
+  // Wizard Step: 1 = Shipping, 2 = Location & Slot, 3 = Payment, 4 = Review
+  const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
 
-  // GPS Location & Real-time Quote state
+  // ── Step 1: Shipping Details ──
+  const [fullName, setFullName] = useState(user?.name || '');
+  const [phone, setPhone] = useState(user?.phone || '');
+  const [addressLine, setAddressLine] = useState('');
+  const [landmark, setLandmark] = useState('');
+  const [city, setCity] = useState('Shahrasti');
+  const [saveToAddressBook, setSaveToAddressBook] = useState(true);
+  const [selectedSavedAddress, setSelectedSavedAddress] = useState<CustomerAddress | null>(null);
+
+  // ── Step 2: Location & Preferred Slot ──
   const [gpsLocation, setGpsLocation] = useState<{
     lat: number;
     lng: number;
@@ -62,10 +83,24 @@ export default function CheckoutScreen() {
   const [senderCountry, setSenderCountry] = useState('');
   const [senderContactMethod, setSenderContactMethod] = useState<'WHATSAPP' | 'IMO' | 'PHONE'>('WHATSAPP');
   const [senderContactNumber, setSenderContactNumber] = useState('');
+  const [deliverySlot, setDeliverySlot] = useState('');
 
-  const [selectedAddress, setSelectedAddress] = useState<CustomerAddress | null>(null);
+  // ── Step 3: Payment Details ──
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CASH_ON_DELIVERY');
+  const [senderNumber, setSenderNumber] = useState(user?.phone || '');
+  const [trxId, setTrxId] = useState('');
 
-  const { data: addresses = [] } = useQuery({
+  // ── Step 4: Notes & Live Summary ──
+  const [deliveryNotes, setDeliveryNotes] = useState('');
+  const [activeCoupon, setActiveCoupon] = useState<string>(coupon?.code || '');
+  const [usePoints, setUsePoints] = useState(false);
+  const [serverSummary, setServerSummary] = useState<CheckoutSummaryResponse | null>(null);
+  const [isSummaryLoading, setIsSummaryLoading] = useState(false);
+
+  const submitOrderMutation = useSubmitOrder();
+
+  // Load saved customer addresses
+  const { data: savedAddresses = [] } = useQuery({
     queryKey: ['customer-addresses'],
     queryFn: async () => {
       try {
@@ -79,18 +114,110 @@ export default function CheckoutScreen() {
     staleTime: 1000 * 60 * 5,
   });
 
+  // Prefill default saved address
+  useEffect(() => {
+    if (savedAddresses.length > 0 && !selectedSavedAddress) {
+      const def = savedAddresses.find((a) => a.isDefault) || savedAddresses[0];
+      if (def) {
+        setSelectedSavedAddress(def);
+        setFullName((prev) => prev || def.fullName);
+        setPhone((prev) => prev || def.phone);
+        setAddressLine((prev) => prev || def.address);
+        if (def.latitude && def.longitude && !gpsLocation) {
+          setGpsLocation({
+            lat: def.latitude,
+            lng: def.longitude,
+            placeName: def.address,
+          });
+        }
+      }
+    }
+  }, [savedAddresses, selectedSavedAddress, gpsLocation]);
+
+  // Sync server summary on pin or discount toggle
+  const fetchSummary = useCallback(async () => {
+    if (items.length === 0) return;
+    try {
+      setIsSummaryLoading(true);
+      const res = await fetchCheckoutSummaryApi({
+        couponCode: activeCoupon || undefined,
+        lat: skipLocation ? undefined : gpsLocation?.lat,
+        lng: skipLocation ? undefined : gpsLocation?.lng,
+        phone: phone.trim() || undefined,
+        redeemPoints: usePoints ? 999999 : undefined,
+        skipLocation,
+        isAbroadOrder,
+      });
+      setServerSummary(res);
+      if (res.shipping?.calculatedFee !== undefined) {
+        setDynamicDeliveryFee(res.shipping.calculatedFee);
+      }
+    } catch {
+      // Graceful fallback to client calculations
+    } finally {
+      setIsSummaryLoading(false);
+    }
+  }, [items.length, activeCoupon, skipLocation, gpsLocation, phone, usePoints, isAbroadOrder]);
+
+  useEffect(() => {
+    void fetchSummary();
+  }, [fetchSummary]);
+
+  // Calculate prices with fallback
+  const sub = subtotal();
+  const isFreeDelivery = sub >= freeDeliveryThreshold;
+  const baseDelivery = dynamicDeliveryFee !== null ? dynamicDeliveryFee : deliveryCharge;
+  const currentDelivery = skipLocation ? 0 : (sub > 0 ? (isFreeDelivery ? 0 : baseDelivery) : 0);
+  const couponDiscount = serverSummary?.discountAmount ?? (coupon?.discount ?? 0);
+  const pointsDiscount = usePoints ? (serverSummary?.pointsDiscountAmount ?? 0) : 0;
+  const grandTotal = serverSummary?.total ?? Math.max(0, sub - couponDiscount - pointsDiscount + currentDelivery);
+
+  const summaryData: CheckoutSummaryData = useMemo(() => ({
+    subtotal: serverSummary?.subtotal ?? sub,
+    deliveryCost: serverSummary?.shippingCost ?? currentDelivery,
+    isFreeDelivery: serverSummary ? serverSummary.shippingCost === 0 : isFreeDelivery,
+    distanceKm: serverSummary?.shipping?.distanceKm ?? gpsLocation?.distanceKm,
+    isPendingFee: skipLocation || serverSummary?.shipping?.isPendingFee,
+    coupon: serverSummary?.coupon?.applied ? {
+      code: serverSummary.coupon.code,
+      discount: serverSummary.coupon.discount,
+      description: serverSummary.coupon.description || undefined,
+    } : coupon ? {
+      code: coupon.code,
+      discount: coupon.discount,
+    } : null,
+    loyalty: serverSummary?.loyalty ? {
+      enabled: serverSummary.loyalty.enabled,
+      userPoints: serverSummary.loyalty.userPoints,
+      pointsRedeemed: serverSummary.loyalty.pointsRedeemed,
+      pointsDiscountAmount: serverSummary.loyalty.pointsDiscountAmount,
+      pointsEarned: serverSummary.loyalty.pointsEarned,
+      canRedeem: serverSummary.loyalty.canRedeem,
+      minOrderAmountToRedeem: serverSummary.loyalty.minOrderAmountToRedeem,
+      minPointsToRedeem: serverSummary.loyalty.minPointsToRedeem,
+      milestone: serverSummary.loyalty.milestone ? {
+        freeShippingApplied: serverSummary.loyalty.milestone.freeShippingApplied,
+        maxWeightKg: serverSummary.loyalty.milestone.maxWeightKg,
+      } : undefined,
+      weightExceeded: serverSummary.loyalty.milestone?.weightExceeded,
+      orderWeightKg: serverSummary.loyalty.milestone?.orderWeightKg,
+    } : null,
+    pointsDiscountAmount: pointsDiscount,
+    grandTotal,
+  }), [serverSummary, sub, currentDelivery, isFreeDelivery, gpsLocation, skipLocation, coupon, pointsDiscount, grandTotal]);
+
+  // Handle GPS detection
   const handleShareLocation = async () => {
     try {
       setIsLocating(true);
       haptics.selection();
       const coords = await getCurrentCoordinates();
-      const sub = subtotal();
       const res = await shareLocationApi({
         lat: coords.latitude,
         lng: coords.longitude,
         accuracyM: coords.accuracy ?? undefined,
         source: 'GPS',
-        phone: isAuthenticated ? user?.phone : guestPhone.trim() || undefined,
+        phone: phone.trim() || undefined,
         subtotal: sub,
       });
 
@@ -114,15 +241,12 @@ export default function CheckoutScreen() {
           'দুঃখিত, এই এলাকাটি আমাদের ডেলিভারি সীমার বাইরে। আমাদের কেন্দ্র থেকে সর্বোচ্চ ডেলিভারি সীমা অতিক্রম করেছে।',
         );
         return;
-      } else if (blockReason === 'DISABLED' || blockReason === 'ORIGIN_NOT_SET') {
-        setLocationBlock(blockReason);
-        toast.warning('ডেলিভারি অনুপলব্ধ', 'বর্তমানে এই এরিয়ায় ডেলিভারি সাময়িকভাবে বন্ধ আছে।');
-        return;
       }
 
       setLocationBlock(null);
       const placeName = res.location?.placeName || res.placeName || res.location?.placeNameBn || res.placeNameBn || '';
       const distance = res.quote?.distanceKm ?? res.distanceKm;
+
       setGpsLocation({
         lat: coords.latitude,
         lng: coords.longitude,
@@ -136,8 +260,8 @@ export default function CheckoutScreen() {
         setDynamicDeliveryFee(res.quote.calculatedFee);
       }
 
-      if (!isAuthenticated && (!guestAddress.trim() || guestAddress === 'Shahrasti') && placeName) {
-        setGuestAddress(placeName);
+      if (!addressLine.trim() && placeName) {
+        setAddressLine(placeName);
       }
 
       haptics.success();
@@ -153,14 +277,14 @@ export default function CheckoutScreen() {
     }
   };
 
+  // Handle Map Pin Drag / Click
   const handlePinChange = async (coords: { lat: number; lng: number }) => {
     try {
-      const sub = subtotal();
       const res = await shareLocationApi({
         lat: coords.lat,
         lng: coords.lng,
         source: 'PIN',
-        phone: isAuthenticated ? user?.phone : guestPhone.trim() || undefined,
+        phone: phone.trim() || undefined,
         subtotal: sub,
       });
 
@@ -181,8 +305,7 @@ export default function CheckoutScreen() {
       }
 
       setLocationBlock(null);
-      const placeName =
-        res.location?.placeName || res.placeName || res.location?.placeNameBn || res.placeNameBn || '';
+      const placeName = res.location?.placeName || res.placeName || res.location?.placeNameBn || res.placeNameBn || '';
       const distance = res.quote?.distanceKm ?? res.distanceKm;
 
       setGpsLocation({
@@ -198,10 +321,6 @@ export default function CheckoutScreen() {
         setDynamicDeliveryFee(res.quote.calculatedFee);
       }
 
-      if (!isAuthenticated && (!guestAddress.trim() || guestAddress === 'Shahrasti') && placeName) {
-        setGuestAddress(placeName);
-      }
-
       haptics.selection();
     } catch {
       setGpsLocation((prev) => ({
@@ -213,81 +332,56 @@ export default function CheckoutScreen() {
     }
   };
 
-  const effectiveAddress = useMemo<CustomerAddress | null>(() => {
-    if (!isAuthenticated) {
-      return {
-        id: 'guest-address',
-        fullName: guestName.trim(),
-        phone: guestPhone.trim(),
-        address: guestAddress.trim(),
-        city: guestCity,
-        district: 'Chandpur',
-        latitude: gpsLocation?.lat ?? 23.2185,
-        longitude: gpsLocation?.lng ?? 90.9525,
-        label: 'HOME',
-      };
+  // Step 1 Validation & Next
+  const handleContinueToLocation = async () => {
+    const cleanName = fullName.trim();
+    if (cleanName.length < 2) {
+      toast.warning('নাম আবশ্যক', 'অনুগ্রহ করে গ্রাহকের পুরো নাম লিখুন');
+      return;
+    }
+    const cleanPhone = phone.trim().replace(/[\s-]/g, '');
+    if (!cleanPhone || cleanPhone.length !== 11 || !BD_PHONE_REGEX.test(cleanPhone)) {
+      toast.warning('সঠিক মোবাইল নম্বর দিন', '১১ ডিজিটের সঠিক মোবাইল নম্বর লিখুন (যেমন: 017XXXXXXXX)');
+      return;
+    }
+    if (addressLine.trim().length < 4) {
+      toast.warning('ঠিকানা আবশ্যক', 'অনুগ্রহ করে বিস্তারিত ডেলিভারি ঠিকানা লিখুন (বাড়ি, রোড, এলাকা)');
+      return;
     }
 
-    if (selectedAddress) {
-      return {
-        ...selectedAddress,
-        latitude: gpsLocation?.lat ?? selectedAddress.latitude,
-        longitude: gpsLocation?.lng ?? selectedAddress.longitude,
-      };
-    }
-    if (addresses.length > 0) {
-      const def = addresses.find((a) => a.isDefault) || addresses[0];
-      if (def) {
-        return {
-          ...def,
-          latitude: gpsLocation?.lat ?? def.latitude,
-          longitude: gpsLocation?.lng ?? def.longitude,
-        };
+    // Save to customer address book if authenticated
+    if (isAuthenticated && saveToAddressBook && (!selectedSavedAddress || selectedSavedAddress.address !== addressLine.trim())) {
+      try {
+        await api.post('/customer/addresses', {
+          fullName: cleanName,
+          phone: cleanPhone,
+          address: addressLine.trim(),
+          latitude: gpsLocation?.lat ?? 23.2452,
+          longitude: gpsLocation?.lng ?? 90.9422,
+          city: city || 'Shahrasti',
+          district: 'Chandpur',
+          label: 'HOME',
+          isDefault: savedAddresses.length === 0,
+        });
+      } catch {
+        // Continue even if address save fails
       }
     }
-    if (user?.phone) {
-      return {
-        id: 'user-profile-default',
-        fullName: user.name || '',
-        phone: user.phone,
-        address: (user as any).address || 'Shahrasti Sadar, Chandpur',
-        city: 'Shahrasti',
-        district: 'Chandpur',
-        latitude: gpsLocation?.lat ?? 23.2185,
-        longitude: gpsLocation?.lng ?? 90.9525,
-        label: 'HOME',
-      };
-    }
-    return null;
-  }, [isAuthenticated, guestName, guestPhone, guestAddress, guestCity, gpsLocation, selectedAddress, addresses, user]);
 
-  const [deliverySlot, setDeliverySlot] = useState('');
-  const [deliveryNotes, setDeliveryNotes] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CASH_ON_DELIVERY');
-  const [senderNumber, setSenderNumber] = useState(user?.phone || '');
-  const [trxId, setTrxId] = useState('');
+    haptics.selection();
+    setCurrentStep(2);
+  };
 
-  const submitOrderMutation = useSubmitOrder();
-
-  const sub = subtotal();
-  const isFreeDelivery = sub >= freeDeliveryThreshold;
-  const baseDelivery = dynamicDeliveryFee !== null ? dynamicDeliveryFee : deliveryCharge;
-  const currentDelivery = skipLocation ? 0 : (sub > 0 ? (isFreeDelivery ? 0 : baseDelivery) : 0);
-  const discount = coupon?.discount ?? 0;
-  const grandTotal = Math.max(0, sub - discount + currentDelivery);
-
-  const handlePlaceOrder = async () => {
-    if (items.length === 0) {
-      toast.warning('Empty Bag', 'Please add items to your cart before checkout');
-      router.replace('/(tabs)/cart');
-      return;
-    }
-
+  // Step 2 Validation & Next
+  const handleContinueToPayment = () => {
     if (!skipLocation && locationBlock === 'OUT_OF_AREA') {
-      toast.error('ডেলিভারি সীমার বাইরে', 'আপনার নির্বাচিত লোকেশন আমাদের ডেলিভারি সীমার বাইরে।');
+      toast.error('ডেলিভারি সীমার বাইরে', 'আপনার নির্বাচিত অবস্থান আমাদের ডেলিভারি সীমার বাইরে।');
       return;
     }
-
+    if (!skipLocation && !gpsLocation) {
+      toast.warning('লোকেশন নির্ধারণ করুন', 'ম্যাপে পিন নির্বাচন করুন অথবা "আমার বর্তমান লোকেশন দিন" চাপুন।');
+      return;
+    }
     if (skipLocation && isAbroadOrder) {
       if (!senderCountry.trim()) {
         toast.warning('দেশ উল্লেখ করুন', 'অনুগ্রহ করে আপনার বর্তমান দেশ লিখুন (যেমন: সৌদি আরব, দুবাই)');
@@ -299,39 +393,62 @@ export default function CheckoutScreen() {
       }
     }
 
-    if (!effectiveAddress || !effectiveAddress.fullName.trim() || !effectiveAddress.phone.trim() || !effectiveAddress.address.trim()) {
-      if (!isAuthenticated) {
-        if (!guestName.trim()) {
-          toast.warning('নাম আবশ্যক', 'অনুগ্রহ করে গ্রাহকের পুরো নাম লিখুন');
-          return;
-        }
-        const cleanPhone = guestPhone.trim();
-        if (!cleanPhone || cleanPhone.length !== 11 || !/^01[3-9]\d{8}$/.test(cleanPhone)) {
-          toast.warning('সঠিক মোবাইল নম্বর দিন', '১১ ডিজিটের সঠিক মোবাইল নম্বর লিখুন (যেমন: 017XXXXXXXX)');
-          return;
-        }
-        if (!guestAddress.trim()) {
-          toast.warning('ঠিকানা আবশ্যক', 'অনুগ্রহ করে ডেলিভারি ঠিকানা লিখুন অথবা "আমার বর্তমান লোকেশন দিন" চাপুন');
-          return;
-        }
-      }
-      toast.warning('ঠিকানা আবশ্যক', 'অনুগ্রহ করে ডেলিভারি ঠিকানা সঠিকভাবে দিন');
-      return;
-    }
+    haptics.selection();
+    setCurrentStep(3);
+  };
 
-    if (!isAuthenticated) {
-      const cleanPhone = effectiveAddress.phone.trim();
-      if (!cleanPhone || cleanPhone.length !== 11 || !/^01[3-9]\d{8}$/.test(cleanPhone)) {
-        toast.warning('সঠিক মোবাইল নম্বর দিন', '১১ ডিজিটের সঠিক মোবাইল নম্বর লিখুন (যেমন: 017XXXXXXXX)');
+  // Step 3 Validation & Next
+  const handleContinueToReview = () => {
+    if (paymentMethod !== 'CASH_ON_DELIVERY') {
+      const cleanSender = senderNumber.trim().replace(/[\s-]/g, '');
+      if (!cleanSender || cleanSender.length < 4) {
+        toast.warning(
+          'প্রেরক নম্বর আবশ্যক',
+          'যে নম্বর থেকে টাকা পাঠিয়েছেন তার মোবাইল নম্বর বা শেষ ৪ ডিজিট লিখুন।',
+        );
         return;
       }
     }
 
-    if (paymentMethod !== 'CASH_ON_DELIVERY' && (!senderNumber.trim() || senderNumber.length < 4)) {
-      toast.warning(
-        'Sender number required',
-        'Please enter the mobile number or last 4 digits you made the transfer from',
-      );
+    haptics.selection();
+    setCurrentStep(4);
+  };
+
+  // Coupon handling
+  const handleApplyCoupon = async (code: string) => {
+    const res = await applyCouponApi(code, {
+      lat: skipLocation ? undefined : gpsLocation?.lat,
+      lng: skipLocation ? undefined : gpsLocation?.lng,
+      phone: phone.trim() || undefined,
+      redeemPoints: usePoints ? 999999 : undefined,
+      skipLocation,
+      isAbroadOrder,
+    });
+    setServerSummary(res);
+    setActiveCoupon(code);
+    if (res.coupon?.applied) {
+      setCoupon({ code, discount: res.coupon.discount });
+      toast.success('কুপন প্রযোজ্য হয়েছে', `${code} কুপনে ৳${res.coupon.discount} ছাড় পেয়েছেন!`);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setActiveCoupon('');
+    setCoupon(null);
+    void fetchSummary();
+    toast.info('কুপন মুছে ফেলা হয়েছে', 'রেগুলার মূল্য ফিরিয়ে আনা হয়েছে');
+  };
+
+  const handleTogglePoints = (apply: boolean) => {
+    setUsePoints(apply);
+    haptics.selection();
+  };
+
+  // Final Order Submission
+  const handlePlaceOrder = async () => {
+    if (items.length === 0) {
+      toast.warning('খালি ব্যাগ', 'চেকআউট করার আগে পণ্য ব্যাগে যুক্ত করুন');
+      router.replace('/(tabs)/cart');
       return;
     }
 
@@ -339,21 +456,23 @@ export default function CheckoutScreen() {
       const order = await submitOrderMutation.mutateAsync({
         paymentMethod,
         shippingAddress: {
-          fullName: effectiveAddress.fullName,
-          phone: effectiveAddress.phone,
-          address: effectiveAddress.address,
-          latitude: effectiveAddress.latitude,
-          longitude: effectiveAddress.longitude,
-          city: effectiveAddress.city || 'Shahrasti',
-          district: effectiveAddress.district || 'Chandpur',
+          fullName: fullName.trim(),
+          phone: phone.trim().replace(/[\s-]/g, ''),
+          address: landmark.trim() ? `${addressLine.trim()} (ল্যান্ডমার্ক: ${landmark.trim()})` : addressLine.trim(),
+          latitude: gpsLocation?.lat,
+          longitude: gpsLocation?.lng,
+          city: city || 'Shahrasti',
+          district: 'Chandpur',
           locationSource: gpsLocation ? 'GPS' : 'PIN',
         },
-        deliverySlot,
+        deliverySlot: deliverySlot || undefined,
         deliveryNote: deliveryNotes.trim() || undefined,
-        couponCode: coupon?.code || undefined,
-        bkashSenderNumber: paymentMethod !== 'CASH_ON_DELIVERY' ? senderNumber.trim() : undefined,
-        bkashTransactionId:
-          paymentMethod !== 'CASH_ON_DELIVERY' && trxId.trim() ? trxId.trim() : undefined,
+        couponCode: activeCoupon || undefined,
+        ...(paymentMethod !== 'CASH_ON_DELIVERY' ? {
+          bkashSenderNumber: senderNumber.trim(),
+          bkashTransactionId: trxId.trim() || undefined,
+        } : {}),
+        redeemPoints: usePoints ? (serverSummary?.loyalty?.pointsRedeemed || 0) : undefined,
         skipLocation,
         isAbroadOrder,
         senderCountry: isAbroadOrder ? senderCountry.trim() : undefined,
@@ -362,8 +481,11 @@ export default function CheckoutScreen() {
       });
 
       haptics.success();
-      toast.success('Order Placed!', `Your order #${order.orderNumber} has been received.`);
-      router.replace(`/order-confirmation/${order.id || order.orderNumber}` as any);
+      toast.success('অর্ডার সম্পন্ন হয়েছে!', `আপনার অর্ডার #${order.orderNumber} সফলভাবে গ্রহণ করা হয়েছে।`);
+      router.replace({
+        pathname: '/orders/[id]',
+        params: { id: order.id, placed: '1' },
+      });
     } catch (err: any) {
       haptics.error();
       const message =
@@ -379,31 +501,40 @@ export default function CheckoutScreen() {
       {/* Top Header */}
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={() => {
+            if (currentStep > 1) {
+              setCurrentStep((s) => (s - 1) as any);
+            } else {
+              router.back();
+            }
+          }}
           style={styles.backBtn}
           accessibilityRole="button"
           accessibilityLabel="Back"
         >
           <Icon name="ArrowLeft" size={22} color="#0b6234" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Order Checkout</Text>
+        <Text style={styles.headerTitle}>অর্ডার চেকআউট (Order Checkout)</Text>
         <View style={{ width: 34 }} />
       </View>
+
+      {/* Guided 4-Step Checkout Progress Bar */}
+      <CheckoutStepIndicator currentStep={currentStep} />
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          {/* Guest Checkout Notice Banner */}
-          {!isAuthenticated && (
+          {/* Guest Notice Banner */}
+          {!isAuthenticated && currentStep === 1 && (
             <View style={styles.guestNoticeCard}>
               <View style={styles.guestNoticeContent}>
                 <Icon name="UserCheck" size={18} color="#0b6234" />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.guestNoticeTitle}>গেস্ট চেকআউট (লগইন ঐচ্ছিক)</Text>
                   <Text style={styles.guestNoticeSub}>
-                    সংরক্ষিত ঠিকানা ও পয়েন্ট পেতে চান?{' '}
+                    সংরক্ষিত ঠিকানা ও ডিসকাউন্ট পয়েন্ট পেতে চান?{' '}
                     <Text
                       style={styles.guestNoticeLink}
                       onPress={() => router.push('/(auth)/login?redirect=/checkout')}
@@ -416,356 +547,582 @@ export default function CheckoutScreen() {
             </View>
           )}
 
-          {/* Section 1: Address Selector (Logged In) or Guest Address Form */}
-          {isAuthenticated ? (
-            <AddressSelector selectedAddress={effectiveAddress} onSelectAddress={setSelectedAddress} />
-          ) : (
-            <View style={styles.guestFormContainer}>
-              <View style={styles.guestFormHeader}>
+          {/* ══════════════════════════════════════════════════════════════
+              STEP 1: SHIPPING DETAILS (১. ঠিকানা)
+             ══════════════════════════════════════════════════════════════ */}
+          {currentStep === 1 && (
+            <View style={styles.stepContainer}>
+              <View style={styles.stepHeaderRow}>
                 <Icon name="MapPin" size={18} color="#0b6234" />
-                <Text style={styles.sectionTitle}>ডেলিভারি তথ্য (Delivery Information)</Text>
+                <Text style={styles.stepTitle}>ডেলিভারির ঠিকানা (Shipping Address)</Text>
               </View>
+              <Text style={styles.stepSubtitle}>
+                পণ্য পৌঁছে দেওয়ার জন্য প্রাপকের নাম, মোবাইল নম্বর ও সঠিক ঠিকানা লিখুন।
+              </Text>
 
-              <View style={styles.guestFieldGroup}>
-                <Text style={styles.guestFieldLabel}>আপনার নাম (Full Name) *</Text>
+              {/* Saved Address Selector for Logged In Customer */}
+              {isAuthenticated && savedAddresses.length > 0 && (
+                <View style={styles.savedSection}>
+                  <Text style={styles.fieldLabel}>সংরক্ষিত ঠিকানা থেকে বেছে নিন:</Text>
+                  <AddressSelector
+                    selectedAddress={selectedSavedAddress}
+                    onSelectAddress={(addr) => {
+                      setSelectedSavedAddress(addr);
+                      setFullName(addr.fullName);
+                      setPhone(addr.phone);
+                      setAddressLine(addr.address);
+                      if (addr.latitude && addr.longitude) {
+                        setGpsLocation({
+                          lat: addr.latitude,
+                          lng: addr.longitude,
+                          placeName: addr.address,
+                        });
+                      }
+                    }}
+                  />
+                  <View style={styles.divider} />
+                </View>
+              )}
+
+              {/* Recipient Form Fields */}
+              <View style={styles.fieldGroup}>
+                <Text style={styles.fieldLabel}>আপনার নাম (Full Name) *</Text>
                 <TextInput
-                  style={styles.guestInput}
-                  placeholder="উদা: তানভির আহমেদ"
+                  style={styles.input}
+                  placeholder="যেমন: তানভির আহমেদ"
                   placeholderTextColor="#9ca3af"
-                  value={guestName}
-                  onChangeText={setGuestName}
+                  value={fullName}
+                  onChangeText={setFullName}
                 />
               </View>
 
-              <View style={styles.guestFieldGroup}>
-                <Text style={styles.guestFieldLabel}>মোবাইল নম্বর (Phone Number) *</Text>
+              <View style={styles.fieldGroup}>
+                <Text style={styles.fieldLabel}>মোবাইল নম্বর (Phone Number) *</Text>
                 <TextInput
-                  style={styles.guestInput}
+                  style={styles.input}
                   placeholder="017XXXXXXXX"
                   placeholderTextColor="#9ca3af"
                   keyboardType="phone-pad"
                   maxLength={11}
-                  value={guestPhone}
-                  onChangeText={setGuestPhone}
+                  value={phone}
+                  onChangeText={setPhone}
                 />
               </View>
 
-              <View style={styles.guestFieldGroup}>
-                <Text style={styles.guestFieldLabel}>বিস্তারিত ঠিকানা (House, Road, Area) *</Text>
+              <View style={styles.fieldGroup}>
+                <Text style={styles.fieldLabel}>বিস্তারিত ঠিকানা (House, Road, Area) *</Text>
                 <TextInput
-                  style={[styles.guestInput, { minHeight: 64 }]}
-                  placeholder="উদা: বাড়ি ১২, রোড ৪, শাহরাস্তি বাজার..."
+                  style={[styles.input, { minHeight: 68, textAlignVertical: 'top' }]}
+                  placeholder="যেমন: বাড়ি ১২, রোড ৪, কালীবাড়ী বাজার, শাহরাস্তি..."
                   placeholderTextColor="#9ca3af"
                   multiline
                   numberOfLines={2}
-                  value={guestAddress}
-                  onChangeText={setGuestAddress}
+                  value={addressLine}
+                  onChangeText={setAddressLine}
                 />
               </View>
 
-              <View style={styles.guestFieldGroup}>
-                <Text style={styles.guestFieldLabel}>শহর / উপজেলা (City / Upazila)</Text>
+              <View style={styles.fieldGroup}>
+                <Text style={styles.fieldLabel}>কাছের ল্যান্ডমার্ক / পরিচিত স্থান (ঐচ্ছিক)</Text>
                 <TextInput
-                  style={styles.guestInput}
-                  value={guestCity}
-                  onChangeText={setGuestCity}
+                  style={styles.input}
+                  placeholder="যেমন: কালীবাড়ী হাই স্কুল মাঠ সংলগ্ন"
+                  placeholderTextColor="#9ca3af"
+                  value={landmark}
+                  onChangeText={setLandmark}
+                />
+              </View>
+
+              {isAuthenticated && (
+                <TouchableOpacity
+                  style={styles.checkboxRow}
+                  onPress={() => setSaveToAddressBook(!saveToAddressBook)}
+                  activeOpacity={0.8}
+                >
+                  <Icon
+                    name={saveToAddressBook ? 'CheckSquare' : 'Square'}
+                    size={18}
+                    color="#0b6234"
+                  />
+                  <Text style={styles.checkboxText}>
+                    ভবিষ্যৎ অর্ডারের জন্য ঠিকানাটি আমার প্রোফাইলে সংরক্ষণ করুন
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+              {/* Step 1 Navigation Button */}
+              <View style={styles.stepActionRow}>
+                <Button
+                  title="লোকেশন ও সময়ে এগিয়ে যান"
+                  variant="primary"
+                  size="lg"
+                  onPress={handleContinueToLocation}
+                  rightIcon={<Icon name="ArrowRight" size={18} color="#ffffff" />}
                 />
               </View>
             </View>
           )}
 
-          {/* Section 1.5: Interactive Delivery Map (Google Map / OSM based on Admin Dashboard) */}
-          <View style={styles.locationSection}>
-            <View style={styles.mapHeaderRow}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Icon name="MapPin" size={16} color="#0b6234" />
-                <Text style={styles.mapSectionTitle}>ডেলিভারি লোকেশন ও ম্যাপ (Delivery Location)</Text>
+          {/* ══════════════════════════════════════════════════════════════
+              STEP 2: LOCATION & PREFERRED SLOT (২. লোকেশন ও সময়)
+             ══════════════════════════════════════════════════════════════ */}
+          {currentStep === 2 && (
+            <View style={styles.stepContainer}>
+              <View style={styles.stepHeaderRow}>
+                <Icon name="Navigation" size={18} color="#0b6234" />
+                <Text style={styles.stepTitle}>ডেলিভারি লোকেশন ও সময় (Location & Slot)</Text>
               </View>
-              <Text style={styles.mapInstructionText}>
-                ড্যাশবোর্ড সেটিংসের ম্যাপে পিন নির্বাচন করুন অথবা বর্তমান লোকেশন দিন
+              <Text style={styles.stepSubtitle}>
+                ম্যাপে আপনার সঠিক বাড়ি নির্বাচন করুন যাতে লাইভ দূরত্বের ভিত্তিতে সঠিক ডেলিভারি চার্জ নির্ধারিত হয়।
               </Text>
-            </View>
 
-            <View style={{ marginVertical: 6 }}>
-              <CheckoutMapView
-                marker={gpsLocation ? { lat: gpsLocation.lat, lng: gpsLocation.lng } : null}
-                onMarkerChange={handlePinChange}
-                height={220}
-              />
-            </View>
-
-            <TouchableOpacity
-              style={[
-                styles.shareLocationBtn,
-                gpsLocation && styles.shareLocationBtnActive,
-                isLocating && styles.shareLocationBtnLoading,
-              ]}
-              onPress={handleShareLocation}
-              disabled={isLocating}
-              activeOpacity={0.8}
-            >
-              {isLocating ? (
-                <ActivityIndicator size="small" color="#0b6234" />
-              ) : (
-                <Icon
-                  name="Crosshair"
-                  size={20}
-                  color={gpsLocation ? '#0b6234' : '#0b6234'}
+              {/* Interactive Map View */}
+              <View style={styles.mapContainer}>
+                <CheckoutMapView
+                  marker={gpsLocation ? { lat: gpsLocation.lat, lng: gpsLocation.lng } : null}
+                  onMarkerChange={handlePinChange}
+                  height={220}
                 />
-              )}
-              <View style={{ flex: 1 }}>
-                <Text style={styles.shareLocationBtnText}>
-                  {isLocating
-                    ? 'আপনার অবস্থান অনুসন্ধান করা হচ্ছে...'
-                    : gpsLocation
-                      ? '✓ বর্তমান অবস্থান যুক্ত হয়েছে (GPS)'
-                      : 'আমার বর্তমান লোকেশন দিন'}
-                </Text>
-                <Text style={styles.shareLocationBtnSub}>
-                  {gpsLocation
-                    ? `${gpsLocation.placeName || 'শাহরাস্তি'} • কেন্দ্র থেকে ${gpsLocation.distanceKm !== undefined ? gpsLocation.distanceKm.toFixed(1) : '0'} কিমি`
-                    : 'ডেলিভারি চার্জ ও সঠিক অবস্থান নিশ্চিত করতে প্রেস করুন'}
-                </Text>
               </View>
-              <Icon
-                name={gpsLocation ? 'Check' : 'ChevronRight'}
-                size={18}
-                color={gpsLocation ? '#0b6234' : '#9ca3af'}
-              />
-            </TouchableOpacity>
 
-            {locationBlock === 'OUT_OF_AREA' && (
-              <View style={styles.outOfAreaAlert}>
-                <Icon name="AlertTriangle" size={18} color="#dc2626" />
-                <Text style={styles.outOfAreaAlertText}>
-                  দুঃখিত, এই এলাকাটি আমাদের ডেলিভারি সীমার বাইরে। আমাদের কেন্দ্র থেকে সর্বোচ্চ ডেলিভারি সীমা অতিক্রম করেছে।
-                </Text>
-              </View>
-            )}
-
-            {/* Skip Location / Abroad Card: only show when out of area */}
-            {!skipLocation && locationBlock === 'OUT_OF_AREA' && (
+              {/* GPS Locate Button */}
               <TouchableOpacity
-                style={styles.skipPinBtn}
-                onPress={() => setSkipLocation(true)}
+                style={[
+                  styles.gpsBtn,
+                  gpsLocation && styles.gpsBtnActive,
+                  isLocating && styles.gpsBtnLoading,
+                ]}
+                onPress={handleShareLocation}
+                disabled={isLocating}
                 activeOpacity={0.8}
               >
-                <Icon name="Globe" size={18} color="#0b6234" />
+                {isLocating ? (
+                  <ActivityIndicator size="small" color="#0b6234" />
+                ) : (
+                  <Icon name="Crosshair" size={20} color="#0b6234" />
+                )}
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.skipPinBtnTitle}>
-                    প্রবাসী অথবা দূর থেকে অর্ডার? লোকেশন পিন ছাড়া অর্ডার করুন
+                  <Text style={styles.gpsBtnTitle}>
+                    {isLocating
+                      ? 'আপনার অবস্থান অনুসন্ধান করা হচ্ছে...'
+                      : gpsLocation
+                        ? '✓ বর্তমান অবস্থান যুক্ত হয়েছে (GPS)'
+                        : 'আমার বর্তমান লোকেশন দিন'}
                   </Text>
-                  <Text style={styles.skipPinBtnSub}>
-                    ডেলিভারি চার্জ পরে দোকান থেকে যাচাই সাপেক্ষে (৳—)
+                  <Text style={styles.gpsBtnSub}>
+                    {gpsLocation
+                      ? `${gpsLocation.placeName || 'শাহরাস্তি'} • কেন্দ্র থেকে ${gpsLocation.distanceKm !== undefined ? gpsLocation.distanceKm.toFixed(1) : '0'} কিমি`
+                      : 'ডেলিভারি চার্জ ও সঠিক অবস্থান নিশ্চিত করতে প্রেস করুন'}
                   </Text>
                 </View>
-                <Icon name="ChevronRight" size={16} color="#0b6234" />
+                <Icon
+                  name={gpsLocation ? 'Check' : 'ChevronRight'}
+                  size={18}
+                  color={gpsLocation ? '#0b6234' : '#9ca3af'}
+                />
               </TouchableOpacity>
-            )}
 
-            {skipLocation && (
-              <View style={styles.skipPinCard}>
-                <View style={styles.skipPinHeader}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
-                    <Icon name="Globe" size={18} color="#0b6234" />
-                    <Text style={styles.skipPinTitle}>
-                      {isAbroadOrder ? 'প্রবাসী অর্ডার (লোকেশন পিন ছাড়া)' : 'লোকেশন পিন ছাড়া অর্ডার'}
-                    </Text>
-                  </View>
-                  <TouchableOpacity onPress={() => setSkipLocation(false)}>
-                    <Text style={styles.skipPinCancel}>GPS দিন</Text>
-                  </TouchableOpacity>
+              {/* Out of Area Alert */}
+              {locationBlock === 'OUT_OF_AREA' && (
+                <View style={styles.outOfAreaAlert}>
+                  <Icon name="AlertTriangle" size={18} color="#dc2626" />
+                  <Text style={styles.outOfAreaAlertText}>
+                    দুঃখিত, এই এলাকাটি আমাদের ডেলিভারি সীমার বাইরে। আমাদের কেন্দ্র থেকে সর্বোচ্চ ডেলিভারি সীমা অতিক্রম করেছে।
+                  </Text>
                 </View>
-                <Text style={styles.skipPinFeeNotice}>
-                  ডেলিভারি ফি: দোকান থেকে যাচাই সাপেক্ষে (৳—)
-                </Text>
+              )}
 
+              {/* Skip Pin Button (if out of area) */}
+              {!skipLocation && locationBlock === 'OUT_OF_AREA' && (
                 <TouchableOpacity
-                  style={styles.abroadCheckRow}
-                  onPress={() => setIsAbroadOrder(!isAbroadOrder)}
+                  style={styles.skipPinBtn}
+                  onPress={() => setSkipLocation(true)}
                   activeOpacity={0.8}
                 >
-                  <Icon
-                    name={isAbroadOrder ? 'CheckSquare' : 'Square'}
-                    size={18}
-                    color="#0b6234"
-                  />
-                  <Text style={styles.abroadCheckText}>
-                    আমি দেশের বাইরে (প্রবাসী) থেকে অর্ডার করছি
-                  </Text>
+                  <Icon name="Globe" size={18} color="#0b6234" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.skipPinBtnTitle}>
+                      প্রবাসী অথবা দূর থেকে অর্ডার? লোকেশন পিন ছাড়া অর্ডার করুন
+                    </Text>
+                    <Text style={styles.skipPinBtnSub}>
+                      ডেলিভারি চার্জ পরে দোকান থেকে যাচাই সাপেক্ষে (৳—)
+                    </Text>
+                  </View>
+                  <Icon name="ChevronRight" size={16} color="#0b6234" />
                 </TouchableOpacity>
+              )}
 
-                {isAbroadOrder && (
-                  <View style={styles.abroadFields}>
-                    <View style={styles.guestFieldGroup}>
-                      <Text style={styles.guestFieldLabel}>আপনার বর্তমান দেশ *</Text>
-                      <TextInput
-                        style={styles.guestInput}
-                        value={senderCountry}
-                        onChangeText={setSenderCountry}
-                        placeholder="যেমন: সৌদি আরব, দুবাই, কাতার, মালয়েশিয়া"
-                        placeholderTextColor="#9ca3af"
-                      />
+              {/* Skip Pin / Abroad Order Card */}
+              {skipLocation && (
+                <View style={styles.abroadCard}>
+                  <View style={styles.abroadHeader}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                      <Icon name="Globe" size={18} color="#0b6234" />
+                      <Text style={styles.abroadTitle}>
+                        {isAbroadOrder ? 'প্রবাসী অর্ডার (লোকেশন পিন ছাড়া)' : 'লোকেশন পিন ছাড়া অর্ডার'}
+                      </Text>
                     </View>
+                    <TouchableOpacity onPress={() => setSkipLocation(false)}>
+                      <Text style={styles.abroadCancelText}>GPS দিন</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <Text style={styles.abroadFeeNotice}>
+                    ডেলিভারি ফি: দোকান থেকে যাচাই সাপেক্ষে (৳—)
+                  </Text>
 
-                    <View style={styles.guestFieldGroup}>
-                      <Text style={styles.guestFieldLabel}>যোগাযোগের মাধ্যম *</Text>
-                      <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
-                        <TouchableOpacity
-                          style={[
-                            styles.platformBtn,
-                            senderContactMethod === 'WHATSAPP' && styles.platformBtnActive,
-                          ]}
-                          onPress={() => setSenderContactMethod('WHATSAPP')}
-                        >
-                          <Text
+                  <TouchableOpacity
+                    style={styles.checkboxRow}
+                    onPress={() => setIsAbroadOrder(!isAbroadOrder)}
+                    activeOpacity={0.8}
+                  >
+                    <Icon
+                      name={isAbroadOrder ? 'CheckSquare' : 'Square'}
+                      size={18}
+                      color="#0b6234"
+                    />
+                    <Text style={styles.checkboxText}>
+                      আমি দেশের বাইরে (প্রবাসী) থেকে অর্ডার করছি
+                    </Text>
+                  </TouchableOpacity>
+
+                  {isAbroadOrder && (
+                    <View style={styles.abroadFields}>
+                      <View style={styles.fieldGroup}>
+                        <Text style={styles.fieldLabel}>আপনার বর্তমান দেশ *</Text>
+                        <TextInput
+                          style={styles.input}
+                          value={senderCountry}
+                          onChangeText={setSenderCountry}
+                          placeholder="যেমন: সৌদি আরব, দুবাই, কাতার, মালয়েশিয়া"
+                          placeholderTextColor="#9ca3af"
+                        />
+                      </View>
+
+                      <View style={styles.fieldGroup}>
+                        <Text style={styles.fieldLabel}>যোগাযোগের মাধ্যম *</Text>
+                        <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
+                          <TouchableOpacity
                             style={[
-                              styles.platformBtnText,
-                              senderContactMethod === 'WHATSAPP' && styles.platformBtnTextActive,
+                              styles.platformPill,
+                              senderContactMethod === 'WHATSAPP' && styles.platformPillActive,
                             ]}
+                            onPress={() => setSenderContactMethod('WHATSAPP')}
                           >
-                            WhatsApp
-                          </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[
-                            styles.platformBtn,
-                            senderContactMethod === 'IMO' && styles.platformBtnActive,
-                          ]}
-                          onPress={() => setSenderContactMethod('IMO')}
-                        >
-                          <Text
+                            <Text
+                              style={[
+                                styles.platformPillText,
+                                senderContactMethod === 'WHATSAPP' && styles.platformPillTextActive,
+                              ]}
+                            >
+                              WhatsApp
+                            </Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
                             style={[
-                              styles.platformBtnText,
-                              senderContactMethod === 'IMO' && styles.platformBtnTextActive,
+                              styles.platformPill,
+                              senderContactMethod === 'IMO' && styles.platformPillActive,
                             ]}
+                            onPress={() => setSenderContactMethod('IMO')}
                           >
-                            IMO
-                          </Text>
-                        </TouchableOpacity>
+                            <Text
+                              style={[
+                                styles.platformPillText,
+                                senderContactMethod === 'IMO' && styles.platformPillTextActive,
+                              ]}
+                            >
+                              IMO
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+
+                      <View style={styles.fieldGroup}>
+                        <Text style={styles.fieldLabel}>
+                          {senderContactMethod === 'IMO' ? 'ইমো' : 'হোয়াটসঅ্যাপ'} নম্বর (কান্ট্রি কোড সহ) *
+                        </Text>
+                        <TextInput
+                          style={styles.input}
+                          value={senderContactNumber}
+                          onChangeText={setSenderContactNumber}
+                          placeholder="+966 50 123 4567"
+                          placeholderTextColor="#9ca3af"
+                          keyboardType="phone-pad"
+                        />
                       </View>
                     </View>
-
-                    <View style={styles.guestFieldGroup}>
-                      <Text style={styles.guestFieldLabel}>
-                        {senderContactMethod === 'IMO' ? 'ইমো' : 'হোয়াটসঅ্যাপ'} নম্বর (কান্ট্রি কোড সহ) *
-                      </Text>
-                      <TextInput
-                        style={styles.guestInput}
-                        value={senderContactNumber}
-                        onChangeText={setSenderContactNumber}
-                        placeholder="+966 50 123 4567"
-                        placeholderTextColor="#9ca3af"
-                        keyboardType="phone-pad"
-                      />
-                    </View>
-                  </View>
-                )}
-              </View>
-            )}
-          </View>
-
-          <View style={styles.sectionDivider} />
-
-          {/* Section 2: Delivery Slot */}
-          <DeliverySlotPicker
-            selectedSlot={deliverySlot}
-            onSelectSlot={setDeliverySlot}
-            deliveryNotes={deliveryNotes}
-            onChangeDeliveryNotes={setDeliveryNotes}
-          />
-
-          <View style={styles.sectionDivider} />
-
-          {/* Section 3: Payment Method */}
-          <PaymentMethodSelector selectedMethod={paymentMethod} onSelectMethod={setPaymentMethod} />
-
-          {/* Section 4: Mobile Banking Form (if applicable) */}
-          <MobileBankingForm
-            method={paymentMethod}
-            senderNumber={senderNumber}
-            onChangeSenderNumber={setSenderNumber}
-            trxId={trxId}
-            onChangeTrxId={setTrxId}
-          />
-
-          <View style={styles.sectionDivider} />
-
-          {/* Section 5: Order Items Preview */}
-          <View style={styles.itemsSummaryBox}>
-            <View style={styles.itemsHeader}>
-              <Text style={styles.itemsTitle}>Order Items ({items.length})</Text>
-              <TouchableOpacity onPress={() => router.push('/(tabs)/cart')}>
-                <Text style={styles.editBagText}>Edit Bag</Text>
-              </TouchableOpacity>
-            </View>
-
-            {items.map((it) => (
-              <View key={it.productId} style={styles.itemRow}>
-                <Text style={styles.itemName} numberOfLines={1}>
-                  {it.quantity}x {it.name}
-                </Text>
-                <Price amount={it.price * it.quantity} size="sm" />
-              </View>
-            ))}
-          </View>
-
-          {/* Section 6: Price Breakdown */}
-          <View style={styles.breakdownCard}>
-            <View style={styles.breakdownRow}>
-              <Text style={styles.breakdownLabel}>Items Subtotal</Text>
-              <Price amount={sub} size="sm" />
-            </View>
-
-            {discount > 0 && (
-              <View style={styles.breakdownRow}>
-                <Text style={styles.discountLabel}>Coupon ({coupon?.code})</Text>
-                <Text style={styles.discountValue}>-৳{discount.toFixed(0)}</Text>
-              </View>
-            )}
-
-            <View style={styles.breakdownRow}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text style={styles.breakdownLabel}>Delivery Fee</Text>
-                {dynamicDeliveryFee !== null && !skipLocation && (
-                  <Text style={styles.calculatedTag}>(লাইভ দূরত্বভিত্তিক)</Text>
-                )}
-              </View>
-              {skipLocation ? (
-                <Text style={{ fontSize: 13, fontWeight: '700', color: '#d97706' }}>দোকান থেকে যাচাই সাপেক্ষে</Text>
-              ) : isFreeDelivery ? (
-                <Text style={styles.freeText}>FREE</Text>
-              ) : (
-                <Price amount={currentDelivery} size="sm" />
+                  )}
+                </View>
               )}
-            </View>
 
-            <View style={styles.cardDivider} />
+              <View style={styles.divider} />
 
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Grand Total</Text>
-              <Price amount={grandTotal} size="lg" />
+              {/* Exact Public Site Matching Preferred Delivery Slot */}
+              <DeliverySlotPicker
+                selectedSlot={deliverySlot}
+                onSelectSlot={setDeliverySlot}
+              />
+
+              {/* Step 2 Action Buttons */}
+              <View style={styles.dualActionRow}>
+                <TouchableOpacity
+                  style={styles.backStepBtn}
+                  onPress={() => setCurrentStep(1)}
+                  activeOpacity={0.8}
+                >
+                  <Icon name="ArrowLeft" size={16} color="#4b5563" />
+                  <Text style={styles.backStepBtnText}>পূর্ববর্তী</Text>
+                </TouchableOpacity>
+
+                <View style={{ flex: 1 }}>
+                  <Button
+                    title="পেমেন্টে এগিয়ে যান"
+                    variant="primary"
+                    size="lg"
+                    onPress={handleContinueToPayment}
+                    rightIcon={<Icon name="ArrowRight" size={18} color="#ffffff" />}
+                  />
+                </View>
+              </View>
             </View>
-          </View>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════════
+              STEP 3: PAYMENT METHOD (৩. পেমেন্ট)
+             ══════════════════════════════════════════════════════════════ */}
+          {currentStep === 3 && (
+            <View style={styles.stepContainer}>
+              <PaymentMethodSelector
+                selectedMethod={paymentMethod}
+                onSelectMethod={setPaymentMethod}
+              />
+
+              {/* Dynamic Mobile Banking Details with Store Accounts */}
+              <MobileBankingForm
+                method={paymentMethod}
+                senderNumber={senderNumber}
+                onChangeSenderNumber={setSenderNumber}
+                trxId={trxId}
+                onChangeTrxId={setTrxId}
+                totalAmount={grandTotal}
+              />
+
+              {/* Step 3 Action Buttons */}
+              <View style={styles.dualActionRow}>
+                <TouchableOpacity
+                  style={styles.backStepBtn}
+                  onPress={() => setCurrentStep(2)}
+                  activeOpacity={0.8}
+                >
+                  <Icon name="ArrowLeft" size={16} color="#4b5563" />
+                  <Text style={styles.backStepBtnText}>পূর্ববর্তী</Text>
+                </TouchableOpacity>
+
+                <View style={{ flex: 1 }}>
+                  <Button
+                    title="রিভিউতে এগিয়ে যান"
+                    variant="primary"
+                    size="lg"
+                    onPress={handleContinueToReview}
+                    rightIcon={<Icon name="ArrowRight" size={18} color="#ffffff" />}
+                  />
+                </View>
+              </View>
+            </View>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════════
+              STEP 4: ORDER REVIEW & CONFIRMATION (৪. রিভিউ)
+             ══════════════════════════════════════════════════════════════ */}
+          {currentStep === 4 && (
+            <View style={styles.stepContainer}>
+              <View style={styles.stepHeaderRow}>
+                <Icon name="CheckCircle" size={18} color="#0b6234" />
+                <Text style={styles.stepTitle}>অর্ডার যাচাই ও নিশ্চিতকরণ (Review & Confirm)</Text>
+              </View>
+              <Text style={styles.stepSubtitle}>
+                অর্ডার নিশ্চিত করার আগে আপনার তথ্য ও আইটেমসমূহ ভালো করে যাচাই করে নিন।
+              </Text>
+
+              {/* Review Card: Shipping Address */}
+              <View style={styles.reviewCard}>
+                <View style={styles.reviewCardHeader}>
+                  <Icon name="MapPin" size={15} color="#0b6234" />
+                  <Text style={styles.reviewCardTitle}>ডেলিভারির ঠিকানা ও প্রাপক</Text>
+                  <TouchableOpacity onPress={() => setCurrentStep(1)}>
+                    <Text style={styles.reviewEditLink}>পরিবর্তন</Text>
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.reviewTextBold}>{fullName} • {phone}</Text>
+                <Text style={styles.reviewTextSub}>{addressLine}</Text>
+                {landmark.trim() ? (
+                  <Text style={styles.reviewTextMuted}>ল্যান্ডমার্ক: {landmark}</Text>
+                ) : null}
+                <Text style={styles.reviewBadgeText}>
+                  {skipLocation
+                    ? (isAbroadOrder ? '🌐 প্রবাসী অর্ডার (লোকেশন পিন ছাড়া)' : '🌐 লোকেশন পিন ছাড়া অর্ডার')
+                    : gpsLocation?.placeName
+                      ? `📍 ${gpsLocation.placeName} (${gpsLocation.distanceKm !== undefined ? gpsLocation.distanceKm.toFixed(1) : ''} কিমি)`
+                      : '📍 ম্যাপ পিন যুক্ত হয়েছে'}
+                </Text>
+              </View>
+
+              {/* Review Card: Delivery Slot */}
+              <View style={styles.reviewCard}>
+                <View style={styles.reviewCardHeader}>
+                  <Icon name="Clock" size={15} color="#0b6234" />
+                  <Text style={styles.reviewCardTitle}>পছন্দের ডেলিভারি সময়</Text>
+                  <TouchableOpacity onPress={() => setCurrentStep(2)}>
+                    <Text style={styles.reviewEditLink}>পরিবর্তন</Text>
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.reviewTextBold}>
+                  {deliverySlot
+                    ? siteSettings?.delivery?.slots?.find((s) => s.id === deliverySlot)?.labelBn || deliverySlot
+                    : 'যেকোনো সময় (Any time)'}
+                </Text>
+              </View>
+
+              {/* Review Card: Payment Method */}
+              <View style={styles.reviewCard}>
+                <View style={styles.reviewCardHeader}>
+                  <Icon name="CreditCard" size={15} color="#0b6234" />
+                  <Text style={styles.reviewCardTitle}>পেমেন্ট মাধ্যম</Text>
+                  <TouchableOpacity onPress={() => setCurrentStep(3)}>
+                    <Text style={styles.reviewEditLink}>পরিবর্তন</Text>
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.reviewTextBold}>
+                  {paymentMethod === 'CASH_ON_DELIVERY'
+                    ? 'ক্যাশ অন ডেলিভারি (Cash on Delivery)'
+                    : `${paymentMethod} (প্রেরক: ${senderNumber}${trxId ? `, TrxID: ${trxId}` : ''})`}
+                </Text>
+              </View>
+
+              {/* Review Card: Cart Items Preview */}
+              <View style={styles.reviewCard}>
+                <View style={styles.reviewCardHeader}>
+                  <Icon name="ShoppingBag" size={15} color="#0b6234" />
+                  <Text style={styles.reviewCardTitle}>অর্ডার আইটেম ({items.length}টি)</Text>
+                  <TouchableOpacity onPress={() => router.push('/(tabs)/cart')}>
+                    <Text style={styles.reviewEditLink}>ব্যাগ এডিট</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {items.map((it) => (
+                  <View key={it.productId} style={styles.itemRow}>
+                    {it.imageUrl ? (
+                      <Image source={{ uri: it.imageUrl }} style={styles.itemThumb} />
+                    ) : (
+                      <View style={styles.itemThumbPlaceholder}>
+                        <Icon name="ShoppingBag" size={16} color="#9ca3af" />
+                      </View>
+                    )}
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.itemName} numberOfLines={1}>{it.name}</Text>
+                      <Text style={styles.itemQty}>
+                        {it.quantity} {it.unit || 'টি'} × ৳{it.price}
+                      </Text>
+                    </View>
+                    <Price amount={it.price * it.quantity} size="sm" />
+                  </View>
+                ))}
+              </View>
+
+              {/* Delivery Notes Input */}
+              <View style={styles.notesBox}>
+                <Text style={styles.fieldLabel}>ডেলিভারি নোট বা বিশেষ নির্দেশনা (ঐচ্ছিক)</Text>
+                <TextInput
+                  style={styles.notesInput}
+                  placeholder="যেমন: কলিংবেল নষ্ট, এসে ফোন দিবেন..."
+                  placeholderTextColor="#9ca3af"
+                  value={deliveryNotes}
+                  onChangeText={setDeliveryNotes}
+                />
+              </View>
+
+              {/* Step 4 Action Buttons */}
+              <View style={styles.dualActionRow}>
+                <TouchableOpacity
+                  style={styles.backStepBtn}
+                  onPress={() => setCurrentStep(3)}
+                  activeOpacity={0.8}
+                >
+                  <Icon name="ArrowLeft" size={16} color="#4b5563" />
+                  <Text style={styles.backStepBtnText}>পূর্ববর্তী</Text>
+                </TouchableOpacity>
+
+                <View style={{ flex: 1 }}>
+                  <Button
+                    title="অর্ডার নিশ্চিত করুন"
+                    variant="primary"
+                    size="lg"
+                    onPress={handlePlaceOrder}
+                    loading={submitOrderMutation.isPending}
+                    disabled={submitOrderMutation.isPending}
+                    rightIcon={<Icon name="ArrowRight" size={18} color="#ffffff" />}
+                  />
+                </View>
+              </View>
+            </View>
+          )}
+
+          {/* Integrated Dynamic Order Summary (Available across all steps) */}
+          <CheckoutOrderSummary
+            summary={summaryData}
+            onApplyCoupon={handleApplyCoupon}
+            onRemoveCoupon={handleRemoveCoupon}
+            onTogglePoints={handleTogglePoints}
+            pointsApplied={usePoints}
+            couponLoading={isSummaryLoading}
+          />
         </ScrollView>
 
-        {/* Sticky Confirm Order Footer */}
+        {/* Sticky Confirm Order Footer on Mobile */}
         <View style={styles.footerBar}>
           <View style={styles.footerPriceCol}>
-            <Text style={styles.footerPriceLabel}>Total Amount</Text>
+            <Text style={styles.footerPriceLabel}>সর্বমোট মূল্য (Total)</Text>
             <Price amount={grandTotal} size="lg" />
           </View>
 
           <View style={{ flex: 1 }}>
-            <Button
-              title={locationBlock === 'OUT_OF_AREA' ? 'ডেলিভারি সীমার বাইরে' : 'Confirm Order'}
-              variant="primary"
-              size="lg"
-              onPress={handlePlaceOrder}
-              loading={submitOrderMutation.isPending}
-              disabled={submitOrderMutation.isPending || locationBlock === 'OUT_OF_AREA'}
-              rightIcon={<Icon name="ArrowRight" size={18} color="#ffffff" />}
-            />
+            {currentStep === 1 && (
+              <Button
+                title="এগিয়ে যান"
+                variant="primary"
+                size="md"
+                onPress={handleContinueToLocation}
+                rightIcon={<Icon name="ArrowRight" size={16} color="#ffffff" />}
+              />
+            )}
+            {currentStep === 2 && (
+              <Button
+                title="পেমেন্টে যান"
+                variant="primary"
+                size="md"
+                onPress={handleContinueToPayment}
+                rightIcon={<Icon name="ArrowRight" size={16} color="#ffffff" />}
+              />
+            )}
+            {currentStep === 3 && (
+              <Button
+                title="রিভিউতে যান"
+                variant="primary"
+                size="md"
+                onPress={handleContinueToReview}
+                rightIcon={<Icon name="ArrowRight" size={16} color="#ffffff" />}
+              />
+            )}
+            {currentStep === 4 && (
+              <Button
+                title="অর্ডার কনফার্ম"
+                variant="primary"
+                size="md"
+                onPress={handlePlaceOrder}
+                loading={submitOrderMutation.isPending}
+                disabled={submitOrderMutation.isPending}
+                rightIcon={<Icon name="ArrowRight" size={16} color="#ffffff" />}
+              />
+            )}
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -776,7 +1133,7 @@ export default function CheckoutScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#f8fafc',
   },
   header: {
     flexDirection: 'row',
@@ -786,27 +1143,27 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     backgroundColor: '#ffffff',
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: '#f1f5f9',
   },
   backBtn: {
-    padding: 4,
+    padding: 6,
   },
   headerTitle: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#111827',
+    fontWeight: '800',
+    color: '#0f172a',
   },
   scrollContent: {
-    paddingBottom: 24,
+    padding: 16,
+    paddingBottom: 32,
   },
   guestNoticeCard: {
     backgroundColor: '#f0fdf4',
     borderWidth: 1,
     borderColor: '#bbf7d0',
-    borderRadius: Radius.md,
-    marginHorizontal: 16,
-    marginTop: 12,
+    borderRadius: 12,
     padding: 12,
+    marginBottom: 14,
   },
   guestNoticeContent: {
     flexDirection: 'row',
@@ -816,101 +1173,136 @@ const styles = StyleSheet.create({
   guestNoticeTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#0b6234',
+    color: '#166534',
   },
   guestNoticeSub: {
-    fontSize: 12,
-    color: '#374151',
+    fontSize: 11.5,
+    color: '#15803d',
     marginTop: 2,
   },
   guestNoticeLink: {
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#0b6234',
     textDecorationLine: 'underline',
   },
-  guestFormContainer: {
+  stepContainer: {
     backgroundColor: '#ffffff',
-    marginHorizontal: 16,
-    marginTop: 12,
-    borderRadius: Radius.md,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    padding: 14,
-    gap: 10,
+    borderColor: '#e2e8f0',
+    padding: 16,
+    marginBottom: 12,
   },
-  guestFormHeader: {
+  stepHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     marginBottom: 4,
   },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  guestFieldGroup: {
-    gap: 4,
-  },
-  guestFieldLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#374151',
-  },
-  guestInput: {
-    backgroundColor: '#f9fafb',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: Radius.md,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    fontSize: 13,
-    color: '#111827',
-  },
-  locationSection: {
-    marginHorizontal: 16,
-    marginTop: 10,
-    gap: 6,
-  },
-  mapHeaderRow: {
-    marginBottom: 2,
-  },
-  mapSectionTitle: {
-    fontSize: 14,
-    fontWeight: '700',
+  stepTitle: {
+    fontSize: 15,
+    fontWeight: '800',
     color: '#0f172a',
   },
-  mapInstructionText: {
-    fontSize: 11,
+  stepSubtitle: {
+    fontSize: 12,
     color: '#64748b',
-    marginTop: 2,
+    marginBottom: 14,
+    lineHeight: 17,
   },
-  shareLocationBtn: {
+  savedSection: {
+    marginBottom: 10,
+  },
+  fieldGroup: {
+    marginBottom: 12,
+  },
+  fieldLabel: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#334155',
+    marginBottom: 6,
+  },
+  input: {
+    height: 44,
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    fontSize: 13.5,
+    color: '#0f172a',
+  },
+  checkboxRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
+    marginTop: 4,
+    marginBottom: 14,
+  },
+  checkboxText: {
+    fontSize: 12,
+    color: '#475569',
+    flex: 1,
+    lineHeight: 16,
+  },
+  stepActionRow: {
+    marginTop: 8,
+  },
+  dualActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 14,
+  },
+  backStepBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 1.5,
+    borderColor: '#cbd5e1',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    height: 48,
+    justifyContent: 'center',
+  },
+  backStepBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  mapContainer: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    marginBottom: 10,
+  },
+  gpsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
     backgroundColor: '#ffffff',
     borderWidth: 1.5,
-    borderColor: '#86efac',
-    borderRadius: Radius.md,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    borderColor: '#cbd5e1',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
   },
-  shareLocationBtnActive: {
-    backgroundColor: '#f0fdf4',
+  gpsBtnActive: {
     borderColor: '#0b6234',
+    backgroundColor: '#f0fdf4',
   },
-  shareLocationBtnLoading: {
+  gpsBtnLoading: {
     opacity: 0.8,
   },
-  shareLocationBtnText: {
+  gpsBtnTitle: {
     fontSize: 13,
     fontWeight: '700',
     color: '#0b6234',
   },
-  shareLocationBtnSub: {
+  gpsBtnSub: {
     fontSize: 11,
-    color: '#6b7280',
+    color: '#64748b',
     marginTop: 2,
   },
   outOfAreaAlert: {
@@ -919,214 +1311,207 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: '#fef2f2',
     borderWidth: 1,
-    borderColor: '#fca5a5',
-    borderRadius: Radius.md,
+    borderColor: '#fecaca',
+    borderRadius: 10,
     padding: 10,
+    marginBottom: 10,
   },
   outOfAreaAlertText: {
+    fontSize: 11.5,
+    color: '#dc2626',
     flex: 1,
-    fontSize: 12,
-    color: '#b91c1c',
-    lineHeight: 16,
-  },
-  sectionDivider: {
-    height: 8,
-    backgroundColor: '#f3f4f6',
-    marginVertical: 4,
-  },
-  itemsSummaryBox: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 8,
-  },
-  itemsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  itemsTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  editBagText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#0b6234',
-  },
-  itemRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  itemName: {
-    fontSize: 13,
-    color: '#4b5563',
-    flex: 1,
-    marginRight: 10,
-  },
-  breakdownCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    marginHorizontal: 16,
-    marginTop: 12,
-    padding: 14,
-    gap: 8,
-  },
-  breakdownRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  breakdownLabel: {
-    fontSize: 13,
-    color: '#6b7280',
-    fontWeight: '500',
-  },
-  calculatedTag: {
-    fontSize: 10,
-    color: '#0b6234',
-    fontWeight: '600',
-  },
-  discountLabel: {
-    fontSize: 13,
-    color: '#059669',
-    fontWeight: '600',
-  },
-  discountValue: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#059669',
-  },
-  freeText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#059669',
-  },
-  cardDivider: {
-    height: 1,
-    backgroundColor: '#f3f4f6',
-    marginVertical: 4,
-  },
-  totalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  totalLabel: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#111827',
-  },
-  footerBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-    backgroundColor: '#ffffff',
-    borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  footerPriceCol: {
-    justifyContent: 'center',
-  },
-  footerPriceLabel: {
-    fontSize: 11,
-    color: '#9ca3af',
   },
   skipPinBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    backgroundColor: '#ffffff',
+    gap: 8,
+    backgroundColor: '#f0fdf4',
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: Radius.md,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    marginTop: 6,
+    borderColor: '#86efac',
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 10,
   },
   skipPinBtnTitle: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#111827',
+    color: '#0b6234',
   },
   skipPinBtnSub: {
-    fontSize: 11,
-    color: '#6b7280',
+    fontSize: 10.5,
+    color: '#15803d',
     marginTop: 2,
   },
-  skipPinCard: {
-    backgroundColor: '#ffffff',
-    borderWidth: 1.5,
-    borderColor: '#86efac',
-    borderRadius: Radius.md,
-    padding: 14,
-    marginTop: 6,
-    gap: 10,
+  abroadCard: {
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
   },
-  skipPinHeader: {
+  abroadHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginBottom: 4,
   },
-  skipPinTitle: {
+  abroadTitle: {
     fontSize: 13,
     fontWeight: '700',
     color: '#0b6234',
   },
-  skipPinCancel: {
-    fontSize: 12,
-    fontWeight: '600',
+  abroadCancelText: {
+    fontSize: 11.5,
+    fontWeight: '700',
     color: '#0b6234',
     textDecorationLine: 'underline',
   },
-  skipPinFeeNotice: {
+  abroadFeeNotice: {
     fontSize: 11,
-    fontWeight: '600',
     color: '#d97706',
-  },
-  abroadCheckRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 4,
-  },
-  abroadCheckText: {
-    fontSize: 12,
     fontWeight: '600',
-    color: '#1f2937',
+    marginBottom: 8,
   },
   abroadFields: {
-    gap: 10,
-    paddingTop: 6,
-    borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
+    marginTop: 8,
   },
-  platformBtn: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: Radius.sm,
-    paddingVertical: 8,
-    alignItems: 'center',
-    backgroundColor: '#f9fafb',
+  platformPill: {
+    paddingHorizontal: 16,
+    paddingVertical: 7,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: '#cbd5e1',
+    backgroundColor: '#ffffff',
   },
-  platformBtnActive: {
+  platformPillActive: {
     borderColor: '#0b6234',
-    backgroundColor: '#f0fdf4',
+    backgroundColor: 'rgba(11, 98, 52, 0.08)',
   },
-  platformBtnText: {
+  platformPillText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#4b5563',
+    color: '#475569',
   },
-  platformBtnTextActive: {
+  platformPillTextActive: {
     color: '#0b6234',
+    fontWeight: '800',
+  },
+  reviewCard: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    padding: 12,
+    marginBottom: 10,
+  },
+  reviewCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 6,
+  },
+  reviewCardTitle: {
+    fontSize: 12.5,
     fontWeight: '700',
+    color: '#334155',
+    flex: 1,
+  },
+  reviewEditLink: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#0b6234',
+    textDecorationLine: 'underline',
+  },
+  reviewTextBold: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  reviewTextSub: {
+    fontSize: 12,
+    color: '#475569',
+    marginTop: 2,
+  },
+  reviewTextMuted: {
+    fontSize: 11.5,
+    color: '#64748b',
+    marginTop: 2,
+  },
+  reviewBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#0b6234',
+    marginTop: 4,
+  },
+  itemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  itemThumb: {
+    width: 36,
+    height: 36,
+    borderRadius: 6,
+    backgroundColor: '#ffffff',
+  },
+  itemThumbPlaceholder: {
+    width: 36,
+    height: 36,
+    borderRadius: 6,
+    backgroundColor: '#e2e8f0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  itemName: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#0f172a',
+  },
+  itemQty: {
+    fontSize: 11,
+    color: '#64748b',
+    marginTop: 1,
+  },
+  notesBox: {
+    marginTop: 4,
+    marginBottom: 10,
+  },
+  notesInput: {
+    height: 42,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    fontSize: 12.5,
+    color: '#0f172a',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#e2e8f0',
+    marginVertical: 12,
+  },
+  footerBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#ffffff',
+    borderTopWidth: 1,
+    borderTopColor: '#e2e8f0',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+  },
+  footerPriceCol: {
+    minWidth: 100,
+  },
+  footerPriceLabel: {
+    fontSize: 10.5,
+    fontWeight: '600',
+    color: '#64748b',
   },
 });

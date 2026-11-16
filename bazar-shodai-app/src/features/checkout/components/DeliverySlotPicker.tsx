@@ -1,30 +1,24 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Icon } from '@/components/ui/Icon';
-import { Radius } from '@/constants/layout';
 import { haptics } from '@/services/haptics';
 import { useSiteSettings, DeliverySlot } from '@/services/siteService';
 
 export interface DeliverySlotPickerProps {
   selectedSlot: string;
   onSelectSlot: (slotId: string) => void;
-  deliveryNotes: string;
-  onChangeDeliveryNotes: (notes: string) => void;
   slots?: DeliverySlot[];
 }
 
 /**
- * Delivery Slot Picker.
- * Directly mirrors the public storefront implementation:
- * - Dynamically loads admin-configured delivery slots from `/customer/settings` (`delivery.slots`).
- * - Features "যেকোনো সময় (Any time)" as standard default option.
- * - Updates smoothly whenever admin modifies delivery slot windows in the dashboard.
+ * Delivery Slot Picker — EXACT PARITY with public site's LocationStep:
+ * Renders compact horizontal flex-wrap pill buttons:
+ * 1. "যেকোনো সময় (Any time)" (Default)
+ * 2. Admin dashboard-configured slots (`delivery.slots`)
  */
 export function DeliverySlotPicker({
   selectedSlot,
   onSelectSlot,
-  deliveryNotes,
-  onChangeDeliveryNotes,
   slots: propSlots,
 }: DeliverySlotPickerProps) {
   const { data: settings } = useSiteSettings();
@@ -33,50 +27,35 @@ export function DeliverySlotPicker({
 
   return (
     <View style={styles.container}>
-      <View style={styles.titleRow}>
-        <Icon name="Clock" size={18} color="#0b6234" />
+      <View style={styles.headerRow}>
+        <Icon name="Clock" size={16} color="#0b6234" />
         <Text style={styles.sectionTitle}>পছন্দের ডেলিভারি সময় (Preferred Delivery Slot)</Text>
       </View>
       <Text style={styles.sectionLead}>
-        আপনার সুবিধাজনক ডেলিভারি সময় বেছে নিন অথবা যেকোনো সময় দ্রুততম ডেলিভারি গ্রহণ করুন।
+        আপনার সুবিধাজনক সময় বেছে নিন অথবা যেকোনো সময় দ্রুততম ডেলিভারি গ্রহণ করুন।
       </Text>
 
-      {/* Slots List */}
-      <View style={styles.slotsGroup}>
-        {/* Default 'Any time' Option - identical to public site */}
+      {/* Exact Public Site Matching Flex-Wrap Pills */}
+      <View style={styles.pillsWrap}>
+        {/* Default 'Any time' Option */}
         <TouchableOpacity
           onPress={() => {
             haptics.selection();
             onSelectSlot('');
           }}
-          style={[styles.slotCard, selectedSlot === '' && styles.slotCardActive]}
+          style={[styles.pill, selectedSlot === '' && styles.pillActive]}
           activeOpacity={0.8}
         >
-          <View style={styles.radioCircle}>
-            {selectedSlot === '' && <View style={styles.radioDot} />}
-          </View>
-
-          <View style={styles.slotTextCol}>
-            <View style={styles.slotLabelRow}>
-              <Text style={[styles.slotLabel, selectedSlot === '' && styles.slotLabelActive]}>
-                যেকোনো সময় (Any time)
-              </Text>
-              <View style={styles.expressBadge}>
-                <Icon name="Zap" size={10} color="#0b6234" />
-                <Text style={styles.expressText}>দ্রুততম</Text>
-              </View>
-            </View>
-            <Text style={styles.slotSubtitle}>
-              অর্ডার প্রস্তুত হওয়ামাত্র দ্রুত পৌঁছে যাবে আপনার ঠিকানায়
-            </Text>
-          </View>
+          {selectedSlot === '' && <Icon name="Check" size={13} color="#0b6234" style={{ marginRight: 4 }} />}
+          <Text style={[styles.pillText, selectedSlot === '' && styles.pillTextActive]}>
+            যেকোনো সময় (Any time)
+          </Text>
         </TouchableOpacity>
 
         {/* Dynamic Admin-configured Delivery Slots */}
         {activeSlots.map((slot) => {
           const isSelected = selectedSlot === slot.id;
           const displayTitle = slot.labelBn || slot.label;
-          const timeWindow = slot.from && slot.to ? `${slot.from} - ${slot.to}` : '';
 
           return (
             <TouchableOpacity
@@ -85,40 +64,16 @@ export function DeliverySlotPicker({
                 haptics.selection();
                 onSelectSlot(slot.id);
               }}
-              style={[styles.slotCard, isSelected && styles.slotCardActive]}
+              style={[styles.pill, isSelected && styles.pillActive]}
               activeOpacity={0.8}
             >
-              <View style={styles.radioCircle}>
-                {isSelected && <View style={styles.radioDot} />}
-              </View>
-
-              <View style={styles.slotTextCol}>
-                <View style={styles.slotLabelRow}>
-                  <Text style={[styles.slotLabel, isSelected && styles.slotLabelActive]}>
-                    {displayTitle}
-                  </Text>
-                </View>
-                <Text style={styles.slotSubtitle}>
-                  {slot.label} {timeWindow ? `• ${timeWindow}` : ''}
-                </Text>
-              </View>
+              {isSelected && <Icon name="Check" size={13} color="#0b6234" style={{ marginRight: 4 }} />}
+              <Text style={[styles.pillText, isSelected && styles.pillTextActive]}>
+                {displayTitle}
+              </Text>
             </TouchableOpacity>
           );
         })}
-      </View>
-
-      {/* Instructions Textarea */}
-      <View style={styles.notesGroup}>
-        <Text style={styles.notesLabel}>ডেলিভারি নির্দেশনা (Delivery Instructions - Optional)</Text>
-        <TextInput
-          style={styles.notesInput}
-          placeholder="যেমন: আসার আগে কল দিন, দারোয়ানের কাছে রাখুন, ৩য় তলা..."
-          placeholderTextColor="#9ca3af"
-          value={deliveryNotes}
-          onChangeText={onChangeDeliveryNotes}
-          multiline
-          numberOfLines={2}
-        />
       </View>
     </View>
   );
@@ -126,111 +81,51 @@ export function DeliverySlotPicker({
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    marginVertical: 10,
   },
-  titleRow: {
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
     marginBottom: 4,
   },
   sectionTitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
-    color: '#0f172a',
+    color: '#111827',
   },
   sectionLead: {
     fontSize: 12,
-    color: '#64748b',
-    marginBottom: 12,
+    color: '#6b7280',
+    marginBottom: 10,
+    lineHeight: 16,
   },
-  slotsGroup: {
+  pillsWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
   },
-  slotCard: {
+  pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    borderRadius: Radius.brand,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
     borderWidth: 1.5,
-    borderColor: '#e2e8f0',
+    borderColor: '#e5e7eb',
     backgroundColor: '#ffffff',
-    gap: 12,
   },
-  slotCardActive: {
+  pillActive: {
     borderColor: '#0b6234',
-    backgroundColor: '#f0fdf4',
+    backgroundColor: 'rgba(11, 98, 52, 0.08)',
   },
-  radioCircle: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: '#cbd5e1',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  radioDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#0b6234',
-  },
-  slotTextCol: {
-    flex: 1,
-  },
-  slotLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  slotLabel: {
-    fontSize: 13,
+  pillText: {
+    fontSize: 12.5,
     fontWeight: '600',
-    color: '#1e293b',
+    color: '#4b5563',
   },
-  slotLabelActive: {
+  pillTextActive: {
     color: '#0b6234',
-    fontWeight: '700',
-  },
-  expressBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    backgroundColor: '#dcfce7',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  expressText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#0b6234',
-  },
-  slotSubtitle: {
-    fontSize: 11,
-    color: '#64748b',
-    marginTop: 2,
-  },
-  notesGroup: {
-    marginTop: 14,
-  },
-  notesLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#334155',
-    marginBottom: 6,
-  },
-  notesInput: {
-    borderWidth: 1,
-    borderColor: '#cbd5e1',
-    borderRadius: Radius.brand,
-    padding: 10,
-    fontSize: 13,
-    color: '#0f172a',
-    backgroundColor: '#ffffff',
-    minHeight: 60,
-    textAlignVertical: 'top',
+    fontWeight: '800',
   },
 });

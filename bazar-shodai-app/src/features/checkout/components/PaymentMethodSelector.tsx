@@ -4,10 +4,12 @@ import { Icon } from '@/components/ui/Icon';
 import { Radius } from '@/constants/layout';
 import { PaymentMethod } from '../types';
 import { haptics } from '@/services/haptics';
+import { useSiteSettings } from '@/services/siteService';
 
 export interface PaymentMethodSelectorProps {
   selectedMethod: PaymentMethod;
   onSelectMethod: (method: PaymentMethod) => void;
+  availableMethods?: PaymentMethod[];
 }
 
 interface MethodOption {
@@ -19,11 +21,11 @@ interface MethodOption {
   themeColor: string;
 }
 
-const METHODS: MethodOption[] = [
+const ALL_METHODS: MethodOption[] = [
   {
     id: 'CASH_ON_DELIVERY',
-    name: 'Cash on Delivery (COD)',
-    subtitle: 'Pay cash when you receive fresh groceries',
+    name: 'Cash on Delivery (ক্যাশ অন ডেলিভারি)',
+    subtitle: 'পণ্য হাতে পেয়ে নগদ টাকা পরিশোধ করুন',
     icon: 'Banknote',
     badge: 'POPULAR',
     themeColor: '#0b6234',
@@ -31,21 +33,21 @@ const METHODS: MethodOption[] = [
   {
     id: 'BKASH',
     name: 'bKash (বিকাশ)',
-    subtitle: 'Send money to official bKash merchant number',
+    subtitle: 'অফিসিয়াল বিকাশ নম্বরে পেমেন্ট / সেন্ড মানি করুন',
     icon: 'Smartphone',
     themeColor: '#e2136e',
   },
   {
     id: 'NAGAD',
     name: 'Nagad (নগদ)',
-    subtitle: 'Send money to official Nagad merchant number',
+    subtitle: 'অফিসিয়াল নগদ নম্বরে পেমেন্ট / সেন্ড মানি করুন',
     icon: 'Smartphone',
     themeColor: '#f7941d',
   },
   {
     id: 'ROCKET',
     name: 'Rocket (রকেট)',
-    subtitle: 'Dutch-Bangla Bank Rocket transfer',
+    subtitle: 'ডাচ্-বাংলা ব্যাংক রকেট ট্রান্সফার',
     icon: 'Smartphone',
     themeColor: '#8c3494',
   },
@@ -54,16 +56,34 @@ const METHODS: MethodOption[] = [
 export function PaymentMethodSelector({
   selectedMethod,
   onSelectMethod,
+  availableMethods,
 }: PaymentMethodSelectorProps) {
+  const { data: settings } = useSiteSettings();
+
+  const activeMethodsList = availableMethods || (settings?.payment?.methods as PaymentMethod[]) || [
+    'CASH_ON_DELIVERY',
+    'BKASH',
+    'NAGAD',
+    'ROCKET',
+  ];
+
+  const visibleMethods = ALL_METHODS.filter((m) =>
+    activeMethodsList.includes(m.id) ||
+    activeMethodsList.includes(m.id.toUpperCase() as any)
+  );
+
   return (
     <View style={styles.container}>
       <View style={styles.titleRow}>
         <Icon name="CreditCard" size={18} color="#0b6234" />
-        <Text style={styles.sectionTitle}>Payment Method</Text>
+        <Text style={styles.sectionTitle}>পেমেন্ট মাধ্যম বেছে নিন (Payment Method)</Text>
       </View>
+      <Text style={styles.sectionSubtitle}>
+        পণ্য পাওয়ার পর নগদ টাকায় পরিশোধ করুন অথবা মোবাইল ব্যাংকিং ব্যবহার করুন।
+      </Text>
 
       <View style={styles.list}>
-        {METHODS.map((method) => {
+        {visibleMethods.map((method) => {
           const isSelected = selectedMethod === method.id;
 
           return (
@@ -113,18 +133,23 @@ export function PaymentMethodSelector({
 const styles = StyleSheet.create({
   container: {
     marginVertical: 10,
-    paddingHorizontal: 16,
   },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 10,
+    marginBottom: 4,
   },
   sectionTitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
     color: '#111827',
+  },
+  sectionSubtitle: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginBottom: 10,
+    lineHeight: 16,
   },
   list: {
     gap: 8,

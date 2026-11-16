@@ -42,6 +42,31 @@ export interface MapsConfig {
   dynamicPlaceNames?: boolean;
 }
 
+export interface MobileAccount {
+  number: string;
+  type: 'personal' | 'merchant' | 'agent' | string;
+  instructions?: string;
+}
+
+export interface PaymentConfig {
+  methods?: ('CASH_ON_DELIVERY' | 'BKASH' | 'NAGAD' | 'ROCKET' | string)[];
+  bkash?: MobileAccount | null;
+  nagad?: MobileAccount | null;
+  rocket?: MobileAccount | null;
+}
+
+export interface LoyaltyConfig {
+  enabled: boolean;
+  pointsPerHundredSpent?: number;
+  pointsPerCurrencyUnit?: number;
+  minOrderAmountToRedeem?: number;
+  minPointsToRedeem?: number;
+  maxDiscountPercent?: number;
+  freeShippingMilestoneEnabled?: boolean;
+  freeShippingOrderInterval?: number;
+  freeShippingMaxWeightKg?: number;
+}
+
 export interface MobileSiteSettings {
   site?: {
     storeName?: string;
@@ -65,6 +90,8 @@ export interface MobileSiteSettings {
   };
   delivery?: DeliveryConfig;
   maps?: MapsConfig;
+  payment?: PaymentConfig;
+  loyalty?: LoyaltyConfig;
 }
 
 export async function fetchSiteSettingsApi(): Promise<MobileSiteSettings> {

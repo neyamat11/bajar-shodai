@@ -12,6 +12,11 @@ jest.mock('expo-splash-screen', () => ({
   hideAsync: jest.fn().mockResolvedValue(true),
 }));
 
+jest.mock('expo-clipboard', () => ({
+  setStringAsync: jest.fn().mockResolvedValue(true),
+  getStringAsync: jest.fn().mockResolvedValue(''),
+}));
+
 jest.mock('expo-haptics', () => ({
   impactAsync: jest.fn().mockResolvedValue(undefined),
   notificationAsync: jest.fn().mockResolvedValue(undefined),
