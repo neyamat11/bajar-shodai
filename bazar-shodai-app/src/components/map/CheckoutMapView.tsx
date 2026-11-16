@@ -12,6 +12,23 @@ export interface CheckoutMapViewProps {
   interactive?: boolean;
 }
 
+/**
+ * Resolves the effective map provider based on delivery distance calculation mode:
+ * - Direct distance ('direct'): ALWAYS uses Google Map if googleBrowserKey is present.
+ * - Road distance ('road'): Uses the provider selected by the admin in Map settings (google or osm).
+ * - Falls back to OpenStreetMap if Google fails to authenticate/load.
+ */
+export function resolveMapProvider(params: {
+  distanceCalculation?: 'direct' | 'road';
+  provider?: 'google' | 'osm';
+  hasGoogleKey: boolean;
+  googleFailed?: boolean;
+}): 'google' | 'osm' {
+  const isDirect = (params.distanceCalculation ?? 'direct') === 'direct';
+  const wantsGoogle = (isDirect || params.provider === 'google') && params.hasGoogleKey;
+  return wantsGoogle && !params.googleFailed ? 'google' : 'osm';
+}
+
 const DEFAULT_HUB = {
   lat: 23.2117,
   lng: 90.9634,
@@ -21,8 +38,9 @@ const DEFAULT_HUB = {
 /**
  * Checkout Map View for Mobile.
  * Parallels the Web storefront's `MapView` component:
- * - Checks admin dashboard configuration from `/customer/settings` (`maps.provider`, `maps.googleBrowserKey`).
- * - Renders official Google Maps JavaScript API when admin selects Google and provides the browser key.
+ * - Checks admin dashboard configuration from `/customer/settings`.
+ * - Direct distance mode: Always uses Google Maps when browser key is configured.
+ * - Road distance mode: Uses the map provider selected in Map settings (google or osm).
  * - Renders OpenStreetMap (Leaflet) with the admin's tile URL when OSM is selected or as an automated fallback.
  * - Supports dragging the delivery pin, tapping anywhere to set pin, and visualizes the store delivery radius.
  */
@@ -43,10 +61,17 @@ export function CheckoutMapView({
   const serviceRadiusKm = deliveryConfig?.serviceRadiusKm || 10;
   const googleBrowserKey = mapsConfig?.googleBrowserKey?.trim();
   const provider = mapsConfig?.provider || 'osm';
+  const distanceCalculation =
+    mapsConfig?.distanceCalculation ?? deliveryConfig?.distanceCalculation ?? 'direct';
 
-  // Determine whether to use Google or OpenStreetMap based on admin settings
-  const wantsGoogle = provider === 'google' && Boolean(googleBrowserKey);
-  const useGoogle = wantsGoogle && !googleFailed;
+  // Determine whether to use Google or OpenStreetMap based on delivery settings & map settings
+  const effectiveProvider = resolveMapProvider({
+    distanceCalculation,
+    provider,
+    hasGoogleKey: Boolean(googleBrowserKey),
+    googleFailed,
+  });
+  const useGoogle = effectiveProvider === 'google';
   const osmTileUrl = mapsConfig?.osmTileUrl || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
   const handleMessage = (event: WebViewMessageEvent) => {

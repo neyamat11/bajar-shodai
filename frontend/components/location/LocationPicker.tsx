@@ -449,7 +449,10 @@ export default function LocationPicker({
           className="relative z-0 isolate overflow-hidden rounded border border-border"
         >
           <MapView
-            config={maps}
+            config={{
+              ...maps,
+              distanceCalculation: delivery?.distanceCalculation ?? maps.distanceCalculation ?? "direct",
+            }}
             center={origin ?? DEFAULT_CENTER}
             zoom={value ? 17 : 14}
             marker={value}

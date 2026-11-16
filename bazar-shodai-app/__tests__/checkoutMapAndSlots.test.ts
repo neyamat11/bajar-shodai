@@ -1,4 +1,4 @@
-import { CheckoutMapView } from '../src/components/map/CheckoutMapView';
+import { CheckoutMapView, resolveMapProvider } from '../src/components/map/CheckoutMapView';
 import { DeliverySlotPicker } from '../src/features/checkout/components/DeliverySlotPicker';
 import { CheckoutStepIndicator } from '../src/features/checkout/components/CheckoutStepIndicator';
 import { CheckoutOrderSummary } from '../src/features/checkout/components/CheckoutOrderSummary';
@@ -19,28 +19,70 @@ describe('CheckoutMapView, DeliverySlotPicker & 4-Step Checkout Parity', () => {
     expect(typeof MobileBankingForm).toBe('function');
   });
 
-  it('determines Google Maps vs OpenStreetMap based on admin settings', () => {
-    const resolveProvider = (
-      provider: string,
-      googleKey?: string | null,
-      failed = false,
-    ) => {
-      const wantsGoogle = provider === 'google' && Boolean(googleKey?.trim());
-      return wantsGoogle && !failed ? 'google' : 'osm';
-    };
+  it('determines Google Maps vs OpenStreetMap based on distanceCalculation mode and admin settings', () => {
+    // 1. Direct distance mode (Default): ALWAYS use Google Maps when browser key is configured
+    expect(
+      resolveMapProvider({
+        distanceCalculation: 'direct',
+        provider: 'osm',
+        hasGoogleKey: true,
+      }),
+    ).toBe('google');
 
-    // Admin sets Google provider with key -> Google Maps
-    expect(resolveProvider('google', 'AIzaSyTestKey123')).toBe('google');
+    expect(
+      resolveMapProvider({
+        distanceCalculation: 'direct',
+        provider: 'google',
+        hasGoogleKey: true,
+      }),
+    ).toBe('google');
 
-    // Admin sets Google provider without key -> fallback to OSM
-    expect(resolveProvider('google', null)).toBe('osm');
-    expect(resolveProvider('google', '')).toBe('osm');
+    // Missing key -> graceful fallback to OSM
+    expect(
+      resolveMapProvider({
+        distanceCalculation: 'direct',
+        provider: 'google',
+        hasGoogleKey: false,
+      }),
+    ).toBe('osm');
 
-    // Admin sets OSM provider -> OpenStreetMap
-    expect(resolveProvider('osm', 'AIzaSyTestKey123')).toBe('osm');
+    // Google Maps error -> graceful fallback to OSM
+    expect(
+      resolveMapProvider({
+        distanceCalculation: 'direct',
+        provider: 'osm',
+        hasGoogleKey: true,
+        googleFailed: true,
+      }),
+    ).toBe('osm');
 
-    // Google Maps auth failure -> fallback to OSM
-    expect(resolveProvider('google', 'AIzaSyTestKey123', true)).toBe('osm');
+    // 2. Road distance mode: uses the provider selected by admin in map settings
+    // Admin selected OSM -> use OSM
+    expect(
+      resolveMapProvider({
+        distanceCalculation: 'road',
+        provider: 'osm',
+        hasGoogleKey: true,
+      }),
+    ).toBe('osm');
+
+    // Admin selected Google with key -> use Google
+    expect(
+      resolveMapProvider({
+        distanceCalculation: 'road',
+        provider: 'google',
+        hasGoogleKey: true,
+      }),
+    ).toBe('google');
+
+    // Admin selected Google without key -> fallback to OSM
+    expect(
+      resolveMapProvider({
+        distanceCalculation: 'road',
+        provider: 'google',
+        hasGoogleKey: false,
+      }),
+    ).toBe('osm');
   });
 
   it('handles dynamic delivery slots from dashboard with Any Time standard option as compact pills', () => {
