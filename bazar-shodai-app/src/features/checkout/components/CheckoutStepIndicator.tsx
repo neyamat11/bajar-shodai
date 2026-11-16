@@ -10,7 +10,7 @@ interface Step {
 
 const STEPS: Step[] = [
   { id: 1, label: 'ঠিকানা', shortLabel: 'ঠিকানা' },
-  { id: 2, label: 'লোকেশন ও সময়', shortLabel: 'লোকেশন' },
+  { id: 2, label: 'লোকেশন', shortLabel: 'লোকেশন' },
   { id: 3, label: 'পেমেন্ট', shortLabel: 'পেমেন্ট' },
   { id: 4, label: 'রিভিউ', shortLabel: 'রিভিউ' },
 ];

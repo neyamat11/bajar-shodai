@@ -24,7 +24,6 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { CustomerAddress, PaymentMethod } from '@/features/checkout/types';
 import { AddressSelector } from '@/features/checkout/components/AddressSelector';
 import { CheckoutStepIndicator } from '@/features/checkout/components/CheckoutStepIndicator';
-import { DeliverySlotPicker } from '@/features/checkout/components/DeliverySlotPicker';
 import { PaymentMethodSelector } from '@/features/checkout/components/PaymentMethodSelector';
 import { MobileBankingForm } from '@/features/checkout/components/MobileBankingForm';
 import { CheckoutOrderSummary, CheckoutSummaryData } from '@/features/checkout/components/CheckoutOrderSummary';
@@ -664,13 +663,13 @@ export default function CheckoutScreen() {
           )}
 
           {/* ══════════════════════════════════════════════════════════════
-              STEP 2: LOCATION & PREFERRED SLOT (২. লোকেশন ও সময়)
+              STEP 2: DELIVERY LOCATION (২. ডেলিভারি লোকেশন)
              ══════════════════════════════════════════════════════════════ */}
           {currentStep === 2 && (
             <View style={styles.stepContainer}>
               <View style={styles.stepHeaderRow}>
                 <Icon name="Navigation" size={18} color="#0b6234" />
-                <Text style={styles.stepTitle}>ডেলিভারি লোকেশন ও সময় (Location & Slot)</Text>
+                <Text style={styles.stepTitle}>ডেলিভারি লোকেশন (Delivery Location)</Text>
               </View>
               <Text style={styles.stepSubtitle}>
                 ম্যাপে আপনার সঠিক বাড়ি নির্বাচন করুন যাতে লাইভ দূরত্বের ভিত্তিতে সঠিক ডেলিভারি চার্জ নির্ধারিত হয়।
@@ -854,14 +853,6 @@ export default function CheckoutScreen() {
                 </View>
               )}
 
-              <View style={styles.divider} />
-
-              {/* Exact Public Site Matching Preferred Delivery Slot */}
-              <DeliverySlotPicker
-                selectedSlot={deliverySlot}
-                onSelectSlot={setDeliverySlot}
-              />
-
               {/* Step 2 Action Buttons */}
               <View style={styles.dualActionRow}>
                 <TouchableOpacity
@@ -963,22 +954,6 @@ export default function CheckoutScreen() {
                     : gpsLocation?.placeName
                       ? `📍 ${gpsLocation.placeName} (${gpsLocation.distanceKm !== undefined ? gpsLocation.distanceKm.toFixed(1) : ''} কিমি)`
                       : '📍 ম্যাপ পিন যুক্ত হয়েছে'}
-                </Text>
-              </View>
-
-              {/* Review Card: Delivery Slot */}
-              <View style={styles.reviewCard}>
-                <View style={styles.reviewCardHeader}>
-                  <Icon name="Clock" size={15} color="#0b6234" />
-                  <Text style={styles.reviewCardTitle}>পছন্দের ডেলিভারি সময়</Text>
-                  <TouchableOpacity onPress={() => setCurrentStep(2)}>
-                    <Text style={styles.reviewEditLink}>পরিবর্তন</Text>
-                  </TouchableOpacity>
-                </View>
-                <Text style={styles.reviewTextBold}>
-                  {deliverySlot
-                    ? siteSettings?.delivery?.slots?.find((s) => s.id === deliverySlot)?.labelBn || deliverySlot
-                    : 'যেকোনো সময় (Any time)'}
                 </Text>
               </View>
 

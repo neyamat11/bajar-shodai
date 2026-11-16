@@ -119,7 +119,7 @@ describe('CheckoutMapView, DeliverySlotPicker & 4-Step Checkout Parity', () => {
   it('validates 4-step wizard navigation and step states', () => {
     const steps = [
       { id: 1, label: 'ঠিকানা' },
-      { id: 2, label: 'লোকেশন ও সময়' },
+      { id: 2, label: 'লোকেশন' },
       { id: 3, label: 'পেমেন্ট' },
       { id: 4, label: 'রিভিউ' },
     ];
