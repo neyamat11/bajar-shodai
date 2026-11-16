@@ -2,55 +2,81 @@ import React from 'react';
 import { View, Text, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
 import { Icon } from '@/components/ui/Icon';
 import { Radius } from '@/constants/layout';
-import { DeliverySlotOption } from '../types';
 import { haptics } from '@/services/haptics';
+import { useSiteSettings, DeliverySlot } from '@/services/siteService';
 
 export interface DeliverySlotPickerProps {
   selectedSlot: string;
   onSelectSlot: (slotId: string) => void;
   deliveryNotes: string;
   onChangeDeliveryNotes: (notes: string) => void;
+  slots?: DeliverySlot[];
 }
 
-const SLOTS: DeliverySlotOption[] = [
-  {
-    id: 'EXPRESS_1_2_HRS',
-    label: 'Express (1 - 2 Hours)',
-    labelBn: 'তাৎক্ষণিক ১-২ ঘণ্টা',
-    timeWindow: 'Within 60-120 mins',
-    isExpress: true,
-  },
-  {
-    id: 'EVENING_TODAY',
-    label: 'Evening Today (5 PM - 8 PM)',
-    labelBn: 'আজ সন্ধ্যা ৫টা - ৮টা',
-    timeWindow: '5:00 PM - 8:00 PM',
-  },
-  {
-    id: 'MORNING_TOMORROW',
-    label: 'Tomorrow Morning (8 AM - 11 AM)',
-    labelBn: 'আগামীকাল সকাল ৮টা - ১১টা',
-    timeWindow: '8:00 AM - 11:00 AM',
-  },
-];
-
+/**
+ * Delivery Slot Picker.
+ * Directly mirrors the public storefront implementation:
+ * - Dynamically loads admin-configured delivery slots from `/customer/settings` (`delivery.slots`).
+ * - Features "যেকোনো সময় (Any time)" as standard default option.
+ * - Updates smoothly whenever admin modifies delivery slot windows in the dashboard.
+ */
 export function DeliverySlotPicker({
   selectedSlot,
   onSelectSlot,
   deliveryNotes,
   onChangeDeliveryNotes,
+  slots: propSlots,
 }: DeliverySlotPickerProps) {
+  const { data: settings } = useSiteSettings();
+  const remoteSlots = settings?.delivery?.slots;
+  const activeSlots = (propSlots || remoteSlots || []).filter(Boolean);
+
   return (
     <View style={styles.container}>
       <View style={styles.titleRow}>
         <Icon name="Clock" size={18} color="#0b6234" />
-        <Text style={styles.sectionTitle}>Preferred Delivery Slot</Text>
+        <Text style={styles.sectionTitle}>পছন্দের ডেলিভারি সময় (Preferred Delivery Slot)</Text>
       </View>
+      <Text style={styles.sectionLead}>
+        আপনার সুবিধাজনক ডেলিভারি সময় বেছে নিন অথবা যেকোনো সময় দ্রুততম ডেলিভারি গ্রহণ করুন।
+      </Text>
 
       {/* Slots List */}
       <View style={styles.slotsGroup}>
-        {SLOTS.map((slot) => {
+        {/* Default 'Any time' Option - identical to public site */}
+        <TouchableOpacity
+          onPress={() => {
+            haptics.selection();
+            onSelectSlot('');
+          }}
+          style={[styles.slotCard, selectedSlot === '' && styles.slotCardActive]}
+          activeOpacity={0.8}
+        >
+          <View style={styles.radioCircle}>
+            {selectedSlot === '' && <View style={styles.radioDot} />}
+          </View>
+
+          <View style={styles.slotTextCol}>
+            <View style={styles.slotLabelRow}>
+              <Text style={[styles.slotLabel, selectedSlot === '' && styles.slotLabelActive]}>
+                যেকোনো সময় (Any time)
+              </Text>
+              <View style={styles.expressBadge}>
+                <Icon name="Zap" size={10} color="#0b6234" />
+                <Text style={styles.expressText}>দ্রুততম</Text>
+              </View>
+            </View>
+            <Text style={styles.slotSubtitle}>
+              অর্ডার প্রস্তুত হওয়ামাত্র দ্রুত পৌঁছে যাবে আপনার ঠিকানায়
+            </Text>
+          </View>
+        </TouchableOpacity>
+
+        {/* Dynamic Admin-configured Delivery Slots */}
+        {activeSlots.map((slot) => {
           const isSelected = selectedSlot === slot.id;
+          const displayTitle = slot.labelBn || slot.label;
+          const timeWindow = slot.from && slot.to ? `${slot.from} - ${slot.to}` : '';
 
           return (
             <TouchableOpacity
@@ -69,17 +95,11 @@ export function DeliverySlotPicker({
               <View style={styles.slotTextCol}>
                 <View style={styles.slotLabelRow}>
                   <Text style={[styles.slotLabel, isSelected && styles.slotLabelActive]}>
-                    {slot.label}
+                    {displayTitle}
                   </Text>
-                  {slot.isExpress && (
-                    <View style={styles.expressBadge}>
-                      <Icon name="Zap" size={10} color="#0b6234" />
-                      <Text style={styles.expressText}>FASTEST</Text>
-                    </View>
-                  )}
                 </View>
                 <Text style={styles.slotSubtitle}>
-                  {slot.labelBn} • {slot.timeWindow}
+                  {slot.label} {timeWindow ? `• ${timeWindow}` : ''}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -89,16 +109,15 @@ export function DeliverySlotPicker({
 
       {/* Instructions Textarea */}
       <View style={styles.notesGroup}>
-        <Text style={styles.notesLabel}>Delivery Instructions (Optional)</Text>
+        <Text style={styles.notesLabel}>ডেলিভারি নির্দেশনা (Delivery Instructions - Optional)</Text>
         <TextInput
           style={styles.notesInput}
-          placeholder="e.g. Call before arrival, leave with security guard, 3rd floor..."
+          placeholder="যেমন: আসার আগে কল দিন, দারোয়ানের কাছে রাখুন, ৩য় তলা..."
           placeholderTextColor="#9ca3af"
           value={deliveryNotes}
           onChangeText={onChangeDeliveryNotes}
           multiline
           numberOfLines={2}
-          textAlignVertical="top"
         />
       </View>
     </View>
@@ -107,19 +126,24 @@ export function DeliverySlotPicker({
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 10,
     paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 10,
+    gap: 8,
+    marginBottom: 4,
   },
   sectionTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#111827',
+    color: '#0f172a',
+  },
+  sectionLead: {
+    fontSize: 12,
+    color: '#64748b',
+    marginBottom: 12,
   },
   slotsGroup: {
     gap: 8,
@@ -127,11 +151,11 @@ const styles = StyleSheet.create({
   slotCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderRadius: Radius.md,
-    borderWidth: 1.5,
-    borderColor: '#e5e7eb',
     padding: 12,
+    borderRadius: Radius.brand,
+    borderWidth: 1.5,
+    borderColor: '#e2e8f0',
+    backgroundColor: '#ffffff',
     gap: 12,
   },
   slotCardActive: {
@@ -143,7 +167,7 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: '#9ca3af',
+    borderColor: '#cbd5e1',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -163,49 +187,50 @@ const styles = StyleSheet.create({
   },
   slotLabel: {
     fontSize: 13,
-    fontWeight: '700',
-    color: '#111827',
+    fontWeight: '600',
+    color: '#1e293b',
   },
   slotLabelActive: {
     color: '#0b6234',
+    fontWeight: '700',
   },
   expressBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
+    gap: 3,
     backgroundColor: '#dcfce7',
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: Radius.sm,
+    borderRadius: 4,
   },
   expressText: {
-    fontSize: 9,
-    fontWeight: '800',
+    fontSize: 10,
+    fontWeight: '700',
     color: '#0b6234',
   },
   slotSubtitle: {
     fontSize: 11,
-    color: '#6b7280',
+    color: '#64748b',
     marginTop: 2,
   },
   notesGroup: {
-    marginTop: 12,
-    gap: 6,
+    marginTop: 14,
   },
   notesLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#374151',
+    color: '#334155',
+    marginBottom: 6,
   },
   notesInput: {
-    backgroundColor: '#ffffff',
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: Radius.md,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    borderColor: '#cbd5e1',
+    borderRadius: Radius.brand,
+    padding: 10,
     fontSize: 13,
-    color: '#111827',
-    minHeight: 54,
+    color: '#0f172a',
+    backgroundColor: '#ffffff',
+    minHeight: 60,
+    textAlignVertical: 'top',
   },
 });

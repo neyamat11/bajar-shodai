@@ -25,6 +25,7 @@ import { AddressSelector } from '@/features/checkout/components/AddressSelector'
 import { DeliverySlotPicker } from '@/features/checkout/components/DeliverySlotPicker';
 import { PaymentMethodSelector } from '@/features/checkout/components/PaymentMethodSelector';
 import { MobileBankingForm } from '@/features/checkout/components/MobileBankingForm';
+import { CheckoutMapView } from '@/components/map/CheckoutMapView';
 import { useSubmitOrder } from '@/features/checkout/api/useSubmitOrder';
 import { shareLocationApi } from '@/features/location/api/myLocation';
 import { getCurrentCoordinates } from '@/services/location';
@@ -152,6 +153,66 @@ export default function CheckoutScreen() {
     }
   };
 
+  const handlePinChange = async (coords: { lat: number; lng: number }) => {
+    try {
+      const sub = subtotal();
+      const res = await shareLocationApi({
+        lat: coords.lat,
+        lng: coords.lng,
+        source: 'PIN',
+        phone: isAuthenticated ? user?.phone : guestPhone.trim() || undefined,
+        subtotal: sub,
+      });
+
+      const blockReason = res.quote?.block;
+      if (blockReason === 'OUT_OF_AREA') {
+        if (res.quote?.isAbroad) {
+          setIsAbroadOrder(true);
+          setSkipLocation(true);
+          setLocationBlock(null);
+          return;
+        }
+        setLocationBlock('OUT_OF_AREA');
+        toast.warning(
+          'ডেলিভারি সীমার বাইরে',
+          'এই অবস্থানটি আমাদের ডেলিভারি সীমার বাইরে। অনুগ্রহ করে সীমার ভেতরে পিন রাখুন।',
+        );
+        return;
+      }
+
+      setLocationBlock(null);
+      const placeName =
+        res.location?.placeName || res.placeName || res.location?.placeNameBn || res.placeNameBn || '';
+      const distance = res.quote?.distanceKm ?? res.distanceKm;
+
+      setGpsLocation({
+        lat: coords.lat,
+        lng: coords.lng,
+        placeName,
+        placeNameBn: res.location?.placeNameBn || res.placeNameBn,
+        distanceKm: distance,
+        accuracyM: 10,
+      });
+
+      if (res.quote?.calculatedFee !== undefined) {
+        setDynamicDeliveryFee(res.quote.calculatedFee);
+      }
+
+      if (!isAuthenticated && (!guestAddress.trim() || guestAddress === 'Shahrasti') && placeName) {
+        setGuestAddress(placeName);
+      }
+
+      haptics.selection();
+    } catch {
+      setGpsLocation((prev) => ({
+        lat: coords.lat,
+        lng: coords.lng,
+        placeName: prev?.placeName,
+        distanceKm: prev?.distanceKm,
+      }));
+    }
+  };
+
   const effectiveAddress = useMemo<CustomerAddress | null>(() => {
     if (!isAuthenticated) {
       return {
@@ -200,7 +261,7 @@ export default function CheckoutScreen() {
     return null;
   }, [isAuthenticated, guestName, guestPhone, guestAddress, guestCity, gpsLocation, selectedAddress, addresses, user]);
 
-  const [deliverySlot, setDeliverySlot] = useState('EXPRESS_1_2_HRS');
+  const [deliverySlot, setDeliverySlot] = useState('');
   const [deliveryNotes, setDeliveryNotes] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CASH_ON_DELIVERY');
   const [senderNumber, setSenderNumber] = useState(user?.phone || '');
@@ -413,8 +474,26 @@ export default function CheckoutScreen() {
             </View>
           )}
 
-          {/* Section 1.5: Share My Location Feature (Web Parity) */}
+          {/* Section 1.5: Interactive Delivery Map (Google Map / OSM based on Admin Dashboard) */}
           <View style={styles.locationSection}>
+            <View style={styles.mapHeaderRow}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Icon name="MapPin" size={16} color="#0b6234" />
+                <Text style={styles.mapSectionTitle}>ডেলিভারি লোকেশন ও ম্যাপ (Delivery Location)</Text>
+              </View>
+              <Text style={styles.mapInstructionText}>
+                ড্যাশবোর্ড সেটিংসের ম্যাপে পিন নির্বাচন করুন অথবা বর্তমান লোকেশন দিন
+              </Text>
+            </View>
+
+            <View style={{ marginVertical: 6 }}>
+              <CheckoutMapView
+                marker={gpsLocation ? { lat: gpsLocation.lat, lng: gpsLocation.lng } : null}
+                onMarkerChange={handlePinChange}
+                height={220}
+              />
+            </View>
+
             <TouchableOpacity
               style={[
                 styles.shareLocationBtn,
@@ -792,6 +871,19 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 10,
     gap: 6,
+  },
+  mapHeaderRow: {
+    marginBottom: 2,
+  },
+  mapSectionTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  mapInstructionText: {
+    fontSize: 11,
+    color: '#64748b',
+    marginTop: 2,
   },
   shareLocationBtn: {
     flexDirection: 'row',
