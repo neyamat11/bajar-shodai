@@ -18,7 +18,7 @@ import { CustomerAddress } from '../types';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from '@/store/useToastStore';
 import { haptics } from '@/services/haptics';
-import { getCurrentCoordinates, reverseGeocodeCoordinates } from '@/services/location';
+import { acquireLiveLocation, reverseGeocodeCoordinates } from '@/services/location';
 
 export interface AddressSelectorProps {
   selectedAddress: CustomerAddress | null;
@@ -42,7 +42,19 @@ export function AddressSelector({ selectedAddress, onSelectAddress }: AddressSel
     try {
       setIsLocating(true);
       haptics.selection();
-      const pos = await getCurrentCoordinates();
+      const result = await acquireLiveLocation();
+      if (!result.success) {
+        haptics.error();
+        if (result.error === 'SERVICES_DISABLED') {
+          toast.warning('GPS বন্ধ আছে', 'অনুগ্রহ করে ফোনের লোকেশন চালু করুন');
+        } else if (result.error === 'PERMISSION_DENIED') {
+          toast.warning('অনুমতি প্রয়োজন', 'অ্যাপের লোকেশন পারমিশন দিন');
+        } else {
+          toast.error('লোকেশন পাওয়া যায়নি', 'স্যাটেলাইট সিগন্যাল পাওয়া যায়নি');
+        }
+        return;
+      }
+      const pos = result.coords;
       setCoords({ lat: pos.latitude, lng: pos.longitude });
       const geo = await reverseGeocodeCoordinates(pos.latitude, pos.longitude);
       if (!addressLine.trim() && geo.formattedAddress) {

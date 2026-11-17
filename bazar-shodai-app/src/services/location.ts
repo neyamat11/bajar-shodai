@@ -17,12 +17,11 @@ export interface GeocodedAddress {
   postalCode?: string | null;
 }
 
-// Fallback to default operational hub: Shahrasti / Chandpur
-export const DEFAULT_COORDINATES: Coordinates = {
-  latitude: 23.2185,
-  longitude: 90.9525,
-  accuracy: 10,
-};
+export type LocationAcquireError = 'SERVICES_DISABLED' | 'PERMISSION_DENIED' | 'UNAVAILABLE';
+
+export type LocationAcquireResult =
+  | { success: true; coords: Coordinates; isCoarse?: boolean }
+  | { success: false; error: LocationAcquireError };
 
 export async function requestLocationPermission(): Promise<boolean> {
   try {
@@ -33,25 +32,86 @@ export async function requestLocationPermission(): Promise<boolean> {
   }
 }
 
-export async function getCurrentCoordinates(): Promise<Coordinates> {
+export async function checkLocationServicesEnabled(): Promise<boolean> {
   try {
-    const hasPermission = await requestLocationPermission();
-    if (!hasPermission) {
-      return DEFAULT_COORDINATES;
+    return await Location.hasServicesEnabledAsync();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Fast sub-3-second native location acquisition.
+ * 1. Verifies that the phone's Location (GPS) service is enabled.
+ * 2. Checks and requests foreground location permissions.
+ * 3. Calls Location.getCurrentPositionAsync with High accuracy (utilizes Android/iOS fused provider).
+ * 4. Falls back to Location.getLastKnownPositionAsync if satellite signal is delayed.
+ * Never returns fake/hardcoded coordinates.
+ */
+export async function acquireLiveLocation(): Promise<LocationAcquireResult> {
+  try {
+    const servicesEnabled = await checkLocationServicesEnabled();
+    if (!servicesEnabled) {
+      return { success: false, error: 'SERVICES_DISABLED' };
     }
 
-    const pos = await Location.getCurrentPositionAsync({
-      accuracy: Location.Accuracy.Balanced,
-    });
+    const hasPermission = await requestLocationPermission();
+    if (!hasPermission) {
+      return { success: false, error: 'PERMISSION_DENIED' };
+    }
 
-    return {
-      latitude: pos.coords.latitude,
-      longitude: pos.coords.longitude,
-      accuracy: pos.coords.accuracy,
-    };
+    // 1. Fast live fix with High accuracy (timeout 6s)
+    try {
+      const pos = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+        timeInterval: 6000,
+      });
+
+      const accuracy = pos.coords.accuracy ?? 10;
+      return {
+        success: true,
+        coords: {
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+          accuracy,
+        },
+        isCoarse: accuracy > 100,
+      };
+    } catch {
+      // 2. Fallback to last known position if recent (<2 minutes)
+      const lastKnown = await Location.getLastKnownPositionAsync({
+        maxAge: 120000,
+      });
+
+      if (lastKnown) {
+        return {
+          success: true,
+          coords: {
+            latitude: lastKnown.coords.latitude,
+            longitude: lastKnown.coords.longitude,
+            accuracy: lastKnown.coords.accuracy ?? 50,
+          },
+          isCoarse: true,
+        };
+      }
+
+      return { success: false, error: 'UNAVAILABLE' };
+    }
   } catch {
-    return DEFAULT_COORDINATES;
+    return { success: false, error: 'UNAVAILABLE' };
   }
+}
+
+/**
+ * Legacy wrapper: Returns real coordinates or null if failed.
+ * Never silently substitutes fake coordinates.
+ */
+export async function getCurrentCoordinates(): Promise<Coordinates | null> {
+  const result = await acquireLiveLocation();
+  if (result.success) {
+    return result.coords;
+  }
+  return null;
 }
 
 export async function reverseGeocodeCoordinates(

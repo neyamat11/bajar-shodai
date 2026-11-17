@@ -342,13 +342,23 @@ export default function LocationPicker({
         className="flex w-full items-center justify-center gap-2.5 rounded bg-primary px-5 py-3.5 text-base font-bold text-primary-foreground shadow-[0_10px_24px_-12px_rgba(11,98,52,0.8)] transition-all hover:bg-primary/90 active:scale-[0.98] disabled:cursor-wait disabled:opacity-70"
       >
         {geo.loading ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /> : <Crosshair className="h-5 w-5" aria-hidden="true" />}
-        {geo.loading ? (geo.fix ? t("improving", { m: formatNumber(geo.fix.accuracyM, locale, 0) }) : t("finding")) : value?.source === "GPS" ? t("shareAgain") : t("share")}
+        {geo.loading ? t("finding") : value?.source === "GPS" ? t("shareAgain") : t("share")}
       </button>
       {geo.error && (
         <p role="alert" className="flex items-start gap-2 rounded border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-sm font-medium text-destructive">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           {t(`geoError.${geo.error}`)}
         </p>
+      )}
+      {geo.fix?.isCoarse && value?.source === "GPS" && (
+        <div className="flex items-start gap-2 rounded border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-900 dark:text-amber-200">
+          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+          <span>
+            {locale === "bn"
+              ? "ঘরের ভেতর থাকায় লোকেশন কিছুটা অস্পষ্ট হতে পারে। প্রয়োজনে নিচের মানচিত্রে পিনটি টেনে আপনার সঠিক বাড়ির উপর বসান।"
+              : "Location may be approximate indoors. You can drag the pin on the map to your exact house."}
+          </span>
+        </div>
       )}
       {!value && <p className="text-xs text-muted-foreground">{t("consent")}</p>}
 
@@ -357,7 +367,7 @@ export default function LocationPicker({
         <div className="flex flex-wrap items-center gap-2 rounded border border-border bg-card px-3 py-2.5 text-sm">
           <Navigation className="h-4 w-4 shrink-0 text-accent-text" aria-hidden="true" />
           <button type="button" onClick={useSaved} className="min-w-0 flex-1 truncate text-left font-semibold text-foreground hover:text-accent-text">
-            {t("useSaved")}
+            {locale === "bn" ? "পূর্বের অর্ডারের সংরক্ষিত ঠিকানা ব্যবহার করুন" : t("useSaved")}
             {maps?.dynamicPlaceNames && saved.placeName ? <span className="font-normal text-muted-foreground"> · {saved.placeName}</span> : null}
           </button>
           <button type="button" onClick={() => void forget()} className="text-xs font-semibold text-muted-foreground hover:text-destructive">

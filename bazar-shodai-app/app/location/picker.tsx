@@ -6,19 +6,24 @@ import { Icon } from '@/components/ui/Icon';
 import { Button } from '@/components/ui/Button';
 import { Radius } from '@/constants/layout';
 import {
-  getCurrentCoordinates,
+  acquireLiveLocation,
   reverseGeocodeCoordinates,
-  DEFAULT_COORDINATES,
+  Coordinates,
 } from '@/services/location';
 import { useShareLocationMutation, LocationSearchResult } from '@/features/location/api/myLocation';
 import { AddressSearchPicker } from '@/features/location/components/AddressSearchPicker';
 import { toast } from '@/store/useToastStore';
 import { haptics } from '@/services/haptics';
 
+const DEFAULT_CENTER: Coordinates = {
+  latitude: 23.2452,
+  longitude: 90.9422,
+};
+
 export default function DeliveryLocationPickerScreen() {
   const router = useRouter();
 
-  const [coords, setCoords] = useState(DEFAULT_COORDINATES);
+  const [coords, setCoords] = useState<Coordinates>(DEFAULT_CENTER);
   const [address, setAddress] = useState('Acquiring location...');
   const [isLocating, setIsLocating] = useState(false);
 
@@ -28,13 +33,17 @@ export default function DeliveryLocationPickerScreen() {
     setIsLocating(true);
     haptics.selection();
     try {
-      const position = await getCurrentCoordinates();
-      setCoords(position);
-      const geocoded = await reverseGeocodeCoordinates(position.latitude, position.longitude);
-      setAddress(geocoded.formattedAddress);
-      toast.info('Location Found', geocoded.formattedAddress);
+      const result = await acquireLiveLocation();
+      if (result.success) {
+        setCoords(result.coords);
+        const geocoded = await reverseGeocodeCoordinates(result.coords.latitude, result.coords.longitude);
+        setAddress(geocoded.formattedAddress);
+        toast.info('Location Found', geocoded.formattedAddress);
+      } else {
+        toast.warning('Location Warning', 'GPS is disabled or unavailable. Drag pin on map.');
+      }
     } catch {
-      toast.warning('Location Fallback', 'Using standard delivery zone coordinates');
+      toast.warning('Location Warning', 'Could not detect location');
     } finally {
       setIsLocating(false);
     }
@@ -42,11 +51,11 @@ export default function DeliveryLocationPickerScreen() {
 
   useEffect(() => {
     let isMounted = true;
-    getCurrentCoordinates()
-      .then(async (position) => {
-        if (!isMounted) return;
-        setCoords(position);
-        const geocoded = await reverseGeocodeCoordinates(position.latitude, position.longitude);
+    acquireLiveLocation()
+      .then(async (result) => {
+        if (!isMounted || !result.success) return;
+        setCoords(result.coords);
+        const geocoded = await reverseGeocodeCoordinates(result.coords.latitude, result.coords.longitude);
         if (!isMounted) return;
         setAddress(geocoded.formattedAddress);
       })

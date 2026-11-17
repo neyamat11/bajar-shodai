@@ -10,7 +10,7 @@ import {
   fetchLocationTokenInfoApi,
   submitLocationTokenApi,
 } from '@/features/location/api/myLocation';
-import { getCurrentCoordinates } from '@/services/location';
+import { acquireLiveLocation } from '@/services/location';
 import { toast } from '@/store/useToastStore';
 import { haptics } from '@/services/haptics';
 
@@ -32,7 +32,19 @@ export default function LocationShareTokenScreen() {
   const handleShareCurrentLocation = async () => {
     setSubmitting(true);
     try {
-      const pos = await getCurrentCoordinates();
+      const result = await acquireLiveLocation();
+      if (!result.success) {
+        if (result.error === 'SERVICES_DISABLED') {
+          toast.warning('GPS বন্ধ আছে', 'অনুগ্রহ করে ফোনের লোকেশন চালু করুন।');
+        } else if (result.error === 'PERMISSION_DENIED') {
+          toast.warning('পারমিশন প্রয়োজন', 'লোকেশন পারমিশন দিন যাতে রাইডার আপনার কাছে পৌঁছাতে পারে।');
+        } else {
+          toast.error('সিগন্যাল পাওয়া যায়নি', 'স্যাটেলাইট সিগন্যাল পাওয়া যায়নি। খোলা জায়গায় গিয়ে চেষ্টা করুন।');
+        }
+        return;
+      }
+
+      const pos = result.coords;
       await submitLocationTokenApi(tokenStr, {
         lat: pos.latitude,
         lng: pos.longitude,
@@ -41,9 +53,9 @@ export default function LocationShareTokenScreen() {
 
       haptics.success();
       setSubmitted(true);
-      toast.success('Location Shared', 'Rider has received your exact doorstep GPS coordinates!');
+      toast.success('লোকেশন শেয়ার সম্পন্ন', 'ডেলিভারি রাইডার আপনার সঠিক বাড়ির অবস্থান পেয়েছেন!');
     } catch {
-      toast.error('Sharing failed', 'Could not share location. Please check GPS permissions.');
+      toast.error('শেয়ার ব্যর্থ হয়েছে', 'লোকেশন পাঠানো যায়নি। অনুগ্রহ করে পুনরায় চেষ্টা করুন।');
     } finally {
       setSubmitting(false);
     }

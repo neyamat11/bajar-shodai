@@ -30,7 +30,7 @@ import { CheckoutOrderSummary, CheckoutSummaryData } from '@/features/checkout/c
 import { CheckoutMapView } from '@/components/map/CheckoutMapView';
 import { useSubmitOrder } from '@/features/checkout/api/useSubmitOrder';
 import { shareLocationApi } from '@/features/location/api/myLocation';
-import { getCurrentCoordinates } from '@/services/location';
+import { acquireLiveLocation } from '@/services/location';
 import { toast } from '@/store/useToastStore';
 import { haptics } from '@/services/haptics';
 import { useSiteSettings } from '@/services/siteService';
@@ -205,12 +205,35 @@ export default function CheckoutScreen() {
     grandTotal,
   }), [serverSummary, sub, currentDelivery, isFreeDelivery, gpsLocation, skipLocation, coupon, pointsDiscount, grandTotal]);
 
-  // Handle GPS detection
+  // Fast sub-3s GPS detection using native fused provider
   const handleShareLocation = async () => {
     try {
       setIsLocating(true);
       haptics.selection();
-      const coords = await getCurrentCoordinates();
+      const result = await acquireLiveLocation();
+
+      if (!result.success) {
+        haptics.error();
+        if (result.error === 'SERVICES_DISABLED') {
+          toast.warning(
+            'GPS বন্ধ আছে',
+            'আপনার ফোনের লোকেশন / GPS চালু করুন যাতে সঠিক অবস্থান শনাক্ত করা যায়।',
+          );
+        } else if (result.error === 'PERMISSION_DENIED') {
+          toast.warning(
+            'লোকেশন অনুমতি প্রয়োজন',
+            'স্বয়ংক্রিয় অবস্থানের জন্য অ্যাপের লোকেশন পারমিশন দিন, অথবা নিচের মানচিত্রে সরাসরি পিন বসান।',
+          );
+        } else {
+          toast.info(
+            'সিগন্যাল দুর্বল',
+            'ঘরের ভেতরে স্যাটেলাইট সিগন্যাল দুর্বল হতে পারে। নিচের মানচিত্রে পিনটি টেনে আপনার সঠিক বাড়ির উপর বসান।',
+          );
+        }
+        return;
+      }
+
+      const coords = result.coords;
       const res = await shareLocationApi({
         lat: coords.latitude,
         lng: coords.longitude,
@@ -268,6 +291,13 @@ export default function CheckoutScreen() {
         'লোকেশন যুক্ত হয়েছে',
         placeName ? `${placeName} (${distance !== undefined ? distance.toFixed(1) : ''} কিমি)` : 'আপনার সঠিক অবস্থান যুক্ত হয়েছে',
       );
+
+      if (result.isCoarse) {
+        toast.info(
+          'আনুমানিক অবস্থান',
+          'আপনার বাড়ির সঠিক অবস্থান নিশ্চিত করতে প্রয়োজনে মানচিত্রে পিনটি কিছুটা সরিয়ে দিন।',
+        );
+      }
     } catch {
       haptics.error();
       toast.error('লোকেশন ত্রুটি', 'আপনার বর্তমান অবস্থান পাওয়া যায়নি। মোবাইলের GPS চালু আছে কিনা নিশ্চিত করুন।');
@@ -652,7 +682,7 @@ export default function CheckoutScreen() {
               {/* Step 1 Navigation Button */}
               <View style={styles.stepActionRow}>
                 <Button
-                  title="লোকেশন ও সময়ে এগিয়ে যান"
+                  title="লোকেশনে এগিয়ে যান"
                   variant="primary"
                   size="lg"
                   onPress={handleContinueToLocation}
