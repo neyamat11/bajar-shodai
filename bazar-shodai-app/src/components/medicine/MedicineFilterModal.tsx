@@ -203,8 +203,14 @@ export function MedicineFilterModal({
                   )}
                 </View>
 
-                <View style={styles.listContainer}>
-                  {filteredBrands.slice(0, 15).map((b) => {
+                <ScrollView
+                  nestedScrollEnabled={true}
+                  style={styles.listScroll}
+                  contentContainerStyle={{ paddingVertical: 2 }}
+                  showsVerticalScrollIndicator={true}
+                  keyboardShouldPersistTaps="handled"
+                >
+                  {filteredBrands.map((b) => {
                     const isSelected = draft.brand === b.slug;
                     return (
                       <TouchableOpacity
@@ -239,7 +245,12 @@ export function MedicineFilterModal({
                       </TouchableOpacity>
                     );
                   })}
-                </View>
+                  {filteredBrands.length === 0 && (
+                    <View style={styles.emptyListNotice}>
+                      <Text style={styles.emptyListNoticeText}>কোনো কোম্পানি পাওয়া যায়নি</Text>
+                    </View>
+                  )}
+                </ScrollView>
               </View>
             )}
 
@@ -265,8 +276,14 @@ export function MedicineFilterModal({
                   )}
                 </View>
 
-                <View style={styles.listContainer}>
-                  {filteredGenerics.slice(0, 20).map((g) => {
+                <ScrollView
+                  nestedScrollEnabled={true}
+                  style={styles.listScroll}
+                  contentContainerStyle={{ paddingVertical: 2 }}
+                  showsVerticalScrollIndicator={true}
+                  keyboardShouldPersistTaps="handled"
+                >
+                  {filteredGenerics.map((g) => {
                     const isSelected = draft.generic === g.name;
                     return (
                       <TouchableOpacity
@@ -301,7 +318,12 @@ export function MedicineFilterModal({
                       </TouchableOpacity>
                     );
                   })}
-                </View>
+                  {filteredGenerics.length === 0 && (
+                    <View style={styles.emptyListNotice}>
+                      <Text style={styles.emptyListNoticeText}>কোনো জেনেরিক উপাদান পাওয়া যায়নি</Text>
+                    </View>
+                  )}
+                </ScrollView>
               </View>
             )}
 
@@ -470,12 +492,22 @@ const styles = StyleSheet.create({
     color: '#0f172a',
     padding: 0,
   },
-  listContainer: {
+  listScroll: {
     maxHeight: 180,
     backgroundColor: '#ffffff',
     borderRadius: Radius.brand,
     borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderColor: '#e2e8f0',
+    overflow: 'hidden',
+  },
+  emptyListNotice: {
+    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyListNoticeText: {
+    fontSize: 12,
+    color: '#94a3b8',
   },
   listItemRow: {
     flexDirection: 'row',

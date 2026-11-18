@@ -41,7 +41,7 @@ export async function fetchMedicinesApi(
   paramsOrType?: 'ALL' | 'OTC' | 'PRESCRIPTION' | MedicineQueryParams,
   legacySearch?: string,
 ): Promise<ProductCardData[]> {
-  const params: string[] = ['category=medicine'];
+  const params: string[] = ['category=medicine', 'limit=100'];
 
   if (typeof paramsOrType === 'string') {
     if (paramsOrType !== 'ALL') params.push(`medicineType=${paramsOrType}`);

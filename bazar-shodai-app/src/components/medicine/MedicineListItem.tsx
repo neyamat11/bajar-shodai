@@ -6,6 +6,7 @@ import { Radius } from '@/constants/layout';
 import { haptics } from '@/services/haptics';
 import { useCartStore } from '@/store/useCartStore';
 import { toast } from '@/store/useToastStore';
+import { useWishlist, useToggleWishlist } from '@/features/account/api/accountApi';
 import {
   isOralSolidMedicine,
   MedicinePriceBreakdown,
@@ -94,6 +95,23 @@ function MedicineListItemComponent({
   const dosageLabel = product.dosageForm || 'Tablet';
   const isOralSolid = isOralSolidMedicine(product.dosageForm);
   const [isPurchaseSheetOpen, setIsPurchaseSheetOpen] = useState(false);
+
+  const { data: wishlist = [] } = useWishlist();
+  const { mutate: toggleWishlist } = useToggleWishlist();
+  const isWishlisted = Boolean(
+    wishlist?.some?.((w: any) => w.productId === product.id || w.id === product.id)
+  );
+
+  const handleToggleWishlist = (e: any) => {
+    e?.stopPropagation?.();
+    void haptics.selection().catch(() => {});
+    toggleWishlist({ productId: product.id, inWishlist: isWishlisted });
+    if (!isWishlisted) {
+      toast.success('ফেভারিট', `${product.nameBn || product.name} ফেভারিটে যুক্ত হয়েছে`);
+    } else {
+      toast.info('ফেভারিট', `${product.nameBn || product.name} ফেভারিট থেকে সরানো হয়েছে`);
+    }
+  };
 
   const handleAddToCart = (e: any) => {
     e?.stopPropagation?.();
@@ -242,11 +260,7 @@ function MedicineListItemComponent({
             <View style={styles.rxBadge}>
               <Text style={styles.rxBadgeText}>Rx</Text>
             </View>
-          ) : (
-            <View style={styles.otcBadge}>
-              <Text style={styles.otcBadgeText}>OTC</Text>
-            </View>
-          )}
+          ) : null}
         </View>
 
         {product.nameBn ? (
@@ -276,8 +290,23 @@ function MedicineListItemComponent({
         </View>
       </View>
 
-      {/* ── Right Column: Add to Cart Action / Stepper ────────────── */}
+      {/* ── Right Column: Wishlist Heart & Small Buy / Stepper Action ── */}
       <View style={styles.actionCol}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          delayPressIn={0}
+          onPress={handleToggleWishlist}
+          style={[styles.heartBtn, isWishlisted && styles.heartBtnActive]}
+          accessibilityLabel="Add to favorite"
+        >
+          <Icon
+            name="Heart"
+            size={16}
+            color={isWishlisted ? '#ef4444' : '#94a3b8'}
+            fill={isWishlisted ? '#ef4444' : 'none'}
+          />
+        </TouchableOpacity>
+
         {isOutOfStock ? (
           <View style={styles.outOfStockPill}>
             <Text style={styles.outOfStockText}>স্টক শেষ</Text>
@@ -309,12 +338,12 @@ function MedicineListItemComponent({
             activeOpacity={0.8}
             delayPressIn={0}
             onPress={handleAddToCart}
-            style={styles.addBtn}
+            style={styles.smallBuyBtn}
             accessibilityRole="button"
-            accessibilityLabel="Add medicine to cart"
+            accessibilityLabel="Buy medicine"
           >
-            <Icon name="Plus" size={14} color="#ffffff" />
-            <Text style={styles.addBtnText}>যোগ করুন</Text>
+            <Icon name="Plus" size={12} color="#ffffff" />
+            <Text style={styles.smallBuyBtnText}>কিনুন</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -462,8 +491,37 @@ const styles = StyleSheet.create({
     textDecorationLine: 'line-through',
   },
   actionCol: {
-    alignItems: 'flex-end',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  heartBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: Radius.brand,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
     justifyContent: 'center',
+  },
+  heartBtnActive: {
+    borderColor: '#fecaca',
+    backgroundColor: '#fef2f2',
+  },
+  smallBuyBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0b6234',
+    paddingHorizontal: 9,
+    paddingVertical: 7,
+    borderRadius: Radius.brand,
+    gap: 3,
+  },
+  smallBuyBtnText: {
+    color: '#ffffff',
+    fontSize: 11.5,
+    fontWeight: '700',
   },
   addBtn: {
     flexDirection: 'row',

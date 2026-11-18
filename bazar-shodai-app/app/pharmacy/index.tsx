@@ -122,13 +122,19 @@ export default function PharmacyCatalogScreen() {
   });
 
   const medicinesList: MedicineItemData[] = useMemo(() => {
-    return apiMedicines.map((m: any) => {
+    let list: MedicineItemData[] = apiMedicines.map((m: any) => {
       const rawImage =
         m.image || m.imageUrl || m.images?.[0]?.url || m.primaryImage?.url;
       const isUntracked = m.trackStock === false;
       const inStock =
         m.inStock !== false &&
         (isUntracked || m.stock === undefined || Number(m.stock) > 0);
+
+      const isPrescriptionRequired = Boolean(
+        m.medicineMeta?.isPrescriptionRequired ||
+        m.medicineMeta?.type === 'PRESCRIPTION' ||
+        m.type === 'PRESCRIPTION'
+      );
 
       return {
         id: m.id,
@@ -143,7 +149,7 @@ export default function PharmacyCatalogScreen() {
         strength: m.medicineMeta?.strength || '',
         manufacturer:
           m.medicineMeta?.manufacturer || m.brand?.name || 'Licensed Pharma',
-        isPrescriptionRequired: Boolean(m.medicineMeta?.isPrescriptionRequired),
+        isPrescriptionRequired,
         unit: m.unit?.shortLabelBn || m.unit?.shortLabel || 'pack',
         stock: m.stock ? Number(m.stock) : undefined,
         trackStock: m.trackStock,
@@ -158,7 +164,41 @@ export default function PharmacyCatalogScreen() {
         medicineMeta: m.medicineMeta,
       };
     });
-  }, [apiMedicines]);
+
+    // Client-side verification filters for immediate reactivity
+    if (activeType === 'OTC') {
+      list = list.filter((m) => !m.isPrescriptionRequired);
+    } else if (activeType === 'PRESCRIPTION') {
+      list = list.filter((m) => m.isPrescriptionRequired);
+    }
+
+    if (filters.brand) {
+      const bLower = filters.brand.toLowerCase().replace(/-/g, ' ');
+      list = list.filter((m) => {
+        const mfg = (m.manufacturer || '').toLowerCase();
+        const bSlug = (m as any).brand?.slug?.toLowerCase() || '';
+        const bName = (m as any).brand?.name?.toLowerCase() || '';
+        return (
+          mfg.includes(bLower) ||
+          bSlug === filters.brand?.toLowerCase() ||
+          bName.includes(bLower)
+        );
+      });
+    }
+
+    if (filters.generic) {
+      const gLower = filters.generic.toLowerCase();
+      list = list.filter((m) =>
+        (m.genericName || '').toLowerCase().includes(gLower)
+      );
+    }
+
+    if (filters.inStockOnly) {
+      list = list.filter((m) => m.inStock);
+    }
+
+    return list;
+  }, [apiMedicines, activeType, filters]);
 
   const activeFilterCount = [
     filters.subCategory,
@@ -376,7 +416,7 @@ export default function PharmacyCatalogScreen() {
                 {filters.subCategory && (
                   <View style={styles.activeTag}>
                     <Text style={styles.activeTagText}>
-                      ধরন: {filters.subCategory}
+                      ধরন: {subCategories.find((s: any) => s.slug === filters.subCategory)?.nameBn || subCategories.find((s: any) => s.slug === filters.subCategory)?.name || filters.subCategory}
                     </Text>
                     <TouchableOpacity
                       onPress={() =>
@@ -389,7 +429,7 @@ export default function PharmacyCatalogScreen() {
                 )}
                 {filters.brand && (
                   <View style={styles.activeTag}>
-                    <Text style={styles.activeTagText}>কোম্পানি: {filters.brand}</Text>
+                    <Text style={styles.activeTagText}>কোম্পানি: {brands.find((b) => b.slug === filters.brand)?.name || filters.brand}</Text>
                     <TouchableOpacity
                       onPress={() =>
                         setFilters((prev) => ({ ...prev, brand: undefined }))

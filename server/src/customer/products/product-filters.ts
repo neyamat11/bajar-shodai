@@ -128,7 +128,27 @@ export function buildProductWhere(
 ): Prisma.ProductWhereInput {
   const and: Prisma.ProductWhereInput[] = [buildScopeWhere(q)];
 
-  if (q.brand?.length) and.push({ brand: { slug: { in: q.brand } } });
+  if (q.medicineType && q.medicineType !== 'ALL') {
+    and.push({
+      medicineMeta: {
+        type: q.medicineType as any,
+      },
+    });
+  }
+
+  if (q.brand?.length) {
+    and.push({
+      OR: [
+        { brand: { slug: { in: q.brand } } },
+        { brandName: { in: q.brand } },
+        ...q.brand.map((b) => ({
+          medicineMeta: {
+            manufacturer: { contains: b.replace(/-/g, ' '), mode: ci },
+          },
+        })),
+      ],
+    });
+  }
 
   if (q.generic?.length) {
     and.push({

@@ -66,6 +66,11 @@ export class ProductScopeDto {
   @Transform(toBool)
   @IsBoolean()
   excludeMedicine?: boolean;
+
+  @ApiPropertyOptional({ description: 'Filter by medicine type: ALL, OTC, PRESCRIPTION' })
+  @IsOptional()
+  @IsString()
+  medicineType?: string;
 }
 
 export class ProductQueryDto extends ProductScopeDto {
