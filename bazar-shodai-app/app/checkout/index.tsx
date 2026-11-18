@@ -13,7 +13,7 @@ import {
   Alert,
   Linking,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/api/client';
@@ -62,6 +62,7 @@ export default function CheckoutScreen() {
 
   // Wizard Step: 1 = Shipping, 2 = Location & Slot, 3 = Payment, 4 = Review
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
+  const insets = useSafeAreaInsets();
   const scrollViewRef = useRef<React.ElementRef<typeof ScrollView>>(null);
 
   // Automatically scroll to top whenever checkout step changes
@@ -779,17 +780,6 @@ export default function CheckoutScreen() {
                   </Text>
                 </TouchableOpacity>
               )}
-
-              {/* Step 1 Navigation Button */}
-              <View style={styles.stepActionRow}>
-                <Button
-                  title="লোকেশনে এগিয়ে যান"
-                  variant="primary"
-                  size="lg"
-                  onPress={handleContinueToLocation}
-                  rightIcon={<Icon name="ArrowRight" size={18} color="#ffffff" />}
-                />
-              </View>
             </View>
           )}
 
@@ -987,31 +977,9 @@ export default function CheckoutScreen() {
                 </View>
               )}
 
-              {/* Step 2 Action Buttons */}
-              <View style={styles.dualActionRow}>
-                <TouchableOpacity
-                  style={styles.backStepBtn}
-                  onPress={() => setCurrentStep(1)}
-                  activeOpacity={0.8}
-                >
-                  <Icon name="ArrowLeft" size={16} color="#4b5563" />
-                  <Text style={styles.backStepBtnText}>পূর্ববর্তী</Text>
-                </TouchableOpacity>
-
-                <View style={{ flex: 1 }}>
-                  <Button
-                    title="পেমেন্টে এগিয়ে যান"
-                    variant="primary"
-                    size="lg"
-                    onPress={handleContinueToPayment}
-                    rightIcon={<Icon name="ArrowRight" size={18} color="#ffffff" />}
-                  />
-                </View>
-              </View>
-
               {!skipLocation && !gpsLocation && (
                 <TouchableOpacity
-                  style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 4 }}
+                  style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 4 }}
                   onPress={() => {
                     setSkipLocation(true);
                     haptics.selection();
@@ -1046,28 +1014,6 @@ export default function CheckoutScreen() {
                 onChangeTrxId={setTrxId}
                 totalAmount={grandTotal}
               />
-
-              {/* Step 3 Action Buttons */}
-              <View style={styles.dualActionRow}>
-                <TouchableOpacity
-                  style={styles.backStepBtn}
-                  onPress={() => setCurrentStep(2)}
-                  activeOpacity={0.8}
-                >
-                  <Icon name="ArrowLeft" size={16} color="#4b5563" />
-                  <Text style={styles.backStepBtnText}>পূর্ববর্তী</Text>
-                </TouchableOpacity>
-
-                <View style={{ flex: 1 }}>
-                  <Button
-                    title="রিভিউতে এগিয়ে যান"
-                    variant="primary"
-                    size="lg"
-                    onPress={handleContinueToReview}
-                    rightIcon={<Icon name="ArrowRight" size={18} color="#ffffff" />}
-                  />
-                </View>
-              </View>
             </View>
           )}
 
@@ -1164,30 +1110,6 @@ export default function CheckoutScreen() {
                   onChangeText={setDeliveryNotes}
                 />
               </View>
-
-              {/* Step 4 Action Buttons */}
-              <View style={styles.dualActionRow}>
-                <TouchableOpacity
-                  style={styles.backStepBtn}
-                  onPress={() => setCurrentStep(3)}
-                  activeOpacity={0.8}
-                >
-                  <Icon name="ArrowLeft" size={16} color="#4b5563" />
-                  <Text style={styles.backStepBtnText}>পূর্ববর্তী</Text>
-                </TouchableOpacity>
-
-                <View style={{ flex: 1 }}>
-                  <Button
-                    title="অর্ডার নিশ্চিত করুন"
-                    variant="primary"
-                    size="lg"
-                    onPress={handlePlaceOrder}
-                    loading={submitOrderMutation.isPending}
-                    disabled={submitOrderMutation.isPending}
-                    rightIcon={<Icon name="ArrowRight" size={18} color="#ffffff" />}
-                  />
-                </View>
-              </View>
             </View>
           )}
 
@@ -1203,51 +1125,69 @@ export default function CheckoutScreen() {
         </ScrollView>
 
         {/* Sticky Confirm Order Footer on Mobile */}
-        <View style={styles.footerBar}>
+        <View style={[styles.footerBar, { paddingBottom: Math.max(insets.bottom, 12) }]}>
           <View style={styles.footerPriceCol}>
             <Text style={styles.footerPriceLabel}>সর্বমোট মূল্য (Total)</Text>
             <Price amount={grandTotal} size="lg" />
           </View>
 
-          <View style={{ flex: 1 }}>
-            {currentStep === 1 && (
-              <Button
-                title="এগিয়ে যান"
-                variant="primary"
-                size="md"
-                onPress={handleContinueToLocation}
-                rightIcon={<Icon name="ArrowRight" size={16} color="#ffffff" />}
-              />
+          <View style={styles.footerActionRow}>
+            {currentStep > 1 && (
+              <TouchableOpacity
+                style={styles.footerBackBtn}
+                onPress={() => {
+                  haptics.selection();
+                  setCurrentStep((s) => (s - 1) as any);
+                }}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel="পূর্ববর্তী ধাপে যান"
+              >
+                <Icon name="ArrowLeft" size={15} color="#374151" />
+                <Text style={styles.footerBackBtnText}>পূর্ববর্তী</Text>
+              </TouchableOpacity>
             )}
-            {currentStep === 2 && (
-              <Button
-                title="পেমেন্টে যান"
-                variant="primary"
-                size="md"
-                onPress={handleContinueToPayment}
-                rightIcon={<Icon name="ArrowRight" size={16} color="#ffffff" />}
-              />
-            )}
-            {currentStep === 3 && (
-              <Button
-                title="রিভিউতে যান"
-                variant="primary"
-                size="md"
-                onPress={handleContinueToReview}
-                rightIcon={<Icon name="ArrowRight" size={16} color="#ffffff" />}
-              />
-            )}
-            {currentStep === 4 && (
-              <Button
-                title="অর্ডার কনফার্ম"
-                variant="primary"
-                size="md"
-                onPress={handlePlaceOrder}
-                loading={submitOrderMutation.isPending}
-                disabled={submitOrderMutation.isPending}
-                rightIcon={<Icon name="ArrowRight" size={16} color="#ffffff" />}
-              />
-            )}
+
+            <View style={{ flex: 1 }}>
+              {currentStep === 1 && (
+                <Button
+                  title="এগিয়ে যান"
+                  variant="primary"
+                  size="md"
+                  onPress={handleContinueToLocation}
+                  rightIcon={<Icon name="ArrowRight" size={16} color="#ffffff" />}
+                />
+              )}
+              {currentStep === 2 && (
+                <Button
+                  title="পেমেন্টে যান"
+                  variant="primary"
+                  size="md"
+                  onPress={handleContinueToPayment}
+                  rightIcon={<Icon name="ArrowRight" size={16} color="#ffffff" />}
+                />
+              )}
+              {currentStep === 3 && (
+                <Button
+                  title="রিভিউতে যান"
+                  variant="primary"
+                  size="md"
+                  onPress={handleContinueToReview}
+                  rightIcon={<Icon name="ArrowRight" size={16} color="#ffffff" />}
+                />
+              )}
+              {currentStep === 4 && (
+                <Button
+                  title="অর্ডার নিশ্চিত করুন"
+                  variant="primary"
+                  size="md"
+                  onPress={handlePlaceOrder}
+                  loading={submitOrderMutation.isPending}
+                  disabled={submitOrderMutation.isPending}
+                  rightIcon={<Icon name="ArrowRight" size={16} color="#ffffff" />}
+                />
+              )}
+            </View>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -1280,7 +1220,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    paddingBottom: 32,
+    paddingBottom: 48,
   },
   guestNoticeCard: {
     backgroundColor: '#f0fdf4',
@@ -1369,31 +1309,6 @@ const styles = StyleSheet.create({
     color: '#475569',
     flex: 1,
     lineHeight: 16,
-  },
-  stepActionRow: {
-    marginTop: 8,
-  },
-  dualActionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginTop: 14,
-  },
-  backStepBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    borderWidth: 1.5,
-    borderColor: '#cbd5e1',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    height: 48,
-    justifyContent: 'center',
-  },
-  backStepBtnText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#475569',
   },
   mapContainer: {
     borderRadius: 12,
@@ -1628,15 +1543,43 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#e2e8f0',
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 12,
+    paddingTop: 10,
+    gap: 10,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 8,
   },
   footerPriceCol: {
-    minWidth: 100,
+    minWidth: 80,
   },
   footerPriceLabel: {
     fontSize: 10.5,
     fontWeight: '600',
     color: '#64748b',
+  },
+  footerActionRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  footerBackBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 44,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    backgroundColor: '#f1f5f9',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    gap: 4,
+  },
+  footerBackBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#374151',
   },
 });

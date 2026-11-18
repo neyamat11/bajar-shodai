@@ -77,19 +77,59 @@ export default function GoogleMapView(p: MapViewProps) {
   }, []);
 
   useEffect(() => {
+    const dismissGoogleError = () => {
+      // Auto-click any dismiss / OK button inside the Google error popup
+      const dismissBtn = document.querySelector<HTMLButtonElement>(
+        ".gm-err-container button, .gm-err-content button, .dismissButton"
+      );
+      if (dismissBtn) {
+        dismissBtn.click();
+      }
+      // Hide and remove any error dialog container or gray overlay backdrop
+      document
+        .querySelectorAll(".gm-err-container, .gm-err-content, .gm-err-autocomplete, .gm-style-moc")
+        .forEach((el) => {
+          (el as HTMLElement).style.display = "none";
+          el.remove();
+        });
+    };
+
     const prevAuthFailure = (window as unknown as { gm_authFailure?: () => void }).gm_authFailure;
     (window as unknown as { gm_authFailure?: () => void }).gm_authFailure = () => {
-      p.onAuthError?.();
-      document.querySelectorAll(".gm-err-container, .gm-err-content").forEach((el) => el.remove());
+      dismissGoogleError();
       if (typeof prevAuthFailure === "function") prevAuthFailure();
     };
+
+    // Watch for Google Maps billing/development modal to silently dismiss it without falling back
+    const observer = new MutationObserver(() => {
+      dismissGoogleError();
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+
     return () => {
+      observer.disconnect();
       (window as unknown as { gm_authFailure?: () => void }).gm_authFailure = prevAuthFailure;
     };
   }, [p.onAuthError]);
 
   return (
     <APIProvider apiKey={key} onError={() => p.onAuthError?.()}>
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+            .gm-err-container,
+            .gm-err-content,
+            .gm-err-autocomplete,
+            .gm-style-moc {
+              display: none !important;
+              visibility: hidden !important;
+              opacity: 0 !important;
+              pointer-events: none !important;
+            }
+          `,
+        }}
+      />
       <div
         ref={containerRef}
         data-lenis-prevent

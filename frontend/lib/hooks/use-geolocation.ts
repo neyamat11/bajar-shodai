@@ -15,14 +15,16 @@ export interface GeoFix {
 
 // Acceptable high-precision threshold in metres. A reading under 100m is accepted immediately.
 const HIGH_ACCURACY_THRESHOLD_M = 100;
-// Fast safety timeouts: 7s for high accuracy satellite/fused, 3s for low-accuracy fallback
-const HIGH_ACCURACY_TIMEOUT_MS = 7000;
-const LOW_ACCURACY_TIMEOUT_MS = 3000;
+// Mobile-resilient timeouts: 15s for high accuracy satellite/fused, 10s for low-accuracy network fallback
+const HIGH_ACCURACY_TIMEOUT_MS = 15000;
+const LOW_ACCURACY_TIMEOUT_MS = 10000;
 
 /**
- * Fast sub-3-second geolocation engine.
- * Calls the operating system's fused location provider (Google Play Services / GNSS) directly.
- * Resolves within 1–2.5 seconds on mobile phones and provides immediate coordinate pinning.
+ * Fast & resilient geolocation engine for mobile and desktop web browsers.
+ * Leverages OS Fused Location Provider (Google Play Services / GNSS) with smart caching:
+ * - Accepts recent (<30s) fixes instantly without cold-start GPS satellite lock delay.
+ * - Accurately differentiates between browser site permission blocks vs. device GPS turned off.
+ * - Provides graceful network/cellular fallback before declaring a timeout.
  */
 export function useGeolocation() {
   const [fix, setFix] = useState<GeoFix | null>(null);
@@ -43,8 +45,19 @@ export function useGeolocation() {
 
     setLoading(true);
 
-    return new Promise((resolve) => {
+    return new Promise(async (resolve) => {
       let resolved = false;
+
+      // Check whether site permission was explicitly denied in browser settings
+      let isPermissionExplicitlyDenied = false;
+      if (typeof navigator !== "undefined" && navigator.permissions?.query) {
+        try {
+          const perm = await navigator.permissions.query({ name: "geolocation" as PermissionName });
+          isPermissionExplicitlyDenied = perm.state === "denied";
+        } catch {
+          // ignore
+        }
+      }
 
       const finish = (result: GeoFix | null, err?: GeoError) => {
         if (resolved) return;
@@ -59,7 +72,8 @@ export function useGeolocation() {
         resolve(result);
       };
 
-      // 1. Primary: Fast high-accuracy query via OS Fused Location Provider
+      // 1. Primary: High-accuracy query via OS Fused Location Provider (Google Play Services / GPS)
+      // maximumAge: 30000 allows immediate sub-second fix if the device already has a recent location
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const accuracyM = Math.round(pos.coords.accuracy);
@@ -72,12 +86,12 @@ export function useGeolocation() {
           });
         },
         (primaryErr) => {
-          if (primaryErr.code === primaryErr.PERMISSION_DENIED) {
+          // If browser site permission is explicitly denied in browser settings, don't attempt fallback
+          if (primaryErr.code === primaryErr.PERMISSION_DENIED && isPermissionExplicitlyDenied) {
             return finish(null, "denied");
           }
 
-          // 2. Fallback: If device lacks a GPS chip (e.g. laptop) or satellite lock is unavailable,
-          // immediately attempt network-based position (cellular / Wi-Fi) with cached age
+          // 2. Fallback: If satellite GPS is taking time or indoor, attempt network-based position (cellular / Wi-Fi)
           navigator.geolocation.getCurrentPosition(
             (fallbackPos) => {
               const accuracyM = Math.round(fallbackPos.coords.accuracy);
@@ -90,26 +104,27 @@ export function useGeolocation() {
             },
             (fallbackErr) => {
               const code = fallbackErr.code || primaryErr.code;
-              finish(
-                null,
-                code === primaryErr.PERMISSION_DENIED
-                  ? "denied"
-                  : code === primaryErr.TIMEOUT
-                  ? "timeout"
-                  : "unavailable",
-              );
+              if (code === primaryErr.PERMISSION_DENIED) {
+                // If site permission is denied in browser, show "denied".
+                // Otherwise phone's GPS / Location service is turned off, so show "unavailable"
+                finish(null, isPermissionExplicitlyDenied ? "denied" : "unavailable");
+              } else if (code === primaryErr.TIMEOUT) {
+                finish(null, "timeout");
+              } else {
+                finish(null, "unavailable");
+              }
             },
             {
               enableHighAccuracy: false,
               timeout: LOW_ACCURACY_TIMEOUT_MS,
-              maximumAge: 60000,
+              maximumAge: 180000, // 3 minutes cached fix
             },
           );
         },
         {
           enableHighAccuracy: true,
           timeout: HIGH_ACCURACY_TIMEOUT_MS,
-          maximumAge: 0,
+          maximumAge: 30000, // Accepts fresh fused fix from last 30s
         },
       );
     });

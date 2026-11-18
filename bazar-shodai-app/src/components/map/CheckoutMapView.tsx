@@ -111,6 +111,7 @@ export function CheckoutMapView({
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
         <style>
           html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; background: #eef2eb; }
+          .gm-err-container, .gm-err-content, .gm-err-autocomplete, .gm-style-moc { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
         </style>
       </head>
       <body>

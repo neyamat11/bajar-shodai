@@ -17,16 +17,20 @@ const GoogleMapView = dynamic(() => import("./GoogleMapView"), { ssr: false, loa
 export default function MapView(props: MapViewProps) {
   const [googleFailed, setGoogleFailed] = useState(false);
   const isDirectMode = (props.config.distanceCalculation ?? "direct") === "direct";
-  // Direct distance attempts Google Map if key is configured, but smoothly falls back to OsmMap if billing/auth fails
-  // Road distance uses the active provider selected by admin (default OSM, or Google)
   const wantsGoogle = (isDirectMode || props.config.provider === "google") && !!props.config.googleBrowserKey;
-  const useGoogle = wantsGoogle && !googleFailed;
+  // In direct distance mode: strictly use Google Maps (never fallback to OpenStreetMap)
+  // In road distance mode: use the active provider selected by admin (default OSM, or Google)
+  const useGoogle = isDirectMode
+    ? Boolean(props.config.googleBrowserKey)
+    : wantsGoogle && !googleFailed;
 
   return useGoogle ? (
     <GoogleMapView
       {...props}
       onAuthError={() => {
-        setGoogleFailed(true);
+        if (!isDirectMode) {
+          setGoogleFailed(true);
+        }
         props.onAuthError?.();
       }}
     />
