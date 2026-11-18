@@ -665,6 +665,8 @@ export class ProductService {
                 mrpStrip: m.mrpStrip ?? null,
                 mrpBox: m.mrpBox ?? null,
                 packSizeInfo: m.packSizeInfo || null,
+                discountMode: m.discountMode ?? undefined,
+                discountValue: m.discountValue ?? undefined,
               },
             });
           }

@@ -206,6 +206,47 @@ function ProductForm({ id, p }: { id?: string; p?: ProductDetail }) {
 
   const build = (): ProductInput => {
     const clearOr = (v: string) => (v.trim() === "" ? null : v);
+    const cleanMedicineMeta = f.medicineMeta
+      ? {
+          genericName: f.medicineMeta.genericName?.trim() || "",
+          genericSlug: f.medicineMeta.genericSlug?.trim() || undefined,
+          dosageForm: f.medicineMeta.dosageForm?.trim() || "",
+          strength: f.medicineMeta.strength?.trim() || "",
+          manufacturer: f.medicineMeta.manufacturer?.trim() || "",
+          type: f.medicineMeta.type ?? "OTC",
+          medexUrl: f.medicineMeta.medexUrl || undefined,
+          medexId: f.medicineMeta.medexId ?? undefined,
+          mrpUnit:
+            f.medicineMeta.mrpUnit !== null &&
+            f.medicineMeta.mrpUnit !== undefined &&
+            f.medicineMeta.mrpUnit !== ""
+              ? Number(f.medicineMeta.mrpUnit)
+              : undefined,
+          mrpStrip:
+            f.medicineMeta.mrpStrip !== null &&
+            f.medicineMeta.mrpStrip !== undefined &&
+            f.medicineMeta.mrpStrip !== ""
+              ? Number(f.medicineMeta.mrpStrip)
+              : undefined,
+          mrpBox:
+            f.medicineMeta.mrpBox !== null &&
+            f.medicineMeta.mrpBox !== undefined &&
+            f.medicineMeta.mrpBox !== ""
+              ? Number(f.medicineMeta.mrpBox)
+              : undefined,
+          packSizeInfo: f.medicineMeta.packSizeInfo || undefined,
+          discountMode: f.medicineMeta.discountMode || undefined,
+          discountValue:
+            f.medicineMeta.discountValue !== null &&
+            f.medicineMeta.discountValue !== undefined &&
+            f.medicineMeta.discountValue !== ""
+              ? Number(f.medicineMeta.discountValue)
+              : undefined,
+        }
+      : f.medicineMeta === null
+      ? null
+      : undefined;
+
     return {
       name: f.name.trim(), nameBn: f.nameBn.trim(), slug: f.slug || undefined, productCode: f.productCode.trim() || undefined, barcode: f.barcode.trim() || undefined,
       description: f.description, shortDescription: f.shortDescription || undefined,
@@ -226,7 +267,7 @@ function ProductForm({ id, p }: { id?: string; p?: ProductDetail }) {
       metaTitle: f.metaTitle || undefined, metaDescription: f.metaDescription || undefined, metaKeywords: f.metaKeywords || undefined,
       tags: f.tags.split(",").map((s) => s.trim()).filter(Boolean),
       attributes: f.attrs.filter((a) => a.name.trim() && a.value.trim()),
-      medicineMeta: f.medicineMeta,
+      medicineMeta: cleanMedicineMeta,
     };
   };
 

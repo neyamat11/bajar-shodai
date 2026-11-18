@@ -201,6 +201,38 @@ export class MedicineMetaInputDto {
   @IsString()
   @MaxLength(150)
   packSizeInfo?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  id?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  productId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  lastSyncedAt?: any;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  syncStatus?: string | null;
+
+  @ApiPropertyOptional({ example: 'GLOBAL' })
+  @IsOptional()
+  discountMode?: string | null;
+
+  @ApiPropertyOptional({ example: 10 })
+  @IsOptional()
+  discountValue?: number | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  createdAt?: any;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  updatedAt?: any;
 }
 
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
