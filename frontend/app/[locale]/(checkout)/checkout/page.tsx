@@ -100,6 +100,13 @@ function Checkout() {
     getSiteSettings().then(setSettings);
   }, []);
 
+  // Scroll to top on step change
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [step]);
+
   // Empty cart → back to the cart (but not right after placing an order)
   useEffect(() => {
     if (!cartLoading && cartCount === 0 && !placed.current) router.replace("/cart");

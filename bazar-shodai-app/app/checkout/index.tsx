@@ -62,6 +62,16 @@ export default function CheckoutScreen() {
 
   // Wizard Step: 1 = Shipping, 2 = Location & Slot, 3 = Payment, 4 = Review
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
+  const scrollViewRef = useRef<React.ElementRef<typeof ScrollView>>(null);
+
+  // Automatically scroll to top whenever checkout step changes
+  useEffect(() => {
+    scrollViewRef.current?.scrollTo({ y: 0, animated: false });
+    const timer = setTimeout(() => {
+      scrollViewRef.current?.scrollTo({ y: 0, animated: false });
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [currentStep]);
 
   // ── Step 1: Shipping Details ──
   const [fullName, setFullName] = useState(user?.name || '');
@@ -486,6 +496,7 @@ export default function CheckoutScreen() {
     }
 
     haptics.selection();
+    scrollViewRef.current?.scrollTo({ y: 0, animated: false });
     setCurrentStep(2);
   };
 
@@ -511,6 +522,7 @@ export default function CheckoutScreen() {
     }
 
     haptics.selection();
+    scrollViewRef.current?.scrollTo({ y: 0, animated: false });
     setCurrentStep(3);
   };
 
@@ -528,6 +540,7 @@ export default function CheckoutScreen() {
     }
 
     haptics.selection();
+    scrollViewRef.current?.scrollTo({ y: 0, animated: false });
     setCurrentStep(4);
   };
 
@@ -642,7 +655,7 @@ export default function CheckoutScreen() {
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        <ScrollView ref={scrollViewRef} contentContainerStyle={styles.scrollContent}>
           {/* Guest Notice Banner */}
           {!isAuthenticated && currentStep === 1 && (
             <View style={styles.guestNoticeCard}>
