@@ -44,11 +44,10 @@ export default function FloatingCart() {
   useEffect(() => {
     document.documentElement.toggleAttribute("data-cart-bar", visible);
     const updateOffset = () => {
-      const isMobile = window.innerWidth < 768;
       if (typeof document !== "undefined") {
         document.documentElement.style.setProperty(
           "--cart-bar-offset",
-          visible && isMobile ? "74px" : "0px"
+          "0px"
         );
       }
     };
@@ -86,21 +85,25 @@ export default function FloatingCart() {
         <AnimatedNumber value={cartTotal} format={money} className="bg-brand-deep px-1 py-2 font-outfit text-[13px] font-extrabold tabular-nums text-white" />
       </button>
 
-      {/* phones: a bar along the bottom */}
+      {/* phones: compact floating cart on the bottom-left with price */}
       <button
         ref={bar}
         type="button"
         onClick={openCart}
         aria-label={label}
-        className="fixed inset-x-3 bottom-3 z-[1400] flex items-center justify-between gap-3 rounded-xl bg-primary px-4 py-3 text-primary-foreground shadow-[0_14px_36px_-8px_rgba(11,98,52,0.7)] md:hidden"
+        className="fixed bottom-3 left-3 z-[1400] flex items-center gap-2 rounded-full bg-primary/95 pl-2 pr-3 py-1.5 text-primary-foreground shadow-[0_10px_28px_-6px_rgba(11,98,52,0.75)] border border-white/20 backdrop-blur active:scale-95 transition-transform md:hidden"
       >
-        <span className="flex items-center gap-2.5">
-          <span className="relative flex h-9 w-9 items-center justify-center rounded-lg bg-white/15">
-            <ShoppingBasket className="h-5 w-5" aria-hidden="true" />
+        <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-white">
+          <ShoppingBasket className="h-4 w-4" aria-hidden="true" />
+          <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-fresh px-1 text-[10px] font-black text-on-fresh">
+            {formatNumber(cartCount, locale, 0)}
           </span>
-          <span className="text-sm font-bold">{items}</span>
         </span>
-        <AnimatedNumber value={cartTotal} format={money} className="rounded-lg bg-brand-fresh px-3 py-1.5 font-outfit text-sm font-extrabold tabular-nums text-on-fresh" />
+        <AnimatedNumber
+          value={cartTotal}
+          format={money}
+          className="rounded-full bg-brand-fresh px-2.5 py-1 font-outfit text-xs font-black tabular-nums text-on-fresh shadow-sm"
+        />
       </button>
     </>
   );

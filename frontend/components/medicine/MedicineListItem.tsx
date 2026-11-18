@@ -265,13 +265,13 @@ export default function MedicineListItem({ product, onOpenDetail }: MedicineList
       onPointerEnter={warm}
       onTouchStart={warm}
       onFocus={warm}
-      className="group relative flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 p-3.5 sm:p-4 rounded-xl border border-border bg-card hover:border-emerald-500/40 hover:shadow-[0_8px_20px_-8px_rgba(16,185,129,0.18)] transition-all duration-200 w-full min-w-0"
+      className="group relative flex flex-row items-center justify-between gap-3 p-2.5 sm:p-3 md:p-4 rounded-xl border border-border bg-card hover:border-emerald-500/40 hover:shadow-[0_8px_20px_-8px_rgba(16,185,129,0.18)] transition-all duration-200 w-full min-w-0"
     >
       {/* ── Left Side: Dosage Form Avatar & Medicine Info ────────── */}
-      <div className="flex items-start sm:items-center gap-3.5 min-w-0 flex-1">
-        {/* Medical Dosage Badge / Avatar */}
+      <div className="flex items-center gap-3 sm:gap-3.5 min-w-0 flex-1">
+        {/* Medical Dosage Badge / Avatar (Desktop only) */}
         <div
-          className={`shrink-0 ${onOpenDetail ? "cursor-pointer" : ""}`}
+          className={`shrink-0 hidden md:block ${onOpenDetail ? "cursor-pointer" : ""}`}
           onClick={onOpenDetail ? () => onOpenDetail(product) : undefined}
         >
           {hasRealImage ? (
@@ -296,34 +296,34 @@ export default function MedicineListItem({ product, onOpenDetail }: MedicineList
         </div>
 
         {/* Medicine Main Specifications */}
-        <div className="min-w-0 flex-1 space-y-1">
+        <div className="min-w-0 flex-1 space-y-0.5 sm:space-y-1">
           {/* Brand Name & Rx Tag */}
           <div className="flex flex-wrap items-center gap-2">
             {onOpenDetail ? (
               <button
                 type="button"
                 onClick={() => onOpenDetail(product)}
-                className="font-outfit font-bold text-base sm:text-lg text-foreground text-left group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors line-clamp-1"
+                className="font-outfit font-bold text-sm sm:text-base md:text-lg text-foreground text-left group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors line-clamp-1"
               >
                 {product.name}
               </button>
             ) : (
               <Link
                 href={`/products/${product.slug}`}
-                className="font-outfit font-bold text-base sm:text-lg text-foreground group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors line-clamp-1"
+                className="font-outfit font-bold text-sm sm:text-base md:text-lg text-foreground group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors line-clamp-1"
               >
                 {product.name}
               </Link>
             )}
 
-            {/* OTC vs Rx Status */}
+            {/* OTC vs Rx Status (Desktop only) */}
             {isRx ? (
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+              <span className="hidden md:inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
                 <ShieldAlert className="size-3" />
                 <span>Rx · প্রেসক্রিপশন</span>
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+              <span className="hidden md:inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                 <ShieldCheck className="size-3" />
                 <span>OTC · অনুমোদিত</span>
               </span>
@@ -331,25 +331,25 @@ export default function MedicineListItem({ product, onOpenDetail }: MedicineList
           </div>
 
           {/* Molecule (Generic) & Manufacturer */}
-          <div className="flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-1 text-xs text-muted-foreground min-w-0">
+          <div className="flex flex-wrap items-center gap-x-2.5 sm:gap-x-4 gap-y-0.5 text-xs text-muted-foreground min-w-0">
             {genericName && (
               <div className="flex items-center gap-1 text-foreground/90 font-medium min-w-0">
-                <Dna className="size-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span className="truncate max-w-[140px] xs:max-w-[200px] sm:max-w-[260px] md:max-w-none">{genericName}</span>
+                <Dna className="size-3 sm:size-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span className="truncate max-w-[130px] xs:max-w-[180px] sm:max-w-[240px] md:max-w-none text-xs">{genericName}</span>
               </div>
             )}
 
             {manufacturer && (
               <div className="flex items-center gap-1 text-muted-foreground min-w-0">
-                <Building2 className="size-3.5 text-muted-foreground/70 shrink-0" />
-                <span className="truncate max-w-[120px] xs:max-w-[160px] sm:max-w-[200px] md:max-w-none">{manufacturer}</span>
+                <Building2 className="size-3 sm:size-3.5 text-muted-foreground/70 shrink-0" />
+                <span className="truncate max-w-[110px] xs:max-w-[150px] sm:max-w-[200px] md:max-w-none text-[11px] sm:text-xs">{manufacturer}</span>
               </div>
             )}
           </div>
 
-          {/* Pack size info */}
+          {/* Pack size info (Desktop only) */}
           {packText && (
-            <div className="flex items-center gap-1 text-[11px] text-muted-foreground/80 min-w-0">
+            <div className="hidden md:flex items-center gap-1 text-[11px] text-muted-foreground/80 min-w-0">
               <Package className="size-3 shrink-0" />
               <span className="truncate">{packText}</span>
               {meta?.mrpUnit && (
@@ -359,79 +359,77 @@ export default function MedicineListItem({ product, onOpenDetail }: MedicineList
               )}
             </div>
           )}
+
+          {/* Out of stock warning (all devices, never show positive in-stock badge) */}
+          {outOfStock && (
+            <p className="text-[10px] sm:text-[11px] text-destructive font-bold leading-none mt-0.5">
+              {t("card.stockOut")}
+            </p>
+          )}
         </div>
       </div>
 
       {/* ── Right Side: Price & Cart Action ────────────────────────── */}
-      <div className="flex items-center justify-between md:justify-end gap-3 sm:gap-4 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-border/60 w-full md:w-auto min-w-0">
+      <div className="flex flex-col sm:flex-row items-end sm:items-center gap-1.5 sm:gap-3 md:gap-4 shrink-0">
         {/* Pricing */}
-        <div className="text-left md:text-right">
-          <div className="flex items-baseline gap-1.5 md:justify-end">
-            <span className="font-outfit text-lg sm:text-xl font-extrabold text-foreground">
+        <div className="text-right">
+          <div className="flex items-baseline gap-1 md:justify-end">
+            <span className="font-outfit text-sm sm:text-base md:text-xl font-extrabold text-foreground">
               {formatBDT(product.price)}
             </span>
             {product.originalPrice && product.originalPrice > product.price && (
               <>
-                <span className="text-xs text-muted-foreground line-through">
+                <span className="hidden sm:inline text-xs text-muted-foreground line-through">
                   {formatBDT(product.originalPrice)}
                 </span>
                 {product.discount ? (
-                  <span className="text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1 py-0.5 rounded border border-emerald-500/20 leading-none">
+                  <span className="hidden sm:inline text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1 py-0.5 rounded border border-emerald-500/20 leading-none">
                     {product.discount}% {locale === "bn" ? "ছাড়" : "OFF"}
                   </span>
                 ) : null}
               </>
             )}
           </div>
-          <p className="text-[11px] text-muted-foreground">
-            {outOfStock ? (
-              <span className="text-destructive font-bold">{t("card.stockOut")}</span>
-            ) : (
-              <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-                স্টকে আছে (In Stock)
-              </span>
-            )}
-          </p>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           {/* Wishlist Button */}
           <button
             type="button"
             onClick={handleToggleWishlist}
             aria-label="Wishlist"
-            className={`flex size-9 items-center justify-center rounded-lg border border-border bg-background transition-colors hover:text-destructive hover:border-destructive/30 ${
+            className={`flex size-8 sm:size-9 items-center justify-center rounded-lg border border-border bg-background transition-colors hover:text-destructive hover:border-destructive/30 ${
               inVault ? "text-destructive border-destructive/30" : "text-muted-foreground"
             }`}
           >
             <Heart
-              className={`size-4 ${isWishAnimating ? "animate-heartbeat" : ""}`}
+              className={`size-3.5 sm:size-4 ${isWishAnimating ? "animate-heartbeat" : ""}`}
               fill={inVault ? "currentColor" : "none"}
             />
           </button>
 
           {/* Cart Button or Stepper */}
           {line ? (
-            <div className="flex items-center rounded-lg border border-primary bg-primary text-primary-foreground shadow-sm h-9">
+            <div className="flex items-center rounded-lg border border-primary bg-primary text-primary-foreground shadow-sm h-8 sm:h-9">
               <button
                 type="button"
                 onClick={fewer}
-                className="flex size-9 items-center justify-center hover:bg-black/10 transition-colors"
+                className="flex size-8 sm:size-9 items-center justify-center hover:bg-black/10 transition-colors"
                 aria-label="Decrease quantity"
               >
-                <Minus className="size-3.5" />
+                <Minus className="size-3 sm:size-3.5" />
               </button>
-              <span className="px-2 text-xs font-bold min-w-7 text-center">
+              <span className="px-1.5 sm:px-2 text-xs font-bold min-w-6 text-center">
                 {line.quantity}
               </span>
               <button
                 type="button"
                 onClick={more}
-                className="flex size-9 items-center justify-center hover:bg-black/10 transition-colors"
+                className="flex size-8 sm:size-9 items-center justify-center hover:bg-black/10 transition-colors"
                 aria-label="Increase quantity"
               >
-                <Plus className="size-3.5" />
+                <Plus className="size-3 sm:size-3.5" />
               </button>
             </div>
           ) : (
@@ -441,11 +439,11 @@ export default function MedicineListItem({ product, onOpenDetail }: MedicineList
               onClick={handleAddToCart}
               aria-label={locale === "bn" ? "কার্টে যোগ করুন" : "Add to Cart"}
               title={locale === "bn" ? "কার্টে যোগ করুন" : "Add to Cart"}
-              className="flex size-9 sm:w-auto sm:px-3.5 items-center justify-center sm:gap-2 rounded-lg font-medium text-xs bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white shadow-sm disabled:opacity-50 disabled:pointer-events-none transition-all"
+              className="flex size-8 sm:size-9 md:w-auto md:px-3.5 items-center justify-center md:gap-2 rounded-lg font-medium text-xs bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white shadow-sm disabled:opacity-50 disabled:pointer-events-none transition-all"
             >
-              <Plus className="size-4 sm:hidden" />
-              <ShoppingCart className="hidden sm:inline size-3.5" />
-              <span className="hidden sm:inline">
+              <Plus className="size-4 md:hidden" />
+              <ShoppingCart className="hidden md:inline size-3.5" />
+              <span className="hidden md:inline">
                 {locale === "bn" ? "কার্টে যোগ করুন" : "Add to Cart"}
               </span>
             </button>

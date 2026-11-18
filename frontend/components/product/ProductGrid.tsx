@@ -451,7 +451,7 @@ export default function ProductGrid({
           {products.length === 0 && !loading ? (
             <EmptyState hasFilters={hasActiveFilters} onClearFilters={handleClearAll} />
           ) : viewMode === "list" ? (
-            <div className="flex flex-col gap-2.5 w-full min-w-0">
+            <div className="flex flex-col gap-2.5 w-full min-w-0 pb-16 md:pb-6">
               {products.map((product) =>
                 product.medicineMeta ? (
                   <MedicineListItem
