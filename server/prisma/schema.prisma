@@ -684,6 +684,9 @@ model MedicineMeta {
   manufacturer String       // e.g. "Beximco Pharmaceuticals Ltd."
   type         MedicineType @default(OTC)
 
+  // Packaging & Units
+  unitsPerStrip Int         @default(10) // e.g. 10 tabs, 6 tabs, 4 tabs
+
   // Live MedEx Sync Tracking
   medexUrl     String?
   medexId      Int?

@@ -292,6 +292,14 @@ export function MedExAutoFill({
               <span className="font-medium text-foreground">
                 {tr("MedEx Verified MRP:")}
               </span>
+              {medicineMeta.unitsPerStrip && (
+                <span>
+                  {tr("Strip size:")}{" "}
+                  <strong className="text-foreground">
+                    {medicineMeta.unitsPerStrip} {tr("tabs")}
+                  </strong>
+                </span>
+              )}
               {medicineMeta.mrpUnit && (
                 <span>
                   {tr("Unit:")}{" "}

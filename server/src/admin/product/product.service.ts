@@ -360,10 +360,14 @@ export class ProductService {
                     strength: dto.medicineMeta.strength.trim(),
                     manufacturer: dto.medicineMeta.manufacturer.trim(),
                     type: dto.medicineMeta.type ?? 'OTC',
+                    unitsPerStrip: typeof dto.medicineMeta.unitsPerStrip === 'number' && dto.medicineMeta.unitsPerStrip > 0 ? dto.medicineMeta.unitsPerStrip : 10,
                     medexUrl: dto.medicineMeta.medexUrl || null,
                     medexId: dto.medicineMeta.medexId || null,
-                    mrpUnit: dto.medicineMeta.mrpUnit ?? null,
-                    mrpStrip: dto.medicineMeta.mrpStrip ?? null,
+                    mrpUnit:
+                      dto.medicineMeta.mrpUnit !== null && dto.medicineMeta.mrpUnit !== undefined && Number(dto.medicineMeta.mrpUnit) > 0
+                        ? dto.medicineMeta.mrpUnit
+                        : Math.round((pricing.sellingPrice / (typeof dto.medicineMeta.unitsPerStrip === 'number' && dto.medicineMeta.unitsPerStrip > 0 ? dto.medicineMeta.unitsPerStrip : 10)) * 100) / 100,
+                    mrpStrip: dto.medicineMeta.mrpStrip ?? pricing.sellingPrice,
                     mrpBox: dto.medicineMeta.mrpBox ?? null,
                     packSizeInfo: dto.medicineMeta.packSizeInfo || null,
                     lastSyncedAt: dto.medicineMeta.medexUrl ? new Date() : null,
@@ -631,6 +635,12 @@ export class ProductService {
             await tx.medicineMeta.deleteMany({ where: { productId: id } });
           } else {
             const m = dto.medicineMeta;
+            const unitsPerStrip = typeof m.unitsPerStrip === 'number' && m.unitsPerStrip > 0 ? m.unitsPerStrip : 10;
+            const effectiveSelling = dto.sellingPrice !== undefined ? Number(dto.sellingPrice) : Number(current.sellingPrice);
+            const calculatedUnit = Math.round((effectiveSelling / unitsPerStrip) * 100) / 100;
+            const mrpUnit = m.mrpUnit !== null && m.mrpUnit !== undefined && Number(m.mrpUnit) > 0 ? m.mrpUnit : calculatedUnit;
+            const mrpStrip = m.mrpStrip !== null && m.mrpStrip !== undefined && Number(m.mrpStrip) > 0 ? m.mrpStrip : effectiveSelling;
+
             await tx.medicineMeta.upsert({
               where: { productId: id },
               create: {
@@ -642,10 +652,11 @@ export class ProductService {
                 strength: m.strength.trim(),
                 manufacturer: m.manufacturer.trim(),
                 type: m.type ?? 'OTC',
+                unitsPerStrip,
                 medexUrl: m.medexUrl || null,
                 medexId: m.medexId || null,
-                mrpUnit: m.mrpUnit ?? null,
-                mrpStrip: m.mrpStrip ?? null,
+                mrpUnit,
+                mrpStrip,
                 mrpBox: m.mrpBox ?? null,
                 packSizeInfo: m.packSizeInfo || null,
                 lastSyncedAt: m.medexUrl ? new Date() : null,
@@ -659,10 +670,11 @@ export class ProductService {
                 strength: m.strength.trim(),
                 manufacturer: m.manufacturer.trim(),
                 type: m.type ?? undefined,
+                unitsPerStrip,
                 medexUrl: m.medexUrl || null,
                 medexId: m.medexId || null,
-                mrpUnit: m.mrpUnit ?? null,
-                mrpStrip: m.mrpStrip ?? null,
+                mrpUnit,
+                mrpStrip,
                 mrpBox: m.mrpBox ?? null,
                 packSizeInfo: m.packSizeInfo || null,
                 discountMode: m.discountMode ?? undefined,

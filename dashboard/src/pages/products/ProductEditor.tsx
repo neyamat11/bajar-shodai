@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Copy, Plus, Trash2 } from "lucide-react";
+import { Copy, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox, Input, Select, Textarea } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -115,17 +115,34 @@ function ProductForm({ id, p }: { id?: string; p?: ProductDetail }) {
       if (!slugTouched) next.slug = slugify(fullName);
       if (!next.nameBn) next.nameBn = fullName;
 
-      const price = detail.stripPrice ?? detail.unitPrice ?? detail.boxPrice;
-      if (price) {
-        next.sellingPrice = String(price);
+      // Extract units per strip from MedEx packSizeInfo (e.g. "6 Tablets", "10 Tablets", "10's strip")
+      let unitsPerStrip = 10;
+      if (detail.packSizeInfo) {
+        const matchStripTabs = detail.packSizeInfo.match(/(\d+)\s*(?:tablet|capsule|tab|cap)/i);
+        if (matchStripTabs && Number(matchStripTabs[1]) > 0) {
+          unitsPerStrip = Number(matchStripTabs[1]);
+        } else {
+          const matchStripDigits = detail.packSizeInfo.match(/(\d+)\s*'\s*s/i);
+          if (matchStripDigits && Number(matchStripDigits[1]) > 0) {
+            unitsPerStrip = Number(matchStripDigits[1]);
+          }
+        }
+      } else if (detail.stripPrice && detail.unitPrice && detail.unitPrice > 0) {
+        const ratio = Math.round(detail.stripPrice / detail.unitPrice);
+        if (ratio >= 2 && ratio <= 100) unitsPerStrip = ratio;
+      }
+
+      const stripPrice = detail.stripPrice ?? (detail.unitPrice ? detail.unitPrice * unitsPerStrip : detail.boxPrice);
+      if (stripPrice) {
+        next.sellingPrice = String(stripPrice);
         if (!next.buyingPrice) {
-          next.buyingPrice = (price * 0.88).toFixed(2);
+          next.buyingPrice = (stripPrice * 0.88).toFixed(2);
         }
       }
       if (detail.packSizeInfo) {
         next.packSize = detail.packSizeInfo;
       } else if (detail.stripPrice) {
-        next.packSize = "1 Strip";
+        next.packSize = `1 Strip (${unitsPerStrip} Tablets)`;
       }
 
       // Auto-select category to Medicine if available
@@ -138,6 +155,8 @@ function ProductForm({ id, p }: { id?: string; p?: ProductDetail }) {
         next.categoryId = medCat.node.id;
       }
 
+      const calculatedUnitPrice = detail.unitPrice ?? (stripPrice ? Math.round((stripPrice / unitsPerStrip) * 100) / 100 : null);
+
       next.medicineMeta = {
         genericName: detail.genericName,
         genericSlug: detail.genericSlug,
@@ -145,10 +164,11 @@ function ProductForm({ id, p }: { id?: string; p?: ProductDetail }) {
         strength: detail.strength,
         manufacturer: detail.companyName,
         type: "OTC",
+        unitsPerStrip,
         medexUrl: detail.medexUrl,
         medexId: detail.medexId,
-        mrpUnit: detail.unitPrice,
-        mrpStrip: detail.stripPrice,
+        mrpUnit: calculatedUnitPrice,
+        mrpStrip: stripPrice ?? detail.stripPrice,
         mrpBox: detail.boxPrice,
         packSizeInfo: detail.packSizeInfo,
       };
@@ -214,6 +234,7 @@ function ProductForm({ id, p }: { id?: string; p?: ProductDetail }) {
           strength: f.medicineMeta.strength?.trim() || "",
           manufacturer: f.medicineMeta.manufacturer?.trim() || "",
           type: f.medicineMeta.type ?? "OTC",
+          unitsPerStrip: f.medicineMeta.unitsPerStrip ? Number(f.medicineMeta.unitsPerStrip) : 10,
           medexUrl: f.medicineMeta.medexUrl || undefined,
           medexId: f.medicineMeta.medexId ?? undefined,
           mrpUnit:
@@ -447,6 +468,115 @@ function ProductForm({ id, p }: { id?: string; p?: ProductDetail }) {
             </div>
             {margin !== null && <p className="mt-3 text-xs text-muted-foreground">{tr("Margin at the selling price:")}{" "}<b className={margin < 0 ? "text-destructive" : "text-foreground"}>{margin.toFixed(1)}%</b> · profit {money(Number(f.sellingPrice) - Number(f.buyingPrice))} per unit</p>}
           </Section>
+
+          {f.medicineMeta && (
+            <Section
+              title={tr("Medicine Packaging & Pricing (ওষুধের প্যাকেট ও খুচরা মূল্য)")}
+              description={tr("Define the strip size and loose tablet price. Loose tablet price auto-calculates from the strip price.")}
+            >
+              <div className="grid gap-3 sm:grid-cols-3">
+                <Field
+                  label={tr("1 Pata / Strip Price (৳)")}
+                  hint={tr("Syncs with selling price")}
+                >
+                  <Input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={f.sellingPrice}
+                    onChange={(e) => {
+                      const newPrice = e.target.value;
+                      set("sellingPrice", newPrice);
+                      const units = f.medicineMeta?.unitsPerStrip ? Number(f.medicineMeta.unitsPerStrip) : 10;
+                      if (Number(newPrice) > 0 && units > 0) {
+                        const calculatedUnit = (Number(newPrice) / units).toFixed(2);
+                        set("medicineMeta", {
+                          ...f.medicineMeta,
+                          mrpStrip: Number(newPrice),
+                          mrpUnit: Number(calculatedUnit),
+                        });
+                      }
+                    }}
+                  />
+                </Field>
+
+                <Field
+                  label={tr("Tablets/Capsules per Pata (১ পাতায় সংখ্যা)")}
+                  hint={tr("Standard is 10, some are 6 or 4")}
+                >
+                  <Input
+                    type="number"
+                    min={1}
+                    max={100}
+                    step="1"
+                    value={f.medicineMeta.unitsPerStrip ?? 10}
+                    onChange={(e) => {
+                      const units = Math.max(1, parseInt(e.target.value, 10) || 10);
+                      const pataPrice = Number(f.sellingPrice) || 0;
+                      const calculatedUnit = pataPrice > 0 ? (pataPrice / units).toFixed(2) : f.medicineMeta?.mrpUnit;
+                      set("medicineMeta", {
+                        ...f.medicineMeta,
+                        unitsPerStrip: units,
+                        mrpUnit: calculatedUnit !== undefined ? Number(calculatedUnit) : f.medicineMeta?.mrpUnit,
+                      });
+                    }}
+                  />
+                </Field>
+
+                <Field
+                  label={tr("1 Khuchra Tablet Price (১টি খুচরা ট্যাবলেটের মূল্য ৳)")}
+                  hint={tr("Auto: Pata Price ÷ Tabs per Pata")}
+                >
+                  <div className="flex gap-1.5">
+                    <Input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={f.medicineMeta.mrpUnit ?? ""}
+                      onChange={(e) => {
+                        set("medicineMeta", {
+                          ...f.medicineMeta,
+                          mrpUnit: e.target.value === "" ? null : Number(e.target.value),
+                        });
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      title={tr("Recalculate: Pata ÷ Count")}
+                      onClick={() => {
+                        const pataPrice = Number(f.sellingPrice) || 0;
+                        const units = f.medicineMeta?.unitsPerStrip ? Number(f.medicineMeta.unitsPerStrip) : 10;
+                        if (pataPrice > 0 && units > 0) {
+                          set("medicineMeta", {
+                            ...f.medicineMeta,
+                            mrpUnit: Number((pataPrice / units).toFixed(2)),
+                          });
+                          toast.success(tr("Recalculated unit price"));
+                        }
+                      }}
+                      className="px-2 text-xs shrink-0"
+                    >
+                      <RefreshCw className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </Field>
+              </div>
+
+              {Number(f.sellingPrice) > 0 && (
+                <div className="mt-2.5 rounded-md border border-emerald-500/20 bg-emerald-50/50 p-2.5 text-xs text-emerald-800 dark:bg-emerald-950/20 dark:text-emerald-300 flex items-center justify-between">
+                  <span>
+                    💡 <b>1 Pata:</b> ৳{Number(f.sellingPrice).toFixed(2)} ({f.medicineMeta.unitsPerStrip ?? 10} tabs) ·{" "}
+                    <b>1 Khuchra Tab:</b> ৳{Number(f.medicineMeta.mrpUnit || (Number(f.sellingPrice) / (f.medicineMeta.unitsPerStrip ?? 10))).toFixed(2)}
+                  </span>
+                  <span className="text-[11px] text-muted-foreground">
+                    {tr("Customers can buy either the full pata or single tablets at these rates.")}
+                  </span>
+                </div>
+              )}
+            </Section>
+          )}
           <Section title={tr("Scheduled discount")} description={tr("The promo price switches on and off by itself between the two dates. Leave the price empty for no discount.")}>
             <div className="grid gap-3 sm:grid-cols-4">
               <Field label={tr("Promo price ৳")} error={errs.discountPrice}><Input type="number" min={0} step="0.01" value={f.discountPrice} onChange={(e) => set("discountPrice", e.target.value)} /></Field>

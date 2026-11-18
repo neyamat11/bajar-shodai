@@ -10,6 +10,7 @@ export interface MedicineMeta {
   strength: string;
   manufacturer: string;
   type: "OTC" | "PRESCRIPTION";
+  unitsPerStrip?: number | null;
   medexUrl?: string | null;
   medexId?: number | null;
   lastSyncedAt?: string | null;

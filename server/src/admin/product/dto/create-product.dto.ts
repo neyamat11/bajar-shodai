@@ -170,6 +170,12 @@ export class MedicineMetaInputDto {
   @IsIn(['OTC', 'PRESCRIPTION'])
   type?: 'OTC' | 'PRESCRIPTION';
 
+  @ApiPropertyOptional({ example: 10, default: 10 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  unitsPerStrip?: number;
+
   @ApiPropertyOptional({ example: 'https://medex.com.bd/brands/10592/napa-extra-500-mg-tablet' })
   @IsOptional()
   @IsString()

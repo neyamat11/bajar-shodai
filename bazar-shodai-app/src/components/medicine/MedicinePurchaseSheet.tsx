@@ -59,6 +59,7 @@ export function MedicinePurchaseSheet({
 }: MedicinePurchaseSheetProps) {
   const unitsPerStrip =
     product.unitsPerStrip ||
+    product.meta?.unitsPerStrip ||
     parseUnitsPerStrip(
       product.meta || {
         dosageForm: product.dosageForm,
