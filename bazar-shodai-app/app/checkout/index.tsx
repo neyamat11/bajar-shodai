@@ -179,20 +179,28 @@ export default function CheckoutScreen() {
   const isLocationSelected = !!gpsLocation;
   const isLocationPending = !isLocationSelected && !skipLocation;
   const isPendingFee = skipLocation || serverSummary?.shipping?.isPendingFee || (!isLocationSelected && !serverSummary?.shipping?.available);
+  const baseDelivery = dynamicDeliveryFee !== null ? dynamicDeliveryFee : deliveryCharge;
+  const currentDelivery = isPendingFee || isLocationPending ? 0 : baseDelivery;
+  const effectiveDeliveryCost = (isPendingFee || isLocationPending)
+    ? 0
+    : (serverSummary?.shippingCost !== undefined ? serverSummary.shippingCost : currentDelivery);
+
   const siteThreshold = siteSettings?.delivery?.freeDeliveryThreshold ?? null;
   const isThresholdFree = typeof siteThreshold === 'number' && siteThreshold > 0 && sub >= siteThreshold;
-  const isFreeDelivery = isLocationSelected && ((serverSummary?.shipping?.available === true && serverSummary?.shippingCost === 0 && !serverSummary?.shipping?.isPendingFee) || isThresholdFree);
-  const baseDelivery = dynamicDeliveryFee !== null ? dynamicDeliveryFee : deliveryCharge;
-  const currentDelivery = isPendingFee || isLocationPending ? 0 : (isFreeDelivery ? 0 : baseDelivery);
+  const isFreeDelivery = !isLocationPending && !isPendingFee && effectiveDeliveryCost === 0 && (
+    Boolean(serverSummary?.loyalty?.milestone?.freeShippingApplied) ||
+    Boolean(isThresholdFree) ||
+    (serverSummary?.shipping?.available === true && serverSummary?.shippingCost === 0)
+  );
   const couponDiscount = serverSummary?.discountAmount ?? (coupon?.discount ?? 0);
   const pointsDiscount = usePoints ? (serverSummary?.pointsDiscountAmount ?? 0) : 0;
   const grandTotal = isLocationPending || isPendingFee
     ? Math.max(0, sub - couponDiscount - pointsDiscount)
-    : (serverSummary?.total ?? Math.max(0, sub - couponDiscount - pointsDiscount + currentDelivery));
+    : (serverSummary?.total ?? Math.max(0, sub - couponDiscount - pointsDiscount + effectiveDeliveryCost));
 
   const summaryData: CheckoutSummaryData = useMemo(() => ({
     subtotal: serverSummary?.subtotal ?? sub,
-    deliveryCost: (isLocationPending || isPendingFee) ? 0 : (serverSummary?.shippingCost ?? currentDelivery),
+    deliveryCost: effectiveDeliveryCost,
     isFreeDelivery,
     distanceKm: serverSummary?.shipping?.distanceKm ?? gpsLocation?.distanceKm,
     isPendingFee,
@@ -223,7 +231,7 @@ export default function CheckoutScreen() {
     } : null,
     pointsDiscountAmount: pointsDiscount,
     grandTotal,
-  }), [serverSummary, sub, currentDelivery, isFreeDelivery, isPendingFee, isLocationPending, gpsLocation, skipLocation, coupon, pointsDiscount, grandTotal]);
+  }), [serverSummary, sub, effectiveDeliveryCost, isFreeDelivery, isPendingFee, isLocationPending, gpsLocation, skipLocation, coupon, pointsDiscount, grandTotal]);
 
   // Fast sub-3s GPS detection using native fused provider & optimistic local pinning
   const handleShareLocation = async () => {

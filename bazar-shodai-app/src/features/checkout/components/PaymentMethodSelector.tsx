@@ -19,6 +19,7 @@ interface MethodOption {
   icon: string;
   badge?: string;
   themeColor: string;
+  bgColor: string;
 }
 
 const ALL_METHODS: MethodOption[] = [
@@ -29,6 +30,7 @@ const ALL_METHODS: MethodOption[] = [
     icon: 'Banknote',
     badge: 'POPULAR',
     themeColor: '#0b6234',
+    bgColor: '#f0fdf4',
   },
   {
     id: 'BKASH',
@@ -36,6 +38,7 @@ const ALL_METHODS: MethodOption[] = [
     subtitle: 'অফিসিয়াল বিকাশ নম্বরে পেমেন্ট / সেন্ড মানি করুন',
     icon: 'Smartphone',
     themeColor: '#e2136e',
+    bgColor: '#fdf2f8',
   },
   {
     id: 'NAGAD',
@@ -43,6 +46,7 @@ const ALL_METHODS: MethodOption[] = [
     subtitle: 'অফিসিয়াল নগদ নম্বরে পেমেন্ট / সেন্ড মানি করুন',
     icon: 'Smartphone',
     themeColor: '#f7941d',
+    bgColor: '#fff7ed',
   },
   {
     id: 'ROCKET',
@@ -50,6 +54,7 @@ const ALL_METHODS: MethodOption[] = [
     subtitle: 'ডাচ্-বাংলা ব্যাংক রকেট ট্রান্সফার',
     icon: 'Smartphone',
     themeColor: '#8c3494',
+    bgColor: '#faf5ff',
   },
 ];
 
@@ -95,33 +100,72 @@ export function PaymentMethodSelector({
               }}
               style={[
                 styles.methodCard,
-                isSelected && { borderColor: method.themeColor, backgroundColor: '#ffffff' },
+                isSelected && {
+                  borderColor: method.themeColor,
+                  backgroundColor: method.bgColor,
+                },
               ]}
               activeOpacity={0.8}
             >
-              <View style={[styles.radioCircle, isSelected && { borderColor: method.themeColor }]}>
-                {isSelected && (
-                  <View style={[styles.radioDot, { backgroundColor: method.themeColor }]} />
-                )}
+              {/* Left: Brand Icon Box */}
+              <View
+                style={[
+                  styles.iconBox,
+                  {
+                    backgroundColor: isSelected ? '#ffffff' : method.bgColor,
+                    borderColor: isSelected ? method.themeColor : '#e2e8f0',
+                  },
+                ]}
+              >
+                <Icon
+                  name={method.id === 'CASH_ON_DELIVERY' ? 'Banknote' : 'Smartphone'}
+                  size={20}
+                  color={method.themeColor}
+                />
               </View>
 
+              {/* Middle: Method Info */}
               <View style={styles.methodInfo}>
                 <View style={styles.nameRow}>
-                  <Text style={styles.methodName}>{method.name}</Text>
+                  <Text
+                    style={[
+                      styles.methodName,
+                      isSelected && { color: method.themeColor },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {method.name}
+                  </Text>
                   {method.badge && (
                     <View style={styles.badge}>
                       <Text style={styles.badgeText}>{method.badge}</Text>
                     </View>
                   )}
                 </View>
-                <Text style={styles.methodSubtitle}>{method.subtitle}</Text>
+                <Text style={styles.methodSubtitle} numberOfLines={2}>
+                  {method.subtitle}
+                </Text>
               </View>
 
-              <Icon
-                name={method.id === 'CASH_ON_DELIVERY' ? 'Banknote' : 'Smartphone'}
-                size={20}
-                color={isSelected ? method.themeColor : '#9ca3af'}
-              />
+              {/* Right: Radio Indicator */}
+              <View
+                style={[
+                  styles.radioCircle,
+                  isSelected && {
+                    borderColor: method.themeColor,
+                    backgroundColor: '#ffffff',
+                  },
+                ]}
+              >
+                {isSelected && (
+                  <View
+                    style={[
+                      styles.radioDot,
+                      { backgroundColor: method.themeColor },
+                    ]}
+                  />
+                )}
+              </View>
             </TouchableOpacity>
           );
         })}
@@ -164,12 +208,56 @@ const styles = StyleSheet.create({
     padding: 12,
     gap: 12,
   },
+  iconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  methodInfo: {
+    flex: 1,
+    minWidth: 0,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  methodName: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#111827',
+    flexShrink: 1,
+  },
+  badge: {
+    backgroundColor: '#dcfce7',
+    paddingHorizontal: 5,
+    paddingVertical: 1.5,
+    borderRadius: 4,
+    borderWidth: 0.5,
+    borderColor: '#86efac',
+    flexShrink: 0,
+  },
+  badgeText: {
+    fontSize: 8.5,
+    fontWeight: '800',
+    color: '#15803d',
+    letterSpacing: 0.5,
+  },
+  methodSubtitle: {
+    fontSize: 11,
+    color: '#6b7280',
+    marginTop: 2,
+    lineHeight: 15,
+  },
   radioCircle: {
     width: 20,
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: '#9ca3af',
+    borderColor: '#cbd5e1',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -177,34 +265,5 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-  },
-  methodInfo: {
-    flex: 1,
-  },
-  nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  methodName: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  badge: {
-    backgroundColor: '#ecfdf5',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: Radius.sm,
-  },
-  badgeText: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: '#0b6234',
-  },
-  methodSubtitle: {
-    fontSize: 11,
-    color: '#6b7280',
-    marginTop: 2,
   },
 });

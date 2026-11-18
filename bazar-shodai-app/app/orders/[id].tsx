@@ -444,10 +444,10 @@ export default function OrderDetailScreen() {
                   <Text style={styles.itemProductNameBn}>{item.productNameBn}</Text>
                 )}
                 <Text style={styles.itemUnitDetails}>
-                  {item.quantity} {item.unit || 'unit'} x ৳{item.unitPrice}
+                  {item.quantity} {item.unit || (item as any).unitLabelBn || (item as any).unitLabel || (isBn ? 'টি' : 'unit')} x ৳{item.unitPrice || (item as any).price || 0}
                 </Text>
               </View>
-              <Price amount={item.totalPrice} size="sm" />
+              <Price amount={item.totalPrice || (item as any).total || (item.quantity * (item.unitPrice || (item as any).price || 0))} size="sm" />
             </View>
           ))}
         </View>
@@ -461,7 +461,7 @@ export default function OrderDetailScreen() {
 
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Subtotal</Text>
-            <Price amount={order.subtotal} size="sm" />
+            <Price amount={order.subtotal ?? 0} size="sm" />
           </View>
 
           {order.discountAmount > 0 && (
@@ -477,10 +477,10 @@ export default function OrderDetailScreen() {
               <Text style={{ fontSize: 13, fontWeight: '700', color: '#d97706' }}>
                 {isBn ? 'নির্দিষ্ট হয়নি (স্টোর থেকে যাচাই) (৳—)' : 'Not specified (Store verification) (৳—)'}
               </Text>
-            ) : order.deliveryFee === 0 ? (
+            ) : (order.deliveryFee === 0 || (order as any).shippingCost === 0) ? (
               <Text style={styles.freeText}>FREE</Text>
             ) : (
-              <Price amount={order.deliveryFee} size="sm" />
+              <Price amount={order.deliveryFee ?? (order as any).shippingCost ?? 0} size="sm" />
             )}
           </View>
 
@@ -488,7 +488,7 @@ export default function OrderDetailScreen() {
 
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Total Payable</Text>
-            <Price amount={order.totalAmount} size="lg" />
+            <Price amount={order.totalAmount ?? (order as any).total ?? 0} size="lg" />
           </View>
 
           <View style={styles.methodRow}>

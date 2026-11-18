@@ -2,17 +2,57 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/client';
 import { CustomerOrderRecord } from '../types';
 
+export function normalizeCustomerOrder(raw: any): CustomerOrderRecord {
+  if (!raw || typeof raw !== 'object') return raw;
+
+  const subtotal = Number(raw.subtotal ?? 0);
+  const deliveryFee = Number(raw.deliveryFee ?? raw.shippingCost ?? 0);
+  const discountAmount = Number(raw.discountAmount ?? 0);
+  const totalAmount = Number(
+    raw.totalAmount ?? raw.total ?? (subtotal + deliveryFee - discountAmount),
+  );
+
+  const items = Array.isArray(raw.items)
+    ? raw.items.map((item: any) => {
+        const quantity = Number(item.quantity ?? 1);
+        const unitPrice = Number(item.unitPrice ?? item.price ?? 0);
+        const totalPrice = Number(
+          item.totalPrice ?? item.total ?? quantity * unitPrice,
+        );
+        const unit = item.unit || item.unitLabelBn || item.unitLabel || 'unit';
+
+        return {
+          ...item,
+          quantity,
+          unitPrice,
+          totalPrice,
+          unit,
+        };
+      })
+    : [];
+
+  return {
+    ...raw,
+    subtotal,
+    deliveryFee,
+    discountAmount,
+    totalAmount,
+    items,
+  };
+}
+
 export async function fetchCustomerOrdersApi(): Promise<CustomerOrderRecord[]> {
   try {
-    const res = await api.get<CustomerOrderRecord[]>('/customer/orders');
-    return Array.isArray(res) ? res : [];
+    const res = await api.get<any[]>('/customer/orders');
+    return Array.isArray(res) ? res.map(normalizeCustomerOrder) : [];
   } catch {
     return [];
   }
 }
 
 export async function fetchOrderDetailApi(orderId: string): Promise<CustomerOrderRecord> {
-  return api.get<CustomerOrderRecord>(`/customer/orders/${encodeURIComponent(orderId)}`);
+  const res = await api.get<any>(`/customer/orders/${encodeURIComponent(orderId)}`);
+  return normalizeCustomerOrder(res);
 }
 
 export async function cancelOrderApi(

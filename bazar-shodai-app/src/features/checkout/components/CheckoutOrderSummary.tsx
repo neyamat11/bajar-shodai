@@ -236,8 +236,10 @@ export function CheckoutOrderSummary({
             <Text style={styles.pendingFeeText}>নির্দিষ্ট হয়নি</Text>
           ) : summary.isPendingFee ? (
             <Text style={styles.pendingFeeText}>নির্দিষ্ট হয়নি (স্টোর থেকে যাচাই)</Text>
-          ) : summary.isFreeDelivery ? (
-            <Text style={styles.freeText}>ফ্রি (FREE)</Text>
+          ) : summary.deliveryCost === 0 && summary.isFreeDelivery ? (
+            <Text style={styles.freeText}>
+              {summary.loyalty?.milestone?.freeShippingApplied ? 'মাইলস্টোন ফ্রি' : 'ফ্রি (FREE)'}
+            </Text>
           ) : (
             <Price amount={summary.deliveryCost} size="sm" />
           )}
