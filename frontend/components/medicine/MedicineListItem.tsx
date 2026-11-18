@@ -399,8 +399,8 @@ export default function MedicineListItem({ product, onOpenDetail }: MedicineList
             type="button"
             onClick={handleToggleWishlist}
             aria-label="Wishlist"
-            className={`flex size-8 sm:size-9 items-center justify-center rounded-lg border border-border bg-background transition-colors hover:text-destructive hover:border-destructive/30 ${
-              inVault ? "text-destructive border-destructive/30" : "text-muted-foreground"
+            className={`flex size-8 sm:size-9 items-center justify-center rounded-lg border border-border bg-background transition-colors hover:text-destructive hover:border-destructive/30 shrink-0 ${
+              inVault ? "text-destructive border-destructive/30 bg-rose-50/50 dark:bg-rose-950/20" : "text-muted-foreground"
             }`}
           >
             <Heart
@@ -411,7 +411,7 @@ export default function MedicineListItem({ product, onOpenDetail }: MedicineList
 
           {/* Cart Button or Stepper */}
           {line ? (
-            <div className="flex items-center rounded-lg border border-primary bg-primary text-primary-foreground shadow-sm h-8 sm:h-9">
+            <div className="flex items-center rounded-lg border border-primary bg-primary text-primary-foreground shadow-sm h-8 sm:h-9 shrink-0">
               <button
                 type="button"
                 onClick={fewer}
@@ -437,14 +437,25 @@ export default function MedicineListItem({ product, onOpenDetail }: MedicineList
               type="button"
               disabled={outOfStock}
               onClick={handleAddToCart}
-              aria-label={locale === "bn" ? "কার্টে যোগ করুন" : "Add to Cart"}
-              title={locale === "bn" ? "কার্টে যোগ করুন" : "Add to Cart"}
-              className="flex size-8 sm:size-9 md:w-auto md:px-3.5 items-center justify-center md:gap-2 rounded-lg font-medium text-xs bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white shadow-sm disabled:opacity-50 disabled:pointer-events-none transition-all"
+              aria-label={outOfStock ? (locale === "bn" ? "স্টক শেষ" : "Out of Stock") : (locale === "bn" ? "কিনুন" : "Buy")}
+              title={outOfStock ? (locale === "bn" ? "স্টক শেষ" : "Out of Stock") : (locale === "bn" ? "কিনুন" : "Buy")}
+              className="flex h-8 sm:h-9 px-2.5 sm:px-3 md:px-3.5 items-center justify-center gap-1 sm:gap-1.5 rounded-lg font-bold text-xs bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white shadow-sm disabled:opacity-50 disabled:pointer-events-none transition-all whitespace-nowrap shrink-0"
             >
-              <Plus className="size-4 md:hidden" />
-              <ShoppingCart className="hidden md:inline size-3.5" />
-              <span className="hidden md:inline">
-                {locale === "bn" ? "কার্টে যোগ করুন" : "Add to Cart"}
+              {!outOfStock && (
+                <>
+                  <Plus className="size-3.5 sm:size-4 shrink-0 md:hidden" />
+                  <ShoppingCart className="hidden md:inline size-3.5 shrink-0" />
+                </>
+              )}
+              <span className="md:hidden text-[11.5px] font-bold leading-none">
+                {outOfStock
+                  ? (locale === "bn" ? "স্টক শেষ" : "Stock Out")
+                  : (locale === "bn" ? "কিনুন" : "Buy")}
+              </span>
+              <span className="hidden md:inline font-medium">
+                {outOfStock
+                  ? (locale === "bn" ? "স্টক শেষ" : "Stock Out")
+                  : (locale === "bn" ? "কার্টে যোগ করুন" : "Add to Cart")}
               </span>
             </button>
           )}

@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Radius } from '@/constants/layout';
 import { useCartStore } from '@/store/useCartStore';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useSiteSettings } from '@/services/siteService';
 import { useServerCart, clearServerCartApi } from '@/features/cart/api/cartApi';
 import { FreeShippingProgressBar } from '@/features/cart/components/FreeShippingProgressBar';
 import { CouponInput } from '@/features/cart/components/CouponInput';
@@ -32,16 +33,23 @@ export default function CartScreen() {
     totalPrice,
     coupon,
     deliveryCharge,
-    freeDeliveryThreshold,
+    setFreeDeliveryThreshold,
   } = useCartStore();
 
+  const { data: siteSettings } = useSiteSettings();
   const { refetch, isRefetching } = useServerCart();
+
+  const siteThreshold = siteSettings?.delivery?.freeDeliveryThreshold ?? null;
+
+  React.useEffect(() => {
+    setFreeDeliveryThreshold(siteThreshold);
+  }, [siteThreshold, setFreeDeliveryThreshold]);
 
   const rawSub = subtotal();
   const sub = typeof rawSub === 'number' && !isNaN(rawSub) ? rawSub : 0;
   const rawTotal = totalPrice();
   const grandTotal = typeof rawTotal === 'number' && !isNaN(rawTotal) ? rawTotal : 0;
-  const isFreeDelivery = sub >= freeDeliveryThreshold;
+  const isFreeDelivery = typeof siteThreshold === 'number' && siteThreshold > 0 && sub >= siteThreshold;
   const currentDeliveryFee = sub > 0 ? (isFreeDelivery ? 0 : deliveryCharge) : 0;
   const discountAmount = Number(coupon?.discount) || 0;
 
@@ -99,9 +107,9 @@ export default function CartScreen() {
         }
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={
-          items.length > 0 ? (
+          items.length > 0 && typeof siteThreshold === 'number' && siteThreshold > 0 ? (
             <View style={styles.listHeader}>
-              <FreeShippingProgressBar subtotal={sub} threshold={freeDeliveryThreshold} />
+              <FreeShippingProgressBar subtotal={sub} threshold={siteThreshold} />
             </View>
           ) : undefined
         }

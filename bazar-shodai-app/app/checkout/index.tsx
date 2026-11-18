@@ -57,7 +57,7 @@ export default function CheckoutScreen() {
   const router = useRouter();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
-  const { items, subtotal, coupon, deliveryCharge, freeDeliveryThreshold, setCoupon } = useCartStore();
+  const { items, subtotal, coupon, deliveryCharge, setCoupon } = useCartStore();
   const { data: siteSettings } = useSiteSettings();
 
   // Wizard Step: 1 = Shipping, 2 = Location & Slot, 3 = Payment, 4 = Review
@@ -179,7 +179,9 @@ export default function CheckoutScreen() {
   const isLocationSelected = !!gpsLocation;
   const isLocationPending = !isLocationSelected && !skipLocation;
   const isPendingFee = skipLocation || serverSummary?.shipping?.isPendingFee || (!isLocationSelected && !serverSummary?.shipping?.available);
-  const isFreeDelivery = isLocationSelected && ((serverSummary?.shipping?.available === true && serverSummary?.shippingCost === 0 && !serverSummary?.shipping?.isPendingFee) || (sub >= freeDeliveryThreshold));
+  const siteThreshold = siteSettings?.delivery?.freeDeliveryThreshold ?? null;
+  const isThresholdFree = typeof siteThreshold === 'number' && siteThreshold > 0 && sub >= siteThreshold;
+  const isFreeDelivery = isLocationSelected && ((serverSummary?.shipping?.available === true && serverSummary?.shippingCost === 0 && !serverSummary?.shipping?.isPendingFee) || isThresholdFree);
   const baseDelivery = dynamicDeliveryFee !== null ? dynamicDeliveryFee : deliveryCharge;
   const currentDelivery = isPendingFee || isLocationPending ? 0 : (isFreeDelivery ? 0 : baseDelivery);
   const couponDiscount = serverSummary?.discountAmount ?? (coupon?.discount ?? 0);

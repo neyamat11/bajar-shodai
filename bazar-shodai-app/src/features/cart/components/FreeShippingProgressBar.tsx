@@ -6,18 +6,22 @@ import { formatBdt } from '@/utils/format';
 
 export interface FreeShippingProgressBarProps {
   subtotal: number;
-  threshold?: number;
+  threshold?: number | null;
 }
 
 export function FreeShippingProgressBar({
   subtotal,
-  threshold = 500,
+  threshold,
 }: FreeShippingProgressBarProps) {
+  if (typeof threshold !== 'number' || isNaN(threshold) || threshold <= 0) {
+    return null;
+  }
+
   const safeSubtotal = typeof subtotal === 'number' && !isNaN(subtotal) ? subtotal : 0;
-  const safeThreshold = typeof threshold === 'number' && !isNaN(threshold) ? threshold : 500;
+  const safeThreshold = threshold;
   const isUnlocked = safeSubtotal >= safeThreshold;
   const remaining = Math.max(0, safeThreshold - safeSubtotal);
-  const percentage = Math.min(100, Math.round((safeSubtotal / (safeThreshold || 1)) * 100));
+  const percentage = Math.min(100, Math.round((safeSubtotal / safeThreshold) * 100));
 
   return (
     <View style={styles.container}>

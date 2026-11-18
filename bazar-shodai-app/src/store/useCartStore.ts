@@ -27,7 +27,7 @@ interface CartState {
   items: CartItem[];
   coupon: AppliedCoupon | null;
   deliveryCharge: number;
-  freeDeliveryThreshold: number;
+  freeDeliveryThreshold: number | null;
 
   totalItems: () => number;
   subtotal: () => number;
@@ -40,6 +40,7 @@ interface CartState {
   setItems: (items: CartItem[]) => void;
   setCoupon: (coupon: AppliedCoupon | null) => void;
   setDeliveryCharge: (charge: number) => void;
+  setFreeDeliveryThreshold: (threshold: number | null) => void;
   syncCartFromServer: () => Promise<void>;
 }
 
@@ -99,7 +100,7 @@ export const useCartStore = create<CartState>((set, get) => ({
   items: loadSavedCart(),
   coupon: loadSavedCoupon(),
   deliveryCharge: 40,
-  freeDeliveryThreshold: 500,
+  freeDeliveryThreshold: null,
 
   totalItems: () => {
     return get().items.reduce((total, item) => total + (Number(item.quantity) || 1), 0);
@@ -116,9 +117,9 @@ export const useCartStore = create<CartState>((set, get) => ({
   totalPrice: () => {
     const sub = get().subtotal();
     const discount = Number(get().coupon?.discount) || 0;
-    const threshold = Number(get().freeDeliveryThreshold) || 500;
+    const threshold = get().freeDeliveryThreshold;
     const charge = Number(get().deliveryCharge) || 40;
-    const isFreeDelivery = sub >= threshold;
+    const isFreeDelivery = typeof threshold === 'number' && threshold > 0 && sub >= threshold;
     const delivery = sub > 0 ? (isFreeDelivery ? 0 : charge) : 0;
     return Math.max(0, sub - discount + delivery);
   },
@@ -235,6 +236,10 @@ export const useCartStore = create<CartState>((set, get) => ({
 
   setDeliveryCharge: (charge) => {
     set({ deliveryCharge: charge });
+  },
+
+  setFreeDeliveryThreshold: (threshold) => {
+    set({ freeDeliveryThreshold: threshold });
   },
 
   syncCartFromServer: async () => {
