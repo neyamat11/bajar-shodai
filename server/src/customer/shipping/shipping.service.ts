@@ -67,6 +67,7 @@ export function publicDelivery(d: DeliverySettings) {
     slots: d.slots,
     restrictToZone: d.restrictToZone ?? true,
     distanceCalculation: d.distanceCalculation ?? 'direct',
+    routeFactor: typeof d.routeFactor === 'number' && d.routeFactor > 0 ? d.routeFactor : 1.3,
   };
 }
 
@@ -144,7 +145,9 @@ export class ShippingService {
     const roadKm = Math.max(route.km, directKm);
 
     const isDirect = (d.distanceCalculation ?? 'direct') === 'direct';
-    const chargedKm = isDirect ? directKm : roadKm;
+    const factor = typeof d.routeFactor === 'number' && d.routeFactor > 0 ? d.routeFactor : 1;
+    const directWithFactorKm = Math.round(directKm * factor * 100) / 100;
+    const chargedKm = isDirect ? directWithFactorKm : roadKm;
     const fee = feeForDistance(chargedKm, d);
 
     const qualifiesForFree = !!input.allItemsFreeShipping || (threshold !== null && subtotal >= threshold);

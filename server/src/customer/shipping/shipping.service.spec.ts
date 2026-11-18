@@ -22,11 +22,19 @@ describe('ShippingService.quote', () => {
   });
 
   it('charges by direct distance when distanceCalculation is direct (default)', async () => {
-    const q = await make({ distanceCalculation: 'direct' }, { km: 9, seconds: 1200, estimated: false }).service.quote(500, { lat: 23.25, lng: 90.9 });
-    expect(q.distanceKm).toBe(5.56);
-    expect(q.directDistanceKm).toBe(5.56);
-    expect(q.roadDistanceKm).toBe(9);
-    expect(q.calculatedFee).toBe(60);
+    // With route multiplier applied (e.g. 1.3x for winding village roads: 5.56 * 1.3 = 7.23 km)
+    const qWithFactor = await make({ distanceCalculation: 'direct', routeFactor: 1.3 }, { km: 9, seconds: 1200, estimated: false }).service.quote(500, { lat: 23.25, lng: 90.9 });
+    expect(qWithFactor.distanceKm).toBe(7.23);
+    expect(qWithFactor.directDistanceKm).toBe(5.56);
+    expect(qWithFactor.roadDistanceKm).toBe(9);
+    expect(qWithFactor.calculatedFee).toBe(80);
+
+    // With route multiplier disabled / set to 1.0 (pure straight line distance: 5.56 km)
+    const qNoFactor = await make({ distanceCalculation: 'direct', routeFactor: 1 }, { km: 9, seconds: 1200, estimated: false }).service.quote(500, { lat: 23.25, lng: 90.9 });
+    expect(qNoFactor.distanceKm).toBe(5.56);
+    expect(qNoFactor.directDistanceKm).toBe(5.56);
+    expect(qNoFactor.roadDistanceKm).toBe(9);
+    expect(qNoFactor.calculatedFee).toBe(60);
   });
 
   it('prices by road distance with the formula', async () => {

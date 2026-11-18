@@ -84,7 +84,7 @@ export function DeliveryForm({ v, tileUrl }: { v: DeliverySettings; tileUrl: str
       freeDeliveryThreshold: f.freeDeliveryThreshold === "" ? null : Number(f.freeDeliveryThreshold),
       openFrom: f.openFrom,
       openTo: f.openTo,
-      routeFactor: num(f.routeFactor) || 1.3,
+      routeFactor: Number.isFinite(num(f.routeFactor)) && num(f.routeFactor) >= 1 ? num(f.routeFactor) : 1.3,
       restrictToZone: f.restrictToZone,
       distanceCalculation: f.distanceCalculation ?? "direct",
       defaultDeliveryMinutes: num(f.defaultDeliveryMinutes) || 90,
@@ -140,7 +140,7 @@ export function DeliveryForm({ v, tileUrl }: { v: DeliverySettings; tileUrl: str
           <Field label={tr("Base charge ৳")}><Input type="number" min={0} value={f.baseCharge} onChange={(e) => setF({ ...f, baseCharge: e.target.value })} /></Field>
           <Field label={tr("Then ৳ per step")}><Input type="number" min={0} value={f.perKmRate} onChange={(e) => setF({ ...f, perKmRate: e.target.value })} /></Field>
           <Field label={tr("Step length (km)")}><Input type="number" min={0.1} step="0.1" value={f.stepKm} onChange={(e) => setF({ ...f, stepKm: e.target.value })} /></Field>
-          <Field label={tr("No road found: × straight line")} hint={tr("Used for an estimate only")}><Input type="number" min={1} max={3} step="0.05" value={f.routeFactor} onChange={(e) => setF({ ...f, routeFactor: e.target.value })} /></Field>
+          <Field label={tr("Road distance multiplier (× straight line)")} hint={tr("Multiplies direct distance by this factor (e.g. 1.2 or 1.3 for winding village roads). Set to 1.0 to turn off.")}><Input type="number" min={1} max={3} step="0.05" value={f.routeFactor} onChange={(e) => setF({ ...f, routeFactor: e.target.value })} /></Field>
         </div>
         {ratesOk && (
           <div className="mt-4 rounded-md border border-border bg-muted/40 p-3">

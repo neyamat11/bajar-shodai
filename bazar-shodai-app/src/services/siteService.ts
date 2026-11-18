@@ -31,6 +31,7 @@ export interface DeliveryConfig {
   slots?: DeliverySlot[];
   restrictToZone?: boolean;
   distanceCalculation?: 'direct' | 'road';
+  routeFactor?: number;
 }
 
 export interface MapsConfig {

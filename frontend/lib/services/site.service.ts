@@ -61,6 +61,7 @@ export interface DeliveryConfig {
   freeDeliveryThreshold: number | null;
   slots: DeliverySlot[];
   distanceCalculation?: 'direct' | 'road';
+  routeFactor?: number;
 }
 /** What the browser needs to draw the map (the secret server keys never reach it). */
 export interface MapsConfig {
@@ -89,7 +90,7 @@ const FALLBACK: SiteSettings = {
     hero: { layout: 'SLIDER_AND_SIDE', maxSlides: 5, autoplayIntervalSec: 6 },
   },
   payment: { methods: ['CASH_ON_DELIVERY'], bkash: null, nagad: null, rocket: null },
-  delivery: { enabled: true, shopOpen: true, openFrom: '08:00', openTo: '22:00', originSet: false, origin: null, serviceRadiusKm: 20, baseKm: 2, baseCharge: 20, perKmRate: 10, stepKm: 1, minOrderAmount: 0, freeDeliveryThreshold: null, slots: [], distanceCalculation: 'direct' },
+  delivery: { enabled: true, shopOpen: true, openFrom: '08:00', openTo: '22:00', originSet: false, origin: null, serviceRadiusKm: 20, baseKm: 2, baseCharge: 20, perKmRate: 10, stepKm: 1, minOrderAmount: 0, freeDeliveryThreshold: null, slots: [], distanceCalculation: 'direct', routeFactor: 1.3 },
   maps: { provider: 'osm', googleBrowserKey: null, osmTileUrl: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', enableMapSearch: true, dynamicPlaceNames: false, distanceCalculation: 'direct' },
   returns: { returnsEnabled: true, returnWindowDays: 7, policyText: null },
 };

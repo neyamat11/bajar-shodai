@@ -297,13 +297,16 @@ export default function CheckoutScreen() {
       const coords = result.coords;
 
       // 1. OPTIMISTIC LOCAL PINNING (Immediate 0ms pin drop & local fee calculation from Kalibari Hub)
-      const distKm = calculateHaversineDistanceKm(
+      const rawDistKm = calculateHaversineDistanceKm(
         KALIBARI_HUB.latitude,
         KALIBARI_HUB.longitude,
         coords.latitude,
         coords.longitude,
       );
-      const localFee = calculateLocalDeliveryFee(distKm);
+      const isDirectCalc = (siteSettings?.delivery?.distanceCalculation ?? 'direct') === 'direct';
+      const routeFactor = isDirectCalc && typeof siteSettings?.delivery?.routeFactor === 'number' && siteSettings.delivery.routeFactor > 0 ? siteSettings.delivery.routeFactor : 1;
+      const distKm = Math.round(rawDistKm * routeFactor * 10) / 10;
+      const localFee = calculateLocalDeliveryFee(distKm, sub);
 
       setGpsLocation({
         lat: coords.latitude,
@@ -395,12 +398,15 @@ export default function CheckoutScreen() {
   // Handle Map Pin Drag / Click
   const handlePinChange = async (coords: { lat: number; lng: number }) => {
     // Optimistic local distance & fee calculation
-    const distKm = calculateHaversineDistanceKm(
+    const rawDistKm = calculateHaversineDistanceKm(
       coords.lat,
       coords.lng,
       KALIBARI_HUB.latitude,
       KALIBARI_HUB.longitude
     );
+    const isDirectCalc = (siteSettings?.delivery?.distanceCalculation ?? 'direct') === 'direct';
+    const routeFactor = isDirectCalc && typeof siteSettings?.delivery?.routeFactor === 'number' && siteSettings.delivery.routeFactor > 0 ? siteSettings.delivery.routeFactor : 1;
+    const distKm = Math.round(rawDistKm * routeFactor * 10) / 10;
     const localFee = calculateLocalDeliveryFee(distKm, sub);
     setDynamicDeliveryFee(localFee);
     setGpsLocation({
