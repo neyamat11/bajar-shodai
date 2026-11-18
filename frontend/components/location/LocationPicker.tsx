@@ -237,11 +237,11 @@ export default function LocationPicker({
               <div>
                 <p className="text-xs font-bold text-foreground">
                   {isAbroadOrder
-                    ? (locale === "bn" ? "প্রবাসী অর্ডার (লোকেশন পিন ছাড়া)" : "Abroad Order (No pin needed)")
-                    : (locale === "bn" ? "লোকেশন পিন ছাড়া অর্ডার" : "Order without Location Pin")}
+                    ? (locale === "bn" ? "প্রবাসী অর্ডার (লোকেশন সেট ছাড়া)" : "Abroad Order (No location set needed)")
+                    : (locale === "bn" ? "লোকেশন সেট ছাড়া অর্ডার" : "Order without Location Set")}
                 </p>
                 <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
-                  {locale === "bn" ? "ডেলিভারি ফি: দোকান থেকে যাচাই সাপেক্ষে (৳—)" : "Delivery Fee: To be confirmed by store (৳—)"}
+                  {locale === "bn" ? "ডেলিভারি ফি: নির্দিষ্ট হয়নি (স্টোর থেকে যাচাই) (৳—)" : "Delivery Fee: Not specified (Store verification) (৳—)"}
                 </p>
               </div>
             </div>
@@ -324,7 +324,7 @@ export default function LocationPicker({
                   />
                   <p className="mt-1 text-[11px] text-muted-foreground">
                     {locale === "bn"
-                      ? "অর্ডারের তথ্য ও ডেলিভারি যাচাই করতে দোকান থেকে এই নম্বরে যোগাযোগ করা হবে।"
+                      ? "অর্ডারের তথ্য ও ডেলিভারি যাচাই করতে স্টোর থেকে এই নম্বরে যোগাযোগ করা হবে।"
                       : "Store staff will reach out to this number to verify the order and recipient details."}
                   </p>
                 </div>
@@ -527,7 +527,7 @@ export default function LocationPicker({
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
                       {locale === "bn"
-                        ? "কোনো সমস্যা নেই! ম্যাপে পিন ছাড়াই আপনি অর্ডারটি সম্পন্ন করতে পারেন। আমাদের টিম সরাসরি আপনার সাথে যোগাযোগ করে ডেলিভারি নিশ্চিত করবে।"
+                        ? "কোনো সমস্যা নেই! লোকেশন সেট ছাড়াই আপনি অর্ডারটি সম্পন্ন করতে পারেন। আমাদের টিম সরাসরি আপনার সাথে যোগাযোগ করে ডেলিভারি নিশ্চিত করবে।"
                         : "No problem! You can complete your order without setting a location pin. Our team will verify delivery directly with your family."}
                     </p>
                   </div>
@@ -542,7 +542,7 @@ export default function LocationPicker({
                     }}
                     className="w-full rounded bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold py-2 px-3 transition-colors shadow"
                   >
-                    {locale === "bn" ? "লোকেশন পিন ছাড়া এগিয়ে যান" : "Continue without location pin"}
+                    {locale === "bn" ? "লোকেশন সেট ছাড়া এগিয়ে যান" : "Continue without location set"}
                   </button>
                 )}
               </div>
@@ -569,12 +569,12 @@ export default function LocationPicker({
                       <div>
                         <p className="text-xs font-bold text-foreground">
                           {locale === "bn"
-                            ? "প্রবাসী অথবা দূর থেকে অর্ডার? লোকেশন পিন ছাড়া অর্ডার করুন"
-                            : "Ordering from abroad or remote? Order without location pin"}
+                            ? "প্রবাসী অথবা দূর থেকে অর্ডার? লোকেশন সেট ছাড়া অর্ডার করুন"
+                            : "Ordering from abroad or remote? Order without location set"}
                         </p>
                         <p className="text-[11px] text-muted-foreground">
                           {locale === "bn"
-                            ? "ডেলিভারি চার্জ দোকান থেকে নিশ্চিত করা হবে (৳—)"
+                            ? "ডেলিভারি চার্জ পরে স্টোর থেকে নিশ্চিত করা হবে (৳—)"
                             : "Delivery fee will be confirmed by store (৳—)"}
                         </p>
                       </div>

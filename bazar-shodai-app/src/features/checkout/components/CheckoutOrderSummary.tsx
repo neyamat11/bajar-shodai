@@ -10,6 +10,7 @@ export interface CheckoutSummaryData {
   isFreeDelivery: boolean;
   distanceKm?: number;
   isPendingFee?: boolean;
+  isLocationPending?: boolean;
   coupon?: {
     code: string;
     discount: number;
@@ -231,8 +232,10 @@ export function CheckoutOrderSummary({
             )}
           </View>
 
-          {summary.isPendingFee ? (
-            <Text style={styles.pendingFeeText}>দোকান থেকে যাচাই সাপেক্ষে</Text>
+          {summary.isLocationPending ? (
+            <Text style={styles.pendingFeeText}>নির্দিষ্ট হয়নি</Text>
+          ) : summary.isPendingFee ? (
+            <Text style={styles.pendingFeeText}>নির্দিষ্ট হয়নি (স্টোর থেকে যাচাই)</Text>
           ) : summary.isFreeDelivery ? (
             <Text style={styles.freeText}>ফ্রি (FREE)</Text>
           ) : (

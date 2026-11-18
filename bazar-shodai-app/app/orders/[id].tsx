@@ -293,11 +293,11 @@ export default function OrderDetailScreen() {
               <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                   <Text style={styles.familyShareTitle}>
-                    {isBn ? 'ডেলিভারি লোকেশন এখনও নিশ্চিত করা হয়নি' : 'Delivery Location Needed'}
+                    {isBn ? 'ডেলিভারি লোকেশন এখনও নির্দিষ্ট হয়নি' : 'Delivery Location Not Specified'}
                   </Text>
                   <View style={styles.feePendingBadge}>
                     <Text style={styles.feePendingText}>
-                      {isBn ? 'ফি যাচাই সাপেক্ষে' : 'Fee Pending'}
+                      {isBn ? 'স্টোর থেকে যাচাই' : 'Store Verification'}
                     </Text>
                   </View>
                 </View>
@@ -475,7 +475,7 @@ export default function OrderDetailScreen() {
             <Text style={styles.summaryLabel}>Delivery Fee</Text>
             {order.deliveryFeePending ? (
               <Text style={{ fontSize: 13, fontWeight: '700', color: '#d97706' }}>
-                দোকান থেকে যাচাই সাপেক্ষে
+                {isBn ? 'নির্দিষ্ট হয়নি (স্টোর থেকে যাচাই) (৳—)' : 'Not specified (Store verification) (৳—)'}
               </Text>
             ) : order.deliveryFee === 0 ? (
               <Text style={styles.freeText}>FREE</Text>

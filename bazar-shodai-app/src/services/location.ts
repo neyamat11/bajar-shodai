@@ -1,4 +1,36 @@
 import * as Location from 'expo-location';
+import { Platform } from 'react-native';
+
+export const KALIBARI_HUB = {
+  latitude: 23.2452,
+  longitude: 90.9422,
+};
+
+export function calculateHaversineDistanceKm(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c * 10) / 10;
+}
+
+export function calculateLocalDeliveryFee(distanceKm: number, subtotal?: number): number {
+  if (subtotal !== undefined && subtotal >= 1000) return 0;
+  if (distanceKm <= 2) return 20;
+  const extraKm = Math.ceil(distanceKm - 2);
+  return 20 + extraKm * 10;
+}
 
 export interface Coordinates {
   latitude: number;
@@ -50,9 +82,20 @@ export async function checkLocationServicesEnabled(): Promise<boolean> {
  */
 export async function acquireLiveLocation(): Promise<LocationAcquireResult> {
   try {
-    const servicesEnabled = await checkLocationServicesEnabled();
+    let servicesEnabled = await checkLocationServicesEnabled();
     if (!servicesEnabled) {
-      return { success: false, error: 'SERVICES_DISABLED' };
+      // Directly trigger Google Play Services native system turn-on dialog on Android
+      if (Platform.OS === 'android') {
+        try {
+          await Location.enableNetworkProviderAsync();
+          servicesEnabled = await checkLocationServicesEnabled();
+        } catch {
+          // User dismissed or tapped 'No thanks'
+        }
+      }
+      if (!servicesEnabled) {
+        return { success: false, error: 'SERVICES_DISABLED' };
+      }
     }
 
     const hasPermission = await requestLocationPermission();

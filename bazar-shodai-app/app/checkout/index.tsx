@@ -10,6 +10,8 @@ import {
   ActivityIndicator,
   StyleSheet,
   Image,
+  Alert,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -30,7 +32,12 @@ import { CheckoutOrderSummary, CheckoutSummaryData } from '@/features/checkout/c
 import { CheckoutMapView } from '@/components/map/CheckoutMapView';
 import { useSubmitOrder } from '@/features/checkout/api/useSubmitOrder';
 import { shareLocationApi } from '@/features/location/api/myLocation';
-import { acquireLiveLocation } from '@/services/location';
+import {
+  acquireLiveLocation,
+  KALIBARI_HUB,
+  calculateHaversineDistanceKm,
+  calculateLocalDeliveryFee,
+} from '@/services/location';
 import { toast } from '@/store/useToastStore';
 import { haptics } from '@/services/haptics';
 import { useSiteSettings } from '@/services/siteService';
@@ -113,6 +120,11 @@ export default function CheckoutScreen() {
     staleTime: 1000 * 60 * 5,
   });
 
+  // Pre-warm Render backend on checkout entry to prevent cold-start delays on location step
+  useEffect(() => {
+    api.get('/health').catch(() => {});
+  }, []);
+
   // Prefill default saved address
   useEffect(() => {
     if (savedAddresses.length > 0 && !selectedSavedAddress) {
@@ -164,19 +176,25 @@ export default function CheckoutScreen() {
 
   // Calculate prices with fallback
   const sub = subtotal();
-  const isFreeDelivery = sub >= freeDeliveryThreshold;
+  const isLocationSelected = !!gpsLocation;
+  const isLocationPending = !isLocationSelected && !skipLocation;
+  const isPendingFee = skipLocation || serverSummary?.shipping?.isPendingFee || (!isLocationSelected && !serverSummary?.shipping?.available);
+  const isFreeDelivery = isLocationSelected && ((serverSummary?.shipping?.available === true && serverSummary?.shippingCost === 0 && !serverSummary?.shipping?.isPendingFee) || (sub >= freeDeliveryThreshold));
   const baseDelivery = dynamicDeliveryFee !== null ? dynamicDeliveryFee : deliveryCharge;
-  const currentDelivery = skipLocation ? 0 : (sub > 0 ? (isFreeDelivery ? 0 : baseDelivery) : 0);
+  const currentDelivery = isPendingFee || isLocationPending ? 0 : (isFreeDelivery ? 0 : baseDelivery);
   const couponDiscount = serverSummary?.discountAmount ?? (coupon?.discount ?? 0);
   const pointsDiscount = usePoints ? (serverSummary?.pointsDiscountAmount ?? 0) : 0;
-  const grandTotal = serverSummary?.total ?? Math.max(0, sub - couponDiscount - pointsDiscount + currentDelivery);
+  const grandTotal = isLocationPending || isPendingFee
+    ? Math.max(0, sub - couponDiscount - pointsDiscount)
+    : (serverSummary?.total ?? Math.max(0, sub - couponDiscount - pointsDiscount + currentDelivery));
 
   const summaryData: CheckoutSummaryData = useMemo(() => ({
     subtotal: serverSummary?.subtotal ?? sub,
-    deliveryCost: serverSummary?.shippingCost ?? currentDelivery,
-    isFreeDelivery: serverSummary ? serverSummary.shippingCost === 0 : isFreeDelivery,
+    deliveryCost: (isLocationPending || isPendingFee) ? 0 : (serverSummary?.shippingCost ?? currentDelivery),
+    isFreeDelivery,
     distanceKm: serverSummary?.shipping?.distanceKm ?? gpsLocation?.distanceKm,
-    isPendingFee: skipLocation || serverSummary?.shipping?.isPendingFee,
+    isPendingFee,
+    isLocationPending,
     coupon: serverSummary?.coupon?.applied ? {
       code: serverSummary.coupon.code,
       discount: serverSummary.coupon.discount,
@@ -203,9 +221,9 @@ export default function CheckoutScreen() {
     } : null,
     pointsDiscountAmount: pointsDiscount,
     grandTotal,
-  }), [serverSummary, sub, currentDelivery, isFreeDelivery, gpsLocation, skipLocation, coupon, pointsDiscount, grandTotal]);
+  }), [serverSummary, sub, currentDelivery, isFreeDelivery, isPendingFee, isLocationPending, gpsLocation, skipLocation, coupon, pointsDiscount, grandTotal]);
 
-  // Fast sub-3s GPS detection using native fused provider
+  // Fast sub-3s GPS detection using native fused provider & optimistic local pinning
   const handleShareLocation = async () => {
     try {
       setIsLocating(true);
@@ -215,14 +233,36 @@ export default function CheckoutScreen() {
       if (!result.success) {
         haptics.error();
         if (result.error === 'SERVICES_DISABLED') {
-          toast.warning(
+          Alert.alert(
             'GPS বন্ধ আছে',
-            'আপনার ফোনের লোকেশন / GPS চালু করুন যাতে সঠিক অবস্থান শনাক্ত করা যায়।',
+            'আপনার ফোনের লোকেশন / GPS চালু করুন যাতে সঠিক অবস্থান শনাক্ত করা যায়, অথবা লোকেশন সেট ছাড়াই এগিয়ে যান।',
+            [
+              {
+                text: 'লোকেশন সেট ছাড়া এগিয়ে যান',
+                onPress: () => {
+                  setSkipLocation(true);
+                  setCurrentStep(3);
+                },
+              },
+              { text: 'সেটিংস খুলুন', onPress: () => Linking.openSettings() },
+              { text: 'বাতিল', style: 'cancel' },
+            ],
           );
         } else if (result.error === 'PERMISSION_DENIED') {
-          toast.warning(
+          Alert.alert(
             'লোকেশন অনুমতি প্রয়োজন',
-            'স্বয়ংক্রিয় অবস্থানের জন্য অ্যাপের লোকেশন পারমিশন দিন, অথবা নিচের মানচিত্রে সরাসরি পিন বসান।',
+            'স্বয়ংক্রিয় অবস্থানের জন্য অ্যাপের লোকেশন পারমিশন দিন, অথবা লোকেশন সেট ছাড়াও অর্ডার সম্পন্ন করতে পারেন।',
+            [
+              {
+                text: 'লোকেশন সেট ছাড়া এগিয়ে যান',
+                onPress: () => {
+                  setSkipLocation(true);
+                  setCurrentStep(3);
+                },
+              },
+              { text: 'সেটিংস খুলুন', onPress: () => Linking.openSettings() },
+              { text: 'বাতিল', style: 'cancel' },
+            ],
           );
         } else {
           toast.info(
@@ -234,63 +274,88 @@ export default function CheckoutScreen() {
       }
 
       const coords = result.coords;
-      const res = await shareLocationApi({
-        lat: coords.latitude,
-        lng: coords.longitude,
-        accuracyM: coords.accuracy ?? undefined,
-        source: 'GPS',
-        phone: phone.trim() || undefined,
-        subtotal: sub,
-      });
 
-      const blockReason = res.quote?.block;
-      if (blockReason === 'OUT_OF_AREA') {
-        if (res.quote?.isAbroad) {
-          setIsAbroadOrder(true);
-          setSkipLocation(true);
-          setLocationBlock(null);
-          haptics.success();
-          toast.info(
-            'আপনি দেশের বাইরে থেকে অর্ডার করছেন!',
-            'লোকেশন পিন ছাড়াই অর্ডার সম্পন্ন করতে পারেন। আমাদের টিম সরাসরি আপনার সাথে যোগাযোগ করবে।',
-          );
-          return;
-        }
-        setLocationBlock('OUT_OF_AREA');
-        haptics.error();
-        toast.error(
-          'ডেলিভারি সীমার বাইরে',
-          'দুঃখিত, এই এলাকাটি আমাদের ডেলিভারি সীমার বাইরে। আমাদের কেন্দ্র থেকে সর্বোচ্চ ডেলিভারি সীমা অতিক্রম করেছে।',
-        );
-        return;
-      }
-
-      setLocationBlock(null);
-      const placeName = res.location?.placeName || res.placeName || res.location?.placeNameBn || res.placeNameBn || '';
-      const distance = res.quote?.distanceKm ?? res.distanceKm;
+      // 1. OPTIMISTIC LOCAL PINNING (Immediate 0ms pin drop & local fee calculation from Kalibari Hub)
+      const distKm = calculateHaversineDistanceKm(
+        KALIBARI_HUB.latitude,
+        KALIBARI_HUB.longitude,
+        coords.latitude,
+        coords.longitude,
+      );
+      const localFee = calculateLocalDeliveryFee(distKm);
 
       setGpsLocation({
         lat: coords.latitude,
         lng: coords.longitude,
-        placeName,
-        placeNameBn: res.location?.placeNameBn || res.placeNameBn,
-        distanceKm: distance,
+        distanceKm: distKm,
         accuracyM: coords.accuracy ?? undefined,
       });
-
-      if (res.quote?.calculatedFee !== undefined) {
-        setDynamicDeliveryFee(res.quote.calculatedFee);
-      }
-
-      if (!addressLine.trim() && placeName) {
-        setAddressLine(placeName);
-      }
-
+      setDynamicDeliveryFee(localFee);
+      setLocationBlock(null);
       haptics.success();
-      toast.success(
-        'লোকেশন যুক্ত হয়েছে',
-        placeName ? `${placeName} (${distance !== undefined ? distance.toFixed(1) : ''} কিমি)` : 'আপনার সঠিক অবস্থান যুক্ত হয়েছে',
-      );
+
+      // 2. RESILIENT BACKGROUND SERVER SYNC (Never unpins or throws GPS error if server is cold)
+      try {
+        const res = await shareLocationApi({
+          lat: coords.latitude,
+          lng: coords.longitude,
+          accuracyM: coords.accuracy ?? undefined,
+          source: 'GPS',
+          phone: phone.trim() || undefined,
+          subtotal: sub,
+        });
+
+        const blockReason = res.quote?.block;
+        if (blockReason === 'OUT_OF_AREA') {
+          if (res.quote?.isAbroad) {
+            setIsAbroadOrder(true);
+            setSkipLocation(true);
+            setLocationBlock(null);
+            toast.info(
+              'আপনি দেশের বাইরে থেকে অর্ডার করছেন!',
+              'লোকেশন সেট ছাড়াই অর্ডার সম্পন্ন করতে পারেন। আমাদের টিম সরাসরি আপনার সাথে যোগাযোগ করবে।',
+            );
+            return;
+          }
+          setLocationBlock('OUT_OF_AREA');
+          toast.error(
+            'ডেলিভারি সীমার বাইরে',
+            'দুঃখিত, এই এলাকাটি আমাদের ডেলিভারি সীমার বাইরে। আমাদের কেন্দ্র থেকে সর্বোচ্চ ডেলিভারি সীমা অতিক্রম করেছে।',
+          );
+          return;
+        }
+
+        const placeName = res.location?.placeName || res.placeName || res.location?.placeNameBn || res.placeNameBn || '';
+        const distance = res.quote?.distanceKm ?? res.distanceKm ?? distKm;
+
+        setGpsLocation((prev) => ({
+          lat: coords.latitude,
+          lng: coords.longitude,
+          placeName: placeName || prev?.placeName,
+          placeNameBn: res.location?.placeNameBn || res.placeNameBn,
+          distanceKm: distance,
+          accuracyM: coords.accuracy ?? undefined,
+        }));
+
+        if (res.quote?.calculatedFee !== undefined) {
+          setDynamicDeliveryFee(res.quote.calculatedFee);
+        }
+
+        if (!addressLine.trim() && placeName) {
+          setAddressLine(placeName);
+        }
+
+        toast.success(
+          'লোকেশন যুক্ত হয়েছে',
+          placeName ? `${placeName} (${distance.toFixed(1)} কিমি)` : `সঠিক অবস্থান যুক্ত হয়েছে (${distance.toFixed(1)} কিমি)`,
+        );
+      } catch {
+        // Render cold start or network delay: Local GPS is securely preserved!
+        toast.success(
+          'লোকেশন যুক্ত হয়েছে',
+          `আপনার বর্তমান অবস্থান পিন করা হয়েছে (${distKm.toFixed(1)} কিমি)`,
+        );
+      }
 
       if (result.isCoarse) {
         toast.info(
@@ -300,7 +365,7 @@ export default function CheckoutScreen() {
       }
     } catch {
       haptics.error();
-      toast.error('লোকেশন ত্রুটি', 'আপনার বর্তমান অবস্থান পাওয়া যায়নি। মোবাইলের GPS চালু আছে কিনা নিশ্চিত করুন।');
+      toast.error('লোকেশন ত্রুটি', 'আপনার বর্তমান অবস্থান পাওয়া যায়নি।');
     } finally {
       setIsLocating(false);
     }
@@ -308,6 +373,24 @@ export default function CheckoutScreen() {
 
   // Handle Map Pin Drag / Click
   const handlePinChange = async (coords: { lat: number; lng: number }) => {
+    // Optimistic local distance & fee calculation
+    const distKm = calculateHaversineDistanceKm(
+      coords.lat,
+      coords.lng,
+      KALIBARI_HUB.latitude,
+      KALIBARI_HUB.longitude
+    );
+    const localFee = calculateLocalDeliveryFee(distKm, sub);
+    setDynamicDeliveryFee(localFee);
+    setGpsLocation({
+      lat: coords.lat,
+      lng: coords.lng,
+      distanceKm: distKm,
+      accuracyM: 10,
+    });
+    setSkipLocation(false);
+    setLocationBlock(null);
+
     try {
       const res = await shareLocationApi({
         lat: coords.lat,
@@ -335,7 +418,7 @@ export default function CheckoutScreen() {
 
       setLocationBlock(null);
       const placeName = res.location?.placeName || res.placeName || res.location?.placeNameBn || res.placeNameBn || '';
-      const distance = res.quote?.distanceKm ?? res.distanceKm;
+      const distance = res.quote?.distanceKm ?? res.distanceKm ?? distKm;
 
       setGpsLocation({
         lat: coords.lat,
@@ -352,12 +435,7 @@ export default function CheckoutScreen() {
 
       haptics.selection();
     } catch {
-      setGpsLocation((prev) => ({
-        lat: coords.lat,
-        lng: coords.lng,
-        placeName: prev?.placeName,
-        distanceKm: prev?.distanceKm,
-      }));
+      // Local calculation already applied and preserved
     }
   };
 
@@ -407,9 +485,9 @@ export default function CheckoutScreen() {
       toast.error('ডেলিভারি সীমার বাইরে', 'আপনার নির্বাচিত অবস্থান আমাদের ডেলিভারি সীমার বাইরে।');
       return;
     }
+    // Location is optional: if no pin is selected and skip wasn't explicitly toggled, proceed with skipLocation = true (Store verification)
     if (!skipLocation && !gpsLocation) {
-      toast.warning('লোকেশন নির্ধারণ করুন', 'ম্যাপে পিন নির্বাচন করুন অথবা "আমার বর্তমান লোকেশন দিন" চাপুন।');
-      return;
+      setSkipLocation(true);
     }
     if (skipLocation && isAbroadOrder) {
       if (!senderCountry.trim()) {
@@ -761,42 +839,45 @@ export default function CheckoutScreen() {
                 </View>
               )}
 
-              {/* Skip Pin Button (if out of area) */}
-              {!skipLocation && locationBlock === 'OUT_OF_AREA' && (
+              {/* Skip Location / Abroad Option */}
+              {!skipLocation && (
                 <TouchableOpacity
                   style={styles.skipPinBtn}
-                  onPress={() => setSkipLocation(true)}
+                  onPress={() => {
+                    setSkipLocation(true);
+                    haptics.selection();
+                  }}
                   activeOpacity={0.8}
                 >
                   <Icon name="Globe" size={18} color="#0b6234" />
                   <View style={{ flex: 1 }}>
                     <Text style={styles.skipPinBtnTitle}>
-                      প্রবাসী অথবা দূর থেকে অর্ডার? লোকেশন পিন ছাড়া অর্ডার করুন
+                      প্রবাসী অথবা দূর থেকে অর্ডার? লোকেশন সেট ছাড়া অর্ডার করুন
                     </Text>
                     <Text style={styles.skipPinBtnSub}>
-                      ডেলিভারি চার্জ পরে দোকান থেকে যাচাই সাপেক্ষে (৳—)
+                      ডেলিভারি চার্জ পরে স্টোর থেকে নিশ্চিত করা হবে (৳—)
                     </Text>
                   </View>
                   <Icon name="ChevronRight" size={16} color="#0b6234" />
                 </TouchableOpacity>
               )}
 
-              {/* Skip Pin / Abroad Order Card */}
+              {/* Skip Location / Abroad Order Card */}
               {skipLocation && (
                 <View style={styles.abroadCard}>
                   <View style={styles.abroadHeader}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
                       <Icon name="Globe" size={18} color="#0b6234" />
                       <Text style={styles.abroadTitle}>
-                        {isAbroadOrder ? 'প্রবাসী অর্ডার (লোকেশন পিন ছাড়া)' : 'লোকেশন পিন ছাড়া অর্ডার'}
+                        {isAbroadOrder ? 'প্রবাসী অর্ডার (লোকেশন সেট ছাড়া)' : 'লোকেশন সেট ছাড়া অর্ডার'}
                       </Text>
                     </View>
                     <TouchableOpacity onPress={() => setSkipLocation(false)}>
-                      <Text style={styles.abroadCancelText}>GPS দিন</Text>
+                      <Text style={styles.abroadCancelText}>ম্যাপে লোকেশন দিন</Text>
                     </TouchableOpacity>
                   </View>
                   <Text style={styles.abroadFeeNotice}>
-                    ডেলিভারি ফি: দোকান থেকে যাচাই সাপেক্ষে (৳—)
+                    ডেলিভারি ফি: নির্দিষ্ট হয়নি (স্টোর থেকে যাচাই) (৳—)
                   </Text>
 
                   <TouchableOpacity
@@ -904,6 +985,22 @@ export default function CheckoutScreen() {
                   />
                 </View>
               </View>
+
+              {!skipLocation && !gpsLocation && (
+                <TouchableOpacity
+                  style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 4 }}
+                  onPress={() => {
+                    setSkipLocation(true);
+                    haptics.selection();
+                    setCurrentStep(3);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={{ fontSize: 13, fontWeight: '600', color: '#0b6234', textDecorationLine: 'underline' }}>
+                    লোকেশন সেট ছাড়া এগিয়ে যান →
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           )}
 
@@ -980,7 +1077,7 @@ export default function CheckoutScreen() {
                 ) : null}
                 <Text style={styles.reviewBadgeText}>
                   {skipLocation
-                    ? (isAbroadOrder ? '🌐 প্রবাসী অর্ডার (লোকেশন পিন ছাড়া)' : '🌐 লোকেশন পিন ছাড়া অর্ডার')
+                    ? (isAbroadOrder ? '🌐 প্রবাসী অর্ডার (লোকেশন সেট ছাড়া)' : '🌐 লোকেশন সেট ছাড়া অর্ডার')
                     : gpsLocation?.placeName
                       ? `📍 ${gpsLocation.placeName} (${gpsLocation.distanceKm !== undefined ? gpsLocation.distanceKm.toFixed(1) : ''} কিমি)`
                       : '📍 ম্যাপ পিন যুক্ত হয়েছে'}

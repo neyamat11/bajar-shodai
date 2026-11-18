@@ -175,10 +175,10 @@ function Detail() {
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <h3 className="font-outfit text-base sm:text-lg font-bold text-foreground">
-                  {locale === "bn" ? "ডেলিভারি লোকেশন এখনও নিশ্চিত করা হয়নি" : "Delivery location is not shared yet"}
+                  {locale === "bn" ? "ডেলিভারি লোকেশন এখনও নির্দিষ্ট হয়নি" : "Delivery location not specified yet"}
                 </h3>
                 <span className="rounded bg-amber-500/20 px-2 py-0.5 text-[11px] font-bold text-amber-700 dark:text-amber-300">
-                  {locale === "bn" ? "ফি যাচাই সাপেক্ষে" : "Fee Pending"}
+                  {locale === "bn" ? "স্টোর থেকে যাচাই" : "Store Verification"}
                 </span>
               </div>
               <p className="mt-1.5 text-sm text-foreground/85 leading-relaxed font-medium">

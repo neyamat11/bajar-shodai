@@ -78,11 +78,11 @@ export default function OrderConfirmationScreen() {
               <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                   <Text style={styles.familyShareTitle}>
-                    {isBn ? 'ডেলিভারি লোকেশন বাকি আছে' : 'Delivery Location Needed'}
+                    {isBn ? 'ডেলিভারি লোকেশন এখনও নির্দিষ্ট হয়নি' : 'Delivery Location Not Specified'}
                   </Text>
                   <View style={styles.feePendingBadge}>
                     <Text style={styles.feePendingText}>
-                      {isBn ? 'ফি যাচাই সাপেক্ষে' : 'Fee Pending'}
+                      {isBn ? 'স্টোর থেকে যাচাই' : 'Store Verification'}
                     </Text>
                   </View>
                 </View>
