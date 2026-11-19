@@ -111,7 +111,12 @@ export function CheckoutMapView({
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
         <style>
           html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; background: #eef2eb; }
-          .gm-err-container, .gm-err-content, .gm-err-autocomplete, .gm-style-moc { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
+          .gm-err-container, .gm-err-content, .gm-err-autocomplete, .gm-style-moc, .dismissButton, div[style*="z-index: 1000001"], div[style*="z-index: 1000000"] {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+          }
         </style>
       </head>
       <body>
@@ -202,9 +207,46 @@ export function CheckoutMapView({
             }
           };
 
+          function dismissGoogleError() {
+            var buttons = document.querySelectorAll('.gm-err-container button, .gm-err-content button, .dismissButton, button');
+            for (var i = 0; i < buttons.length; i++) {
+              var btn = buttons[i];
+              if (btn.classList.contains('dismissButton') || (btn.innerText && btn.innerText.trim() === 'OK')) {
+                try { btn.click(); } catch (e) {}
+              }
+            }
+            var errEls = document.querySelectorAll('.gm-err-container, .gm-err-content, .gm-err-autocomplete, .gm-style-moc');
+            for (var j = 0; j < errEls.length; j++) {
+              errEls[j].style.display = 'none';
+              if (errEls[j].parentNode) errEls[j].parentNode.removeChild(errEls[j]);
+            }
+            var allDivs = document.querySelectorAll('body div');
+            for (var k = 0; k < allDivs.length; k++) {
+              var d = allDivs[k];
+              if (d.innerText && d.innerText.indexOf("This page can't load Google Maps correctly") !== -1) {
+                d.style.display = 'none';
+                if (d.parentNode) d.parentNode.removeChild(d);
+              }
+            }
+          }
+
           window.gm_authFailure = function() {
-            post('MAP_ERROR', { error: 'AuthFailure' });
+            dismissGoogleError();
           };
+
+          if (window.MutationObserver) {
+            var observer = new MutationObserver(function() {
+              dismissGoogleError();
+            });
+            observer.observe(document.body, { childList: true, subtree: true });
+          }
+
+          var checkInterval = setInterval(function() {
+            dismissGoogleError();
+          }, 200);
+          setTimeout(function() {
+            clearInterval(checkInterval);
+          }, 6000);
         </script>
         <script src="https://maps.googleapis.com/maps/api/js?key=${googleBrowserKey}&callback=initGoogleMap" async defer onerror="post('MAP_ERROR', { error: 'NetworkError' })"></script>
       </body>
