@@ -47,6 +47,7 @@ export class HeroConfigDto {
 
 export class SocialLinksDto {
   @ApiPropertyOptional() @IsOptional() @IsString() facebook?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() whatsapp?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() instagram?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() youtube?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() tiktok?: string;
