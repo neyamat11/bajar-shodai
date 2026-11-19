@@ -21,7 +21,7 @@ export function HeroSliderSection({ banners, className = '' }: HeroSliderSection
   const formattedBanners: BannerItem[] = mainBanners.map((b) => ({
     id: b.id,
     title: b.title || '',
-    imageUrl: b.imageUrl || b.mobileImageUrl || '',
+    imageUrl: b.mobileImageUrl || b.imageUrl || '',
     linkUrl: b.linkUrl || undefined,
   }));
 

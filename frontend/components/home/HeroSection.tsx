@@ -49,7 +49,7 @@ function BannerSlide({
         <>
           {/* Mobile view (< md): Prefer high-quality uncropped banner without artificial top margin */}
           <Image
-            src={b.imageUrl || b.mobileImageUrl}
+            src={b.mobileImageUrl || b.imageUrl}
             alt={b.title ?? t("bannerAlt")}
             fill
             priority={priority}
@@ -161,8 +161,8 @@ function Slider({
       onTouchEnd={handleTouchEnd}
       className={`relative h-full w-full overflow-hidden rounded border border-border bg-secondary touch-pan-y select-none ${
         fullWidth
-          ? "aspect-[16/9] sm:aspect-[16/8] md:aspect-[16/7.5] min-h-[220px] sm:min-h-[380px] md:min-h-[460px] lg:min-h-[500px]"
-          : "aspect-[16/10] sm:aspect-[16/9] min-h-[220px] sm:min-h-[340px] md:min-h-[440px] lg:aspect-auto lg:h-full lg:min-h-0"
+          ? "aspect-[16/9] sm:aspect-[16/8] md:aspect-[16/7.5] min-h-[160px] sm:min-h-[380px] md:min-h-[460px] lg:min-h-[500px]"
+          : "aspect-[16/10] sm:aspect-[16/9] min-h-[160px] sm:min-h-[340px] md:min-h-[440px] lg:aspect-auto lg:h-full lg:min-h-0"
       }`}
     >
       {banners.map((b, idx) => (
