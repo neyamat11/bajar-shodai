@@ -45,19 +45,8 @@ export function useGeolocation() {
 
     setLoading(true);
 
-    return new Promise(async (resolve) => {
+    return new Promise((resolve) => {
       let resolved = false;
-
-      // Check whether site permission was explicitly denied in browser settings
-      let isPermissionExplicitlyDenied = false;
-      if (typeof navigator !== "undefined" && navigator.permissions?.query) {
-        try {
-          const perm = await navigator.permissions.query({ name: "geolocation" as PermissionName });
-          isPermissionExplicitlyDenied = perm.state === "denied";
-        } catch {
-          // ignore
-        }
-      }
 
       const finish = (result: GeoFix | null, err?: GeoError) => {
         if (resolved) return;
@@ -86,11 +75,6 @@ export function useGeolocation() {
           });
         },
         (primaryErr) => {
-          // If browser site permission is explicitly denied in browser settings, don't attempt fallback
-          if (primaryErr.code === primaryErr.PERMISSION_DENIED && isPermissionExplicitlyDenied) {
-            return finish(null, "denied");
-          }
-
           // 2. Fallback: If satellite GPS is taking time or indoor, attempt network-based position (cellular / Wi-Fi)
           navigator.geolocation.getCurrentPosition(
             (fallbackPos) => {
@@ -104,11 +88,7 @@ export function useGeolocation() {
             },
             (fallbackErr) => {
               const code = fallbackErr.code || primaryErr.code;
-              if (code === primaryErr.PERMISSION_DENIED) {
-                // If site permission is denied in browser, show "denied".
-                // Otherwise phone's GPS / Location service is turned off, so show "unavailable"
-                finish(null, isPermissionExplicitlyDenied ? "denied" : "unavailable");
-              } else if (code === primaryErr.TIMEOUT) {
+              if (code === primaryErr.TIMEOUT) {
                 finish(null, "timeout");
               } else {
                 finish(null, "unavailable");

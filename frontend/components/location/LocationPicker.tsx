@@ -66,6 +66,7 @@ export default function LocationPicker({
   const [quote, setQuote] = useState<DeliveryQuote | null>(null);
   const [quoting, setQuoting] = useState(false);
   const [saved, setSaved] = useState<PickedLocation | null>(null);
+  const [showLocationModal, setShowLocationModal] = useState(false);
   const [query, setQuery] = useState("");
   const [found, setFound] = useState<FoundPlace[] | null>(null);
   const [searching, setSearching] = useState(false);
@@ -146,8 +147,12 @@ export default function LocationPicker({
   const shopName = delivery?.origin ? (locale === "bn" ? delivery.origin.labelBn : delivery.origin.label).split(",")[0] : "";
 
   const shareMyLocation = useCallback(async () => {
+    setShowLocationModal(false);
     const fix = await geo.locate();
-    if (!fix) return;
+    if (!fix) {
+      setShowLocationModal(true);
+      return;
+    }
     const picked: PickedLocation = { lat: fix.lat, lng: fix.lng, accuracyM: fix.accuracyM, source: "GPS" };
     onChange(picked);
     setFitKey(key5(picked));
@@ -344,11 +349,84 @@ export default function LocationPicker({
         {geo.loading ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /> : <Crosshair className="h-5 w-5" aria-hidden="true" />}
         {geo.loading ? t("finding") : value?.source === "GPS" ? t("shareAgain") : t("share")}
       </button>
-      {geo.error && (
-        <p role="alert" className="flex items-start gap-2 rounded border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-sm font-medium text-destructive">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-          {t(`geoError.${geo.error}`)}
-        </p>
+      {/* Location (GPS) Guidance Modal */}
+      {showLocationModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setShowLocationModal(false)}
+        >
+          <div
+            className="relative w-full max-w-sm rounded-xl border border-border bg-card p-6 shadow-2xl space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              type="button"
+              onClick={() => setShowLocationModal(false)}
+              className="absolute right-3.5 top-3.5 rounded-full p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              aria-label="Close"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            {/* Icon & Title */}
+            <div className="flex flex-col items-center text-center space-y-2.5">
+              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/15 text-primary ring-8 ring-primary/5">
+                <Navigation className="h-7 w-7" aria-hidden="true" />
+              </span>
+              <h3 className="font-outfit text-lg font-bold text-foreground">
+                {locale === "bn" ? "লোকেশন (GPS) চালু করুন" : "Turn on Device Location"}
+              </h3>
+            </div>
+
+            {/* Step One Guidance Box (Phone Notification Panel GPS) */}
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-3.5 text-xs text-foreground leading-relaxed">
+              <p className="font-semibold text-primary mb-1">
+                {locale === "bn" ? "সহজ নির্দেশনা:" : "Quick Step:"}
+              </p>
+              <p className="font-medium text-foreground/90">
+                {locale === "bn"
+                  ? "ফোনের উপর থেকে নোটিফিকেশন বারটি নিচে নামিয়ে Location (GPS) আইকনটি চালু করুন।"
+                  : "Swipe down the notification panel from the top of your screen and turn on the Location (GPS) icon."}
+              </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="space-y-2 pt-1">
+              <button
+                type="button"
+                onClick={() => void shareMyLocation()}
+                disabled={geo.loading}
+                className="flex w-full items-center justify-center gap-2 rounded bg-primary px-4 py-3 text-sm font-bold text-primary-foreground shadow-md transition-all hover:bg-primary/90 active:scale-[0.98] disabled:cursor-wait disabled:opacity-70"
+              >
+                {geo.loading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <Crosshair className="h-4 w-4" aria-hidden="true" />
+                )}
+                {geo.loading
+                  ? (locale === "bn" ? "অবস্থান খোঁজা হচ্ছে…" : "Locating…")
+                  : (locale === "bn" ? "আবার চেষ্টা করুন" : "Try Again")}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowLocationModal(false);
+                  const mapEl = document.getElementById("location-map-container");
+                  if (mapEl) {
+                    mapEl.scrollIntoView({ behavior: "smooth", block: "center" });
+                  }
+                }}
+                className="w-full rounded border border-border bg-card px-4 py-2.5 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              >
+                {locale === "bn" ? "মানচিত্রে পিন বেছে নিন" : "Pick on Map instead"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
       {geo.fix?.isCoarse && value?.source === "GPS" && (
         <div className="flex items-start gap-2 rounded border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-900 dark:text-amber-200">
@@ -454,6 +532,7 @@ export default function LocationPicker({
       {/* 3. the map */}
       {maps && (
         <div
+          id="location-map-container"
           data-lenis-prevent
           onWheel={(e) => e.stopPropagation()}
           className="relative z-0 isolate overflow-hidden rounded border border-border"
