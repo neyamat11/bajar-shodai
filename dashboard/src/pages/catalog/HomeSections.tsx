@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -7,6 +7,7 @@ import {
   Check,
   Edit2,
   Layers,
+  Loader2,
   PackagePlus,
   Plus,
   Save,
@@ -45,6 +46,7 @@ import { money } from "@/lib/format";
 import { tr } from "@/i18n";
 import { CardListSkeleton } from "@/components/shared/skeletons";
 import { useProductNameDisplay } from "@/lib/productName";
+import { useInfiniteList } from "@/hooks/useInfiniteList";
 
 const MAX_FEATURED = 18;
 
@@ -250,24 +252,63 @@ export default function HomeSections() {
     }
   };
 
-  // Modal product search
-  const { data: searchResult, isLoading: searching } = useQuery({
-    queryKey: ["home-section-product-search", searchTerm, selectedCat],
-    queryFn: () =>
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  // Modal product search with infinite scrolling (20 products per page)
+  const {
+    rows: searchRows,
+    total: totalSearchCount,
+    isLoading: searching,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteList(
+    ["home-section-product-search", searchTerm, selectedCat],
+    (page) =>
       productsApi.list({
         search: searchTerm,
         categoryId: selectedCat || undefined,
         status: "ACTIVE",
-        limit: 30,
+        page,
+        limit: 20,
       }),
-    enabled: modalOpen,
-  });
+    { enabled: modalOpen },
+  );
 
   const { data: categories } = useQuery({
     queryKey: ["categories"],
     queryFn: categoriesApi.list,
     enabled: modalOpen,
   });
+
+  // IntersectionObserver for infinite scrolling sentinel
+  useEffect(() => {
+    if (!modalOpen) return;
+    const el = sentinelRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      { threshold: 0.1 },
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [modalOpen, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  // Handle scroll event on container as immediate fallback
+  const handleModalScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    if (scrollHeight - scrollTop - clientHeight < 120) {
+      if (hasNextPage && !isFetchingNextPage) {
+        fetchNextPage();
+      }
+    }
+  };
 
   const selectedIds = useMemo(() => new Set(currentItems.map((i) => i.id)), [currentItems]);
 
@@ -602,72 +643,102 @@ export default function HomeSections() {
                 )}
               </div>
 
-              {/* Product Results */}
-              <div className="max-h-[380px] overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+              {/* Product Count & Scroll Hint */}
+              {!searching && searchRows.length > 0 && (
+                <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+                  <span>
+                    {tr(`Showing ${searchRows.length} of ${totalSearchCount} products`)}
+                  </span>
+                  {hasNextPage && (
+                    <span className="text-[11px] font-medium text-brand-fresh">
+                      {tr("Scroll down to load more")}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Product Results with Infinite Scrolling */}
+              <div
+                onScroll={handleModalScroll}
+                className="max-h-[380px] overflow-y-auto space-y-2 pr-1 custom-scrollbar"
+              >
                 {searching ? (
-                  <div className="py-8 text-center text-sm text-muted-foreground">
-                    {tr("Searching products...")}
+                  <div className="py-8 text-center text-sm text-muted-foreground flex items-center justify-center gap-2">
+                    <Loader2 className="size-4 animate-spin text-brand-fresh" />
+                    <span>{tr("Searching products...")}</span>
                   </div>
-                ) : !searchResult?.data || searchResult.data.length === 0 ? (
+                ) : searchRows.length === 0 ? (
                   <div className="py-8 text-center text-sm text-muted-foreground">
                     {tr("No products found matching your search.")}
                   </div>
                 ) : (
-                  searchResult.data.map((prod: ProductRow) => {
-                    const isAdded = selectedIds.has(prod.id);
-                    const isFull = currentItems.length >= maxItems;
-                    const nameInfo = formatName(prod);
+                  <>
+                    {searchRows.map((prod: ProductRow) => {
+                      const isAdded = selectedIds.has(prod.id);
+                      const isFull = currentItems.length >= maxItems;
+                      const nameInfo = formatName(prod);
 
-                    return (
-                      <div
-                        key={prod.id}
-                        className="flex items-center justify-between gap-3 rounded border border-border p-2.5 transition-colors hover:bg-muted/40"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <Thumb src={prod.mainImage} alt={nameInfo.primary} className="size-10 shrink-0" />
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold text-foreground">
-                              {nameInfo.primary}
-                            </p>
-                            <p className="truncate text-xs text-muted-foreground">
-                              {[
-                                nameInfo.secondary,
-                                prod.productCode,
-                                prod.categoryName,
-                                money(prod.sellingPrice),
-                              ]
-                                .filter(Boolean)
-                                .join(" · ")}
-                            </p>
+                      return (
+                        <div
+                          key={prod.id}
+                          className="flex items-center justify-between gap-3 rounded border border-border p-2.5 transition-colors hover:bg-muted/40"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <Thumb src={prod.mainImage} alt={nameInfo.primary} className="size-10 shrink-0" />
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-semibold text-foreground">
+                                {nameInfo.primary}
+                              </p>
+                              <p className="truncate text-xs text-muted-foreground">
+                                {[
+                                  nameInfo.secondary,
+                                  prod.productCode,
+                                  prod.categoryName,
+                                  money(prod.sellingPrice),
+                                ]
+                                  .filter(Boolean)
+                                  .join(" · ")}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div>
+                            {isAdded ? (
+                              <Badge
+                                variant="outline"
+                                className="gap-1 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+                              >
+                                <Check className="size-3" />
+                                {tr("Added")}
+                              </Badge>
+                            ) : (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                disabled={isFull}
+                                onClick={() => handleAdd(prod)}
+                                className="gap-1.5 h-8 text-xs font-semibold hover:border-brand-fresh hover:text-brand-fresh"
+                              >
+                                <Plus className="size-3.5" />
+                                {tr("Add")}
+                              </Button>
+                            )}
                           </div>
                         </div>
+                      );
+                    })}
 
-                        <div>
-                          {isAdded ? (
-                            <Badge
-                              variant="outline"
-                              className="gap-1 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-                            >
-                              <Check className="size-3" />
-                              {tr("Added")}
-                            </Badge>
-                          ) : (
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              disabled={isFull}
-                              onClick={() => handleAdd(prod)}
-                              className="gap-1.5 h-8 text-xs font-semibold hover:border-brand-fresh hover:text-brand-fresh"
-                            >
-                              <Plus className="size-3.5" />
-                              {tr("Add")}
-                            </Button>
-                          )}
-                        </div>
+                    {/* Sentinel for infinite scroll */}
+                    <div ref={sentinelRef} className="h-4" />
+
+                    {isFetchingNextPage && (
+                      <div className="py-3 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                        <Loader2 className="size-4 animate-spin text-brand-fresh" />
+                        <span>{tr("Loading more products...")}</span>
                       </div>
-                    );
-                  })
+                    )}
+                  </>
                 )}
               </div>
             </DialogBody>
