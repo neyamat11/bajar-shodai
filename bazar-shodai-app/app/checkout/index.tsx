@@ -662,7 +662,13 @@ export default function CheckoutScreen() {
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ScrollView ref={scrollViewRef} contentContainerStyle={styles.scrollContent}>
+        <ScrollView
+          ref={scrollViewRef}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          nestedScrollEnabled={true}
+          showsVerticalScrollIndicator={false}
+        >
           {/* Guest Notice Banner */}
           {!isAuthenticated && currentStep === 1 && (
             <View style={styles.guestNoticeCard}>
