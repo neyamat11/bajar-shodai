@@ -50,9 +50,11 @@ export class FeaturedProductsService {
     const products = await this.prisma.product.findMany({
       where: {
         isFeatured: true,
+        featuredOrder: { not: null },
       },
       select: featuredSelect,
       orderBy: [{ featuredOrder: 'asc' }, { id: 'asc' }],
+      take: 18,
     });
 
     return products.map((p) => ({

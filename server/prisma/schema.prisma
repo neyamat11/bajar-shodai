@@ -649,6 +649,7 @@ model Product {
   backInStockSubs   BackInStockSubscription[]
   recentlyViewed    RecentlyViewedProduct[]
   medicineMeta      MedicineMeta?
+  homeSectionItems  HomeSectionItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2018,3 +2019,36 @@ model ChatMessage {
   @@index([conversationId, createdAt])
   @@index([conversationId, id])
 }
+
+model HomeSection {
+  id           String            @id @default(uuid())
+  slug         String            @unique
+  title        String
+  titleBn      String?
+  subtitle     String?
+  subtitleBn   String?
+  categorySlug String?
+  displayOrder Int               @default(0)
+  maxProducts  Int               @default(6)
+  isActive     Boolean           @default(true)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  items        HomeSectionItem[]
+
+  @@index([isActive, displayOrder])
+}
+
+model HomeSectionItem {
+  id           String      @id @default(uuid())
+  sectionId    String
+  productId    String
+  displayOrder Int         @default(0)
+  createdAt    DateTime    @default(now())
+
+  section HomeSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  product Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([sectionId, productId])
+  @@index([sectionId, displayOrder])
+}
+

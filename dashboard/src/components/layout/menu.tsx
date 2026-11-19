@@ -54,7 +54,7 @@ export const menu: MenuSection[] = [
       { label: tr("Products"), to: "/products", icon: i(Boxes), end: true, needs: ["products.view"] },
       { label: tr("Add product"), to: "/products/new", icon: i(PackagePlus), needs: ["products.manage"] },
       { label: tr("Daily prices & stock"), to: "/daily-sheet", icon: i(CalendarClock), needs: ["inventory.manage", "products.manage"] },
-      { label: tr("Featured (আজকের তাজা বাজার)"), to: "/featured-products", icon: i(Sparkles), needs: ["products.manage"] },
+      { label: tr("Home Sections (হোমপেজ সেকশন)"), to: "/home-sections", icon: i(Sparkles), needs: ["products.manage"] },
       { label: tr("Medicine Hub & Sync"), to: "/medicine-sync", icon: i(Pill), needs: ["products.view"] },
       { label: tr("Inventory"), to: "/inventory", icon: i(Warehouse), badge: (s) => s.lowStockItems + s.outOfStockItems, needs: ["inventory.manage", "products.view"] },
       { label: tr("Categories"), to: "/categories", icon: i(FolderTree), needs: ["products.view"] },

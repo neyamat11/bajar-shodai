@@ -80,6 +80,7 @@ export function useHomeData() {
     onSale: Array.isArray(feedQuery.data?.onSale)
       ? feedQuery.data.onSale
       : (feedQuery.data?.onSale?.data ?? []),
+    sections: Array.isArray(feedQuery.data?.sections) ? feedQuery.data.sections : [],
     isLoading,
     isRefetching,
     isError,

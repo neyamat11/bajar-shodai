@@ -148,11 +148,25 @@ export async function getProductsByBrand(brand: string, locale: Locale = clientL
   return (await listProducts({ brand: [brand], limit: 100 }, locale)).products;
 }
 
+export interface HomeCuratedSection {
+  id: string;
+  slug: string;
+  title: string;
+  titleBn: string | null;
+  subtitle: string | null;
+  subtitleBn: string | null;
+  categorySlug: string | null;
+  displayOrder: number;
+  maxProducts: number;
+  products: Product[];
+}
+
 export interface HomeData {
   featured: Product[];
   newArrivals: Product[];
   bestSellers: Product[];
   onSale: Product[];
+  sections: HomeCuratedSection[];
 }
 export async function getHomeData(locale: Locale = clientLocale()): Promise<HomeData> {
   const h = await api.get<any>('/customer/home', { revalidate: 300 });
@@ -162,5 +176,17 @@ export async function getHomeData(locale: Locale = clientLocale()): Promise<Home
     newArrivals: m(h.newArrivals),
     bestSellers: m(h.bestSellers),
     onSale: m(h.onSale),
+    sections: (h.sections ?? []).map((sec: any) => ({
+      id: sec.id,
+      slug: sec.slug,
+      title: locale === 'bn' && sec.titleBn ? sec.titleBn : sec.title,
+      titleBn: sec.titleBn,
+      subtitle: locale === 'bn' && sec.subtitleBn ? sec.subtitleBn : sec.subtitle,
+      subtitleBn: sec.subtitleBn,
+      categorySlug: sec.categorySlug,
+      displayOrder: sec.displayOrder,
+      maxProducts: sec.maxProducts,
+      products: m(sec.products),
+    })),
   };
 }

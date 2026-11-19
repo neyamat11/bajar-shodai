@@ -39,67 +39,65 @@ export function FeaturedProductsSection({
         </View>
       </View>
 
-      {/* Horizontal Cards Scroll */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <View className="flex-row gap-3">
-          {displayProducts.map((p) => {
-            const cartItem = cartItems.find((i) => i.productId === p.id);
-            const rawImage =
-              p.image ||
-              p.imageUrl ||
-              (p as any).primaryImage?.url ||
-              (p as any).images?.[0]?.url;
+      {/* 2-Column Vertical Grid (Matches Public Frontend Mobile Responsive Design) */}
+      <View className="flex-row flex-wrap justify-between">
+        {displayProducts.map((p) => {
+          const cartItem = cartItems.find((i) => i.productId === p.id);
+          const rawImage =
+            p.image ||
+            p.imageUrl ||
+            (p as any).primaryImage?.url ||
+            (p as any).images?.[0]?.url;
 
-            const gridItem: ProductGridItem = {
-              id: p.id,
-              name: p.name,
-              banglaName: p.nameBn ?? undefined,
-              slug: p.slug,
-              price: Number(p.price),
-              originalPrice: p.regularPrice ? Number(p.regularPrice) : undefined,
-              imageUrl: rawImage,
-              unit: p.unit?.shortLabelBn || p.unit?.shortLabel || 'kg',
-              packSize: p.packSize ?? undefined,
-              stock: p.stock,
-              trackStock: (p as any).trackStock,
-              inStock: (p as any).inStock,
-              discountPercent: p.discountPercent,
-            };
+          const gridItem: ProductGridItem = {
+            id: p.id,
+            name: p.name,
+            banglaName: p.nameBn ?? undefined,
+            slug: p.slug,
+            price: Number(p.price),
+            originalPrice: p.regularPrice ? Number(p.regularPrice) : undefined,
+            imageUrl: rawImage,
+            unit: p.unit?.shortLabelBn || p.unit?.shortLabel || 'kg',
+            packSize: p.packSize ?? undefined,
+            stock: p.stock,
+            trackStock: (p as any).trackStock,
+            inStock: (p as any).inStock,
+            discountPercent: p.discountPercent,
+          };
 
-            return (
-              <View key={p.id} style={{ width: 155 }}>
-                <ProductGridCard
-                  product={gridItem}
-                  quantityInCart={cartItem?.quantity}
-                  onPress={() => openQuickView(gridItem as any)}
-                  onAddToCart={() => {
-                    addItem(
-                      {
-                        id: p.id,
-                        productId: p.id,
-                        name: gridItem.banglaName || gridItem.name,
-                        price: gridItem.price,
-                        unit: gridItem.unit,
-                        imageUrl: gridItem.imageUrl,
-                      },
-                      p.unit?.minQty ?? 1,
-                    );
-                    toast.success('Cart', `${gridItem.banglaName || gridItem.name} added`);
-                  }}
-                  onQuantityChange={(newQty) => {
-                    if (!cartItem) return;
-                    if (newQty <= 0) {
-                      removeItem(cartItem.id);
-                    } else {
-                      updateQuantity(cartItem.id, newQty);
-                    }
-                  }}
-                />
-              </View>
-            );
-          })}
-        </View>
-      </ScrollView>
+          return (
+            <View key={p.id} style={{ width: '48%', marginBottom: 12 }}>
+              <ProductGridCard
+                product={gridItem}
+                quantityInCart={cartItem?.quantity}
+                onPress={() => openQuickView(gridItem as any)}
+                onAddToCart={() => {
+                  addItem(
+                    {
+                      id: p.id,
+                      productId: p.id,
+                      name: gridItem.banglaName || gridItem.name,
+                      price: gridItem.price,
+                      unit: gridItem.unit,
+                      imageUrl: gridItem.imageUrl,
+                    },
+                    p.unit?.minQty ?? 1,
+                  );
+                  toast.success('Cart', `${gridItem.banglaName || gridItem.name} added`);
+                }}
+                onQuantityChange={(newQty) => {
+                  if (!cartItem) return;
+                  if (newQty <= 0) {
+                    removeItem(cartItem.id);
+                  } else {
+                    updateQuantity(cartItem.id, newQty);
+                  }
+                }}
+              />
+            </View>
+          );
+        })}
+      </View>
     </View>
   );
 }

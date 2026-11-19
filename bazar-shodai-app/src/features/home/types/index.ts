@@ -69,6 +69,19 @@ export interface ProductCardData {
   brand?: { id: string; name: string; slug: string; logo?: string | null } | null;
 }
 
+export interface HomeSectionPayload {
+  id: string;
+  slug: string;
+  title: string;
+  titleBn?: string | null;
+  subtitle?: string | null;
+  subtitleBn?: string | null;
+  categorySlug?: string | null;
+  displayOrder: number;
+  maxProducts: number;
+  products: ProductCardData[];
+}
+
 export interface HomeFeedData {
   featured: ProductCardData[];
   newArrivals: { data: ProductCardData[]; total: number } | ProductCardData[];
@@ -76,4 +89,5 @@ export interface HomeFeedData {
   onSale: { data: ProductCardData[]; total: number } | ProductCardData[];
   categories: HomeCategoryData[];
   brands: HomeBrandData[];
+  sections?: HomeSectionPayload[];
 }

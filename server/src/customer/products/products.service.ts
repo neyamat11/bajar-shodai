@@ -582,7 +582,7 @@ export class ProductsService {
       'products:home:v2',
       async () => {
         const first = { page: 1, limit: 10, excludeMedicine: true };
-        const [featured, newArrivals, bestSellers, onSale, categories, brands] =
+        const [featured, newArrivals, bestSellers, onSale, categories, brands, sections] =
           await Promise.all([
             this.prisma.product.findMany({
               where: { status: 'ACTIVE', isFeatured: true, ...notMedicine() },
@@ -600,6 +600,7 @@ export class ProductsService {
               orderBy: { name: 'asc' },
               take: 20,
             }),
+            this.homeSections(),
           ]);
         return {
           featured: featured.map(toCard),
@@ -608,10 +609,49 @@ export class ProductsService {
           onSale: onSale.data,
           categories,
           brands,
+          sections,
         };
       },
       SECTIONS_TTL,
     );
+  }
+
+  private async homeSections() {
+    const rawSections = await this.prisma.homeSection.findMany({
+      where: { isActive: true },
+      orderBy: [{ displayOrder: 'asc' }, { createdAt: 'asc' }],
+      include: {
+        items: {
+          where: {
+            product: {
+              status: 'ACTIVE',
+            },
+          },
+          orderBy: { displayOrder: 'asc' },
+          include: {
+            product: {
+              select: cardSelect,
+            },
+          },
+        },
+      },
+    });
+
+    return rawSections.map((sec) => ({
+      id: sec.id,
+      slug: sec.slug,
+      title: sec.title,
+      titleBn: sec.titleBn,
+      subtitle: sec.subtitle,
+      subtitleBn: sec.subtitleBn,
+      categorySlug: sec.categorySlug,
+      displayOrder: sec.displayOrder,
+      maxProducts: sec.maxProducts,
+      products: sec.items
+        .filter((item) => item.product)
+        .slice(0, sec.maxProducts)
+        .map((item) => toCard(item.product)),
+    }));
   }
 
   private async homeCategories() {

@@ -6,6 +6,7 @@ import { HomeHeader } from '@/features/home/components/HomeHeader';
 import { HeroSliderSection } from '@/features/home/components/HeroSliderSection';
 import { CategoryGridSection } from '@/features/home/components/CategoryGridSection';
 import { FeaturedProductsSection } from '@/features/home/components/FeaturedProductsSection';
+import { HomeCategorySection } from '@/features/home/components/HomeCategorySection';
 import { BestSellersSection } from '@/features/home/components/BestSellersSection';
 import { BrandShowcaseSection } from '@/features/home/components/BrandShowcaseSection';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -51,6 +52,7 @@ export default function HomeScreen() {
     featured,
     bestSellers,
     brands,
+    sections,
     isLoading,
     isRefetching,
     refetchAll,
@@ -92,6 +94,21 @@ export default function HomeScreen() {
 
             {/* Featured Products (আজকের তাজা বাজার) */}
             <FeaturedProductsSection products={featured} />
+
+            {/* Curated Category Sections (Grocery, Fast Food, Kids & Baby - 2-Column Grid) */}
+            {sections?.map((sec) => (
+              <HomeCategorySection
+                key={sec.id}
+                id={sec.id}
+                slug={sec.slug}
+                title={sec.title}
+                titleBn={sec.titleBn}
+                subtitle={sec.subtitle}
+                subtitleBn={sec.subtitleBn}
+                categorySlug={sec.categorySlug}
+                products={sec.products}
+              />
+            ))}
 
             {/* Express Delivery Guarantee Banner */}
             <View className="px-4 mb-5">
