@@ -3,7 +3,7 @@
 import { Link } from "@/i18n/navigation";
 import type { Product } from "@/lib/types";
 import Image from "next/image";
-import { Plus } from "lucide-react";
+import { ShoppingCart } from "lucide-react";
 import { useQuickAdd } from "@/lib/hooks/use-quick-add";
 import { useLocale, useTranslations } from "next-intl";
 import { formatMoney } from "@/lib/format";
@@ -61,7 +61,7 @@ export default function RelatedSideList({ products }: { products: Product[] }) {
                 aria-label={t("card.addNamed", { name: p.name })}
                 className="w-8 h-8 shrink-0 rounded bg-muted border border-border flex items-center justify-center hover:bg-brand-fresh hover:border-brand-fresh hover:text-white transition-all group/btn active:scale-95"
               >
-                <Plus className="w-4 h-4 text-muted-foreground/70 group-hover/btn:text-white transition-colors" />
+                <ShoppingCart className="w-4 h-4 text-muted-foreground/70 group-hover/btn:text-white transition-colors" />
               </button>
             </li>
           );

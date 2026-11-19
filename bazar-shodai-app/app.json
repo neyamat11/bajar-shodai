@@ -104,7 +104,8 @@
             "enableMinifyInReleaseBuilds": true
           }
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "extra": {
       "router": {

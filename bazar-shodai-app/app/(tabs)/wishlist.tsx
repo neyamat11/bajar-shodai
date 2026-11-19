@@ -50,38 +50,21 @@ export default function WishlistScreen() {
 
   const handleMoveToCart = (item: WishlistItem) => {
     haptics.success();
-    const p = item.product;
+    const p = item.product || item;
+    const pid = item.productId || p.id || item.id;
     addItem({
-      id: p.id,
-      productId: p.id,
-      name: p.name,
-      banglaName: p.nameBn,
-      price: p.salePrice ?? p.price,
-      originalPrice: p.salePrice ? p.price : undefined,
-      imageUrl: p.primaryImage || (p.images && p.images[0]),
-      unit: p.unit,
-      stock: p.stock,
+      id: pid,
+      productId: pid,
+      name: p.name || (item as any).name,
+      banglaName: p.nameBn || (item as any).nameBn,
+      price: p.salePrice ?? p.price ?? (item as any).price,
+      originalPrice: (p.salePrice ? p.price : undefined) || (item as any).originalPrice,
+      imageUrl: p.primaryImage || (p.images && p.images[0]) || (item as any).imageUrl,
+      unit: p.unit || (item as any).unit,
+      stock: p.stock ?? (item as any).stock,
     });
-    toast.success('Added to Bag', `${p.name} is now in your cart.`);
+    toast.success('Added to Bag', `${p.name || (item as any).name} is now in your cart.`);
   };
-
-  if (!isAuthenticated) {
-    return (
-      <SafeAreaView edges={['top', 'left', 'right']} style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>My Wishlist</Text>
-        </View>
-        <View style={styles.emptyContainer}>
-          <EmptyState
-            title="Sign in to View Wishlist"
-            description="Your saved wishlist items will appear here once you sign in to your account."
-            actionLabel="Sign In / Register"
-            onAction={() => router.push('/(auth)/login')}
-          />
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.container}>
@@ -106,7 +89,7 @@ export default function WishlistScreen() {
       ) : (
         <FlatList
           data={wishlist}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item.id || item.productId}
           numColumns={2}
           contentContainerStyle={styles.listContent}
           columnWrapperStyle={styles.columnWrapper}
@@ -114,25 +97,45 @@ export default function WishlistScreen() {
           onRefresh={() => {
             void refetch();
           }}
+          ListHeaderComponent={
+            !isAuthenticated ? (
+              <TouchableOpacity
+                style={styles.guestBanner}
+                onPress={() => router.push('/(auth)/login')}
+                activeOpacity={0.8}
+              >
+                <View style={styles.guestBannerIconWrap}>
+                  <Icon name="Cloud" size={20} color="#0b6234" />
+                </View>
+                <View style={styles.guestBannerTextWrap}>
+                  <Text style={styles.guestBannerTitle}>Sync your wishlist</Text>
+                  <Text style={styles.guestBannerSubtitle}>
+                    Sign in to permanently save your favorites to your account.
+                  </Text>
+                </View>
+                <Icon name="ChevronRight" size={18} color="#94a3b8" />
+              </TouchableOpacity>
+            ) : undefined
+          }
           renderItem={({ item }) => {
-            const p = item.product;
-            const imgUri = p.primaryImage || (p.images && p.images[0]) || '';
-            const isOutOfStock = p.stock <= 0;
+            const p = item.product || item;
+            const imgUri = p.primaryImage || (p.images && p.images[0]) || (item as any).imageUrl || '';
+            const isOutOfStock = p.stock != null && p.stock <= 0;
 
             return (
               <View style={styles.card}>
                 <TouchableOpacity
                   onPress={() =>
                     openQuickView({
-                      id: p.id,
-                      slug: p.slug,
-                      name: p.name,
-                      banglaName: p.nameBn || (p as any).banglaName,
-                      price: p.price,
-                      originalPrice: (p as any).regularPrice || (p as any).originalPrice,
+                      id: p.id || item.productId,
+                      slug: p.slug || (item as any).slug,
+                      name: p.name || (item as any).name,
+                      banglaName: p.nameBn || (p as any).banglaName || (item as any).nameBn,
+                      price: p.salePrice ?? p.price ?? (item as any).price,
+                      originalPrice: (p as any).regularPrice || (p as any).originalPrice || (item as any).originalPrice,
                       imageUrl: imgUri,
-                      unit: p.unit || 'pc',
-                      stock: p.stock,
+                      unit: p.unit || (item as any).unit || 'pc',
+                      stock: p.stock ?? (item as any).stock,
                     })
                   }
                   activeOpacity={0.8}
@@ -151,7 +154,7 @@ export default function WishlistScreen() {
                     )}
 
                     <TouchableOpacity
-                      onPress={() => handleRemove(p.id)}
+                      onPress={() => handleRemove(item.productId || p.id || item.id)}
                       style={styles.heartBtn}
                       accessibilityRole="button"
                       accessibilityLabel="Remove from wishlist"
@@ -168,14 +171,22 @@ export default function WishlistScreen() {
 
                   <View style={styles.infoBox}>
                     <Text style={styles.productName} numberOfLines={2}>
-                      {p.name}
+                      {p.name || (item as any).name}
                     </Text>
-                    {p.unit ? <Text style={styles.unitText}>{p.unit}</Text> : null}
+                    {Boolean(p.nameBn || (item as any).nameBn) && (
+                      <Text style={styles.unitText} numberOfLines={1}>
+                        {p.nameBn || (item as any).nameBn}
+                      </Text>
+                    )}
 
                     <View style={styles.priceRow}>
                       <Price
-                        amount={p.salePrice ?? p.price}
-                        originalAmount={p.salePrice ? p.price : undefined}
+                        amount={p.salePrice ?? p.price ?? (item as any).price}
+                        originalAmount={
+                          (p.salePrice ? p.price : undefined) ||
+                          (item as any).originalPrice ||
+                          (p as any).regularPrice
+                        }
                         size="sm"
                       />
                     </View>
@@ -229,6 +240,38 @@ const styles = StyleSheet.create({
   listContent: {
     padding: 16,
     paddingBottom: 40,
+  },
+  guestBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ecfdf5',
+    borderWidth: 1,
+    borderColor: '#a7f3d0',
+    borderRadius: Radius.lg,
+    padding: 12,
+    marginBottom: 16,
+    gap: 10,
+  },
+  guestBannerIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#d1fae5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  guestBannerTextWrap: {
+    flex: 1,
+  },
+  guestBannerTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#065f46',
+  },
+  guestBannerSubtitle: {
+    fontSize: 11,
+    color: '#047857',
+    marginTop: 2,
   },
   columnWrapper: {
     justifyContent: 'space-between',

@@ -4,6 +4,7 @@ import { storage } from '@/utils/storage';
 import { resetGuestToken } from '@/utils/guestToken';
 import { UserProfile, AuthSession } from '@/features/auth/types';
 import { useCartStore } from './useCartStore';
+import { useWishlistStore } from './useWishlistStore';
 
 const AUTH_USER_KEY = 'bazar_cached_user';
 
@@ -47,6 +48,9 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     // 4. Synchronize merged cart from server into local store
     void useCartStore.getState().syncCartFromServer();
+
+    // 5. Synchronize merged wishlist from local guest storage into user account
+    void useWishlistStore.getState().syncWishlistWithServer();
   },
 
   logout: async () => {
@@ -66,6 +70,9 @@ export const useAuthStore = create<AuthState>((set) => ({
       isAuthenticated: false,
       isLoading: false,
     });
+
+    // 5. Clear wishlist on logout
+    useWishlistStore.getState().clearWishlist();
   },
 
   setProfile: (user: UserProfile) => {
@@ -101,6 +108,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         isLoading: false,
       });
       void useCartStore.getState().syncCartFromServer();
+      void useWishlistStore.getState().fetchWishlistFromServer();
       return true;
     } catch {
       set({ isAuthenticated: false, user: null, userId: null, isLoading: false });

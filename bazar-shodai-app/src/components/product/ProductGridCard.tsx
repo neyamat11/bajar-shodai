@@ -6,6 +6,8 @@ import { formatBdt } from '@/utils/format';
 import { Radius, Shadows } from '@/constants/layout';
 import { haptics } from '@/services/haptics';
 import { useQuickViewStore } from '@/store/useQuickViewStore';
+import { useWishlistStore } from '@/store/useWishlistStore';
+import { toast } from '@/store/useToastStore';
 
 export interface ProductGridItem {
   id: string;
@@ -77,10 +79,26 @@ function ProductGridCardComponent({
     }
   };
 
+  const isInWishlist = useWishlistStore((s) => s.isInWishlist);
+  const toggleWishlist = useWishlistStore((s) => s.toggleItem);
+  const isItemWishlisted =
+    product.isWishlisted !== undefined
+      ? product.isWishlisted
+      : isInWishlist(product.id);
+
   const handleWishlist = (e: any) => {
     e?.stopPropagation?.();
     void haptics.selection().catch(() => {});
-    onToggleWishlist?.();
+    if (onToggleWishlist) {
+      onToggleWishlist();
+    } else {
+      void toggleWishlist(product);
+      if (!isItemWishlisted) {
+        toast.success('Wishlist', `${product.banglaName || product.name} saved to wishlist`);
+      } else {
+        toast.info('Wishlist', `${product.banglaName || product.name} removed from wishlist`);
+      }
+    }
   };
 
   const displayTitle = product.banglaName || product.name;
@@ -142,8 +160,8 @@ function ProductGridCardComponent({
           <Icon
             name="Heart"
             size={13}
-            color={product.isWishlisted ? '#dc2626' : '#6b7280'}
-            fill={product.isWishlisted ? '#dc2626' : 'none'}
+            color={isItemWishlisted ? '#dc2626' : '#6b7280'}
+            fill={isItemWishlisted ? '#dc2626' : 'none'}
           />
         </TouchableOpacity>
 

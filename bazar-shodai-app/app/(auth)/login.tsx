@@ -12,9 +12,12 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { getOrCreateGuestToken } from '@/utils/guestToken';
 import { Radius, TouchTarget } from '@/constants/layout';
 import { getErrorMessage } from '@/api/errorHandler';
+import { GoogleAuthButton } from '@/features/auth/components/GoogleAuthButton';
+import { useTranslation } from '@/i18n';
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { isBn } = useTranslation();
   const params = useLocalSearchParams<{ redirect?: string }>();
   const login = useAuthStore((s) => s.login);
 
@@ -102,6 +105,30 @@ export default function LoginScreen() {
             <Text className="text-xs text-destructive font-medium">{errorMessage}</Text>
           </View>
         ) : null}
+
+        {/* 1-Click Google Sign-In */}
+        <GoogleAuthButton
+          onSuccess={() => {
+            if (params.redirect) {
+              router.replace(params.redirect as any);
+            } else if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.replace('/(tabs)');
+            }
+          }}
+          onError={(msg) => setErrorMessage(msg)}
+          disabled={isSubmitting}
+        />
+
+        {/* Divider: OR CONTINUE WITH */}
+        <View style={styles.dividerRow}>
+          <View style={styles.dividerLine} className="bg-border" />
+          <Text style={styles.dividerText} className="text-muted-foreground">
+            {isBn ? 'অথবা' : 'OR CONTINUE WITH'}
+          </Text>
+          <View style={styles.dividerLine} className="bg-border" />
+        </View>
 
         {/* Identifier Field */}
         <View className="mb-4">
@@ -200,5 +227,20 @@ const styles = StyleSheet.create({
   },
   eyeButton: {
     padding: 6,
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 18,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    paddingHorizontal: 12,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
 });

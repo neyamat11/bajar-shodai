@@ -28,6 +28,7 @@ import {
 } from '@/features/products/api/productsApi';
 import { useProductReviews } from '@/features/reviews/api/reviewsApi';
 import { useCartStore } from '@/store/useCartStore';
+import { useWishlistStore } from '@/store/useWishlistStore';
 import { toast } from '@/store/useToastStore';
 import { haptics } from '@/services/haptics';
 import { assetUrl, toBengaliNumerals } from '@/utils/format';
@@ -112,9 +113,11 @@ export default function ProductDetailScreen() {
   const productSlug = typeof slug === 'string' ? slug : '';
 
   const [quantity, setQuantity] = useState(1);
-  const [isWishlisted, setIsWishlisted] = useState(false);
   const [isWriteReviewOpen, setIsWriteReviewOpen] = useState(false);
   const [isBackInStockOpen, setIsBackInStockOpen] = useState(false);
+
+  const isInWishlist = useWishlistStore((s) => s.isInWishlist);
+  const toggleWishlist = useWishlistStore((s) => s.toggleItem);
 
   const { addItem } = useCartStore();
 
@@ -206,18 +209,29 @@ export default function ProductDetailScreen() {
     }
   };
 
+  const isWishlisted = Boolean(product?.id && isInWishlist(product.id));
+
   // Handle Wishlist
   const handleToggleWishlist = () => {
+    if (!product) return;
     haptics.light();
-    setIsWishlisted((prev) => {
-      const next = !prev;
-      if (next) {
-        toast.success('Wishlist', `${nameBn || name} saved to wishlist`);
-      } else {
-        toast.info('Wishlist', `${nameBn || name} removed from wishlist`);
-      }
-      return next;
+    void toggleWishlist({
+      id: product.id,
+      productId: product.id,
+      slug: product.slug,
+      name: product.name,
+      nameBn: product.nameBn,
+      price: product.price,
+      originalPrice: product.originalPrice,
+      primaryImage: product.primaryImage || (product.images && product.images[0]?.url) || (product.images && product.images[0]) || '',
+      stock: product.stock,
+      unit: product.unit,
     });
+    if (!isWishlisted) {
+      toast.success('Wishlist', `${nameBn || name} saved to wishlist`);
+    } else {
+      toast.info('Wishlist', `${nameBn || name} removed from wishlist`);
+    }
   };
 
   const isOralSolid = isOralSolidMedicine(
@@ -315,7 +329,12 @@ export default function ProductDetailScreen() {
             accessibilityRole="button"
             accessibilityLabel="Wishlist"
           >
-            <Icon name="Heart" size={20} color={isWishlisted ? '#ef4444' : '#374151'} />
+            <Icon
+              name="Heart"
+              size={20}
+              color={isWishlisted ? '#ef4444' : '#374151'}
+              fill={isWishlisted ? '#ef4444' : 'none'}
+            />
           </TouchableOpacity>
         </View>
       </View>

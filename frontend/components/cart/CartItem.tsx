@@ -56,8 +56,7 @@ export default function CartItem({ item, variant = "compact" }: CartItemProps) {
     // Wait for the slide-out animation (300ms) before removing from state
     removeTimerRef.current = setTimeout(async () => {
       const r = await removeFromCart(item.id);
-      if (r.ok) toast.success(t("removed", { name: item.name }));
-      else {
+      if (!r.ok) {
         setIsRemoving(false);
         toast.error(r.error ?? t("removeFailed"));
       }

@@ -442,10 +442,7 @@ export default function MedicineListItem({ product, onOpenDetail }: MedicineList
               className="flex h-8 sm:h-9 px-2.5 sm:px-3 md:px-3.5 items-center justify-center gap-1 sm:gap-1.5 rounded-lg font-bold text-xs bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white shadow-sm disabled:opacity-50 disabled:pointer-events-none transition-all whitespace-nowrap shrink-0"
             >
               {!outOfStock && (
-                <>
-                  <Plus className="size-3.5 sm:size-4 shrink-0 md:hidden" />
-                  <ShoppingCart className="hidden md:inline size-3.5 shrink-0" />
-                </>
+                <ShoppingCart className="size-3.5 sm:size-4 shrink-0" />
               )}
               <span className="md:hidden text-[11.5px] font-bold leading-none">
                 {outOfStock

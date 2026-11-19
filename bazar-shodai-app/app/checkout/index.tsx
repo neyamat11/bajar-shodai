@@ -478,8 +478,8 @@ export default function CheckoutScreen() {
       toast.warning('সঠিক মোবাইল নম্বর দিন', '১১ ডিজিটের সঠিক মোবাইল নম্বর লিখুন (যেমন: 017XXXXXXXX)');
       return;
     }
-    if (addressLine.trim().length < 4) {
-      toast.warning('ঠিকানা আবশ্যক', 'অনুগ্রহ করে বিস্তারিত ডেলিভারি ঠিকানা লিখুন (বাড়ি, রোড, এলাকা)');
+    if (!addressLine.trim()) {
+      toast.warning('ঠিকানা আবশ্যক', 'অনুগ্রহ করে ডেলিভারি ঠিকানা লিখুন');
       return;
     }
 

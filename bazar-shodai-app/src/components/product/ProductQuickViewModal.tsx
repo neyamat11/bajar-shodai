@@ -167,7 +167,7 @@ function QuickViewSheetContent({ product, onClose }: QuickViewSheetContentProps)
   const handleToggleWishlist = () => {
     void haptics.selection().catch(() => {});
     toggleWishlist(
-      { productId: product.id, inWishlist: isWishlisted },
+      { productId: product.id, inWishlist: isWishlisted, product },
       {
         onSuccess: () => {
           toast.success(
@@ -178,14 +178,6 @@ function QuickViewSheetContent({ product, onClose }: QuickViewSheetContentProps)
               : isBn
                 ? 'উইশলিস্টে যুক্ত করা হয়েছে'
                 : 'Added to Wishlist',
-          );
-        },
-        onError: () => {
-          toast.info(
-            isBn ? 'লগইন প্রয়োজন' : 'Sign In Required',
-            isBn
-              ? 'উইশলিস্ট সংরক্ষণ করতে লগইন করুন'
-              : 'Please sign in to save items to your wishlist',
           );
         },
       },

@@ -119,7 +119,6 @@ export default function CartScreen() {
             onUpdateQuantity={(newQty) => updateQuantity(item.id || item.productId, newQty)}
             onRemove={() => {
               removeItem(item.id || item.productId);
-              toast.info('Removed', `${item.name} removed`);
             }}
           />
         )}

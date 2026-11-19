@@ -91,7 +91,7 @@ export default function ShippingForm({ initialData, saved, location, onLocation,
     const e: Errors = {};
     if (f.fullName.trim().length < 2) e.fullName = t("errName");
     if (!/^(\+?88)?01[3-9]\d{8}$/.test(latinDigits(f.phone).replace(/[\s-]/g, ""))) e.phone = t("errPhone");
-    if (f.address.trim().length < 4) e.address = t("errAddress");
+    if (!f.address.trim()) e.address = t("errAddress");
     if (!location) e.location = t("errLocation");
     else if (quote?.block === "OUT_OF_AREA") e.location = t("errOutOfArea");
     return e;

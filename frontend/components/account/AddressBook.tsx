@@ -93,7 +93,7 @@ function AddressForm({
     if (f.fullName.trim().length < 2) return setError(t("errNameAddress"));
     const normalizedPhone = latinDigits(f.phone).replace(/[\s-]/g, "");
     if (!/^(\+?88)?01[3-9]\d{8}$/.test(normalizedPhone)) return setError(t("errPhone"));
-    if (f.line1.trim().length < 3 && !loc?.placeName) return setError(t("errNameAddress"));
+    if (!f.line1.trim() && !loc?.placeName) return setError(t("errNameAddress"));
 
     setBusy(true);
     setError(null);

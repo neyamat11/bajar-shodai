@@ -105,7 +105,7 @@ function MedicineListItemComponent({
   const handleToggleWishlist = (e: any) => {
     e?.stopPropagation?.();
     void haptics.selection().catch(() => {});
-    toggleWishlist({ productId: product.id, inWishlist: isWishlisted });
+    toggleWishlist({ productId: product.id, inWishlist: isWishlisted, product });
     if (!isWishlisted) {
       toast.success('ফেভারিট', `${product.nameBn || product.name} ফেভারিটে যুক্ত হয়েছে`);
     } else {
@@ -342,7 +342,7 @@ function MedicineListItemComponent({
             accessibilityRole="button"
             accessibilityLabel="Buy medicine"
           >
-            <Icon name="Plus" size={12} color="#ffffff" />
+            <Icon name="ShoppingCart" size={12} color="#ffffff" />
             <Text style={styles.smallBuyBtnText}>কিনুন</Text>
           </TouchableOpacity>
         )}

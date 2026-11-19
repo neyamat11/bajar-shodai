@@ -75,6 +75,20 @@ jest.mock('react-native-svg', () => {
   };
 });
 
+jest.mock('expo-web-browser', () => ({
+  maybeCompleteAuthSession: jest.fn(),
+  openAuthSessionAsync: jest.fn().mockResolvedValue({ type: 'dismiss' }),
+}));
+
+jest.mock('expo-auth-session', () => ({
+  makeRedirectUri: jest.fn(() => 'bajarshodai://oauthredirect'),
+}));
+
+jest.mock('expo-auth-session/providers/google', () => ({
+  useAuthRequest: jest.fn(() => [null, null, jest.fn().mockResolvedValue({ type: 'dismiss' })]),
+  useIdTokenAuthRequest: jest.fn(() => [null, null, jest.fn().mockResolvedValue({ type: 'dismiss' })]),
+}));
+
 jest.mock('react-native-mmkv', () => ({
   createMMKV: jest.fn(() => {
     const memory = new Map<string, any>();
