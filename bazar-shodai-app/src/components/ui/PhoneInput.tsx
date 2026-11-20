@@ -64,7 +64,7 @@ export function PhoneInput({
       onChangeText={handleTextChange}
       keyboardType="phone-pad"
       maxLength={12} // 10 digits + 2 spaces
-      placeholder="1712 345 678"
+      placeholder=""
       leftIcon={prefixComponent}
       error={error}
       {...rest}

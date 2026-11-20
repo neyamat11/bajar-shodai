@@ -109,11 +109,8 @@ export default function RegisterScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 20 }} keyboardShouldPersistTaps="handled">
-        <View className="items-center my-5">
+        <View className="items-center mt-6 mb-8">
           <BrandLogo size="xl" />
-          <Text className="text-xs text-muted-foreground mt-2 text-center">
-            Fresh groceries delivered directly to your home in Shahrasti
-          </Text>
         </View>
 
         {errorMessage ? (
@@ -169,7 +166,6 @@ export default function RegisterScreen() {
               setPhone(val);
               if (errorMessage) setErrorMessage(null);
             }}
-            placeholder="01712345678"
           />
         </View>
 

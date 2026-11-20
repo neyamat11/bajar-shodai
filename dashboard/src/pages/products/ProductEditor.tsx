@@ -358,10 +358,10 @@ function ProductForm({ id, p }: { id?: string; p?: ProductDetail }) {
             <div className="space-y-3">
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field label={tr("Product name (Bangla)")} required error={errs.nameBn}>
-                  <Input value={f.nameBn} maxLength={200} onChange={(e) => set("nameBn", e.target.value)} placeholder="রুই মাছ" />
+                  <Input value={f.nameBn} maxLength={200} onChange={(e) => set("nameBn", e.target.value)} placeholder="পণ্যের নাম" />
                 </Field>
                 <Field label={tr("Product name (English)")} required error={errs.name} hint={tr("Makes the web address")}>
-                  <Input value={f.name} maxLength={200} onChange={(e) => { set("name", e.target.value); if (!slugTouched) set("slug", slugify(e.target.value)); }} placeholder={tr("Rui fish")} />
+                  <Input value={f.name} maxLength={200} onChange={(e) => { set("name", e.target.value); if (!slugTouched) set("slug", slugify(e.target.value)); }} placeholder="Product name" />
                 </Field>
               </div>
               <div className="grid gap-3 sm:grid-cols-3">

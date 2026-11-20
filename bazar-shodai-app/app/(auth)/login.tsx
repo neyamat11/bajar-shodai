@@ -93,11 +93,8 @@ export default function LoginScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 20 }} keyboardShouldPersistTaps="handled">
-        <View className="items-center my-6">
+        <View className="items-center mt-6 mb-8">
           <BrandLogo size="xl" />
-          <Text className="text-xs text-muted-foreground mt-2.5 text-center">
-            Log in to manage orders, addresses, and delivery preferences in Shahrasti
-          </Text>
         </View>
 
         {errorMessage ? (
@@ -143,7 +140,7 @@ export default function LoginScreen() {
                 setIdentifier(text);
                 if (errorMessage) setErrorMessage(null);
               }}
-              placeholder="e.g. 01712345678 or user@mail.com"
+              placeholder="Mobile number or email"
               placeholderTextColor="#94a3b8"
               autoCapitalize="none"
               keyboardType="email-address"
