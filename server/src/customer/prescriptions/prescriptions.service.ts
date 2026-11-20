@@ -12,6 +12,7 @@ import { promises as fs } from 'fs';
 import * as path from 'path';
 import sharp from 'sharp';
 import { PrismaService } from '../../prisma/prisma.service';
+import { UploadsService } from '../../common/uploads';
 import { CreatePrescriptionDto } from './prescriptions.dto';
 
 const MAX_PRESCRIPTION_BYTES = 10 * 1024 * 1024; // 10MB
@@ -24,6 +25,7 @@ export class PrescriptionsService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly uploadsService: UploadsService,
     config: ConfigService,
   ) {
     this.rootDir = path.resolve(config.get<string>('uploads.dir') ?? 'uploads');
@@ -45,9 +47,6 @@ export class PrescriptionsService {
       throw new BadRequestException('File size must not exceed 10MB');
     }
 
-    const prescriptionsDir = path.join(this.rootDir, 'prescriptions');
-    await fs.mkdir(prescriptionsDir, { recursive: true });
-
     const uuid = randomUUID();
     let relativeUrl = '';
     const isPdf =
@@ -56,9 +55,11 @@ export class PrescriptionsService {
 
     if (isPdf) {
       const fileName = `${uuid}.pdf`;
-      const filePath = path.join(prescriptionsDir, fileName);
-      await fs.writeFile(filePath, file.buffer);
-      relativeUrl = `/uploads/prescriptions/${fileName}`;
+      relativeUrl = await this.uploadsService.uploadRaw(
+        `prescriptions/${fileName}`,
+        file.buffer,
+        'application/pdf',
+      );
     } else {
       // Validate and process image
       try {
@@ -70,16 +71,18 @@ export class PrescriptionsService {
         }
 
         const fileName = `${uuid}.webp`;
-        const filePath = path.join(prescriptionsDir, fileName);
-
         // Convert to WebP, clamp width to 2000px if larger
-        await sharp(file.buffer)
+        const webpBuffer = await sharp(file.buffer)
           .rotate()
           .resize({ width: 2000, withoutEnlargement: true })
           .webp({ quality: 85 })
-          .toFile(filePath);
+          .toBuffer();
 
-        relativeUrl = `/uploads/prescriptions/${fileName}`;
+        relativeUrl = await this.uploadsService.uploadRaw(
+          `prescriptions/${fileName}`,
+          webpBuffer,
+          'image/webp',
+        );
       } catch (err: unknown) {
         if (err instanceof BadRequestException) throw err;
         this.logger.error('Failed to process prescription image', err);

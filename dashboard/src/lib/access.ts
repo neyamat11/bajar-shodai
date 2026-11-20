@@ -9,12 +9,22 @@ export type Permission =
 
 export const isAdminRole = (u: Pick<AdminUser, "role"> | null | undefined) => u?.role === "ADMIN" || u?.role === "SUPER_ADMIN";
 
-/** True when the user is authorized to delete orders (SuperAdmin, Admin, or Manager). */
+/**
+ * True when the user is authorized to delete orders.
+ * Allowed ONLY for SuperAdmin, Admin, or Manager.
+ * Delivery staff / riders and general staff must NEVER see or use order deletion.
+ */
 export function canDeleteOrders(u: AdminUser | null | undefined): boolean {
   if (!u) return false;
+  // Delivery staff / riders must NEVER be able to delete orders
+  if (u.canDeliver) return false;
+  // SuperAdmin and Admin can delete orders
   if (isAdminRole(u)) return true;
-  if (u.staffTitle && /manager/i.test(u.staffTitle)) return true;
-  return can(u, "orders.delete");
+  // Only staff who are explicitly Managers can delete orders
+  if (u.role === "STAFF" && u.staffTitle && /manager/i.test(u.staffTitle)) {
+    return true;
+  }
+  return false;
 }
 
 /** true when the person holds at least one of the permissions. Admins hold all of them; no permission listed = any signed-in person. */

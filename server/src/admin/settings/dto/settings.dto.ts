@@ -221,6 +221,21 @@ export class DeliverySlotDto {
   @ApiProperty({ example: '12:00' }) @Matches(HHMM, { message: 'Use the form 12:00' }) to: string;
 }
 
+export class HeavyOrderRuleDto {
+  @ApiProperty({ example: 'kg' })
+  @IsString()
+  unit: string;
+
+  @ApiProperty({ example: 12 })
+  @IsNumber()
+  @Min(0)
+  threshold: number;
+
+  @ApiProperty({ example: true })
+  @IsBoolean()
+  isEnabled: boolean;
+}
+
 export class UpdateDeliverySettingsDto {
   @ApiPropertyOptional({ description: 'Take delivery orders at all' })
   @IsOptional()
@@ -302,6 +317,13 @@ export class UpdateDeliverySettingsDto {
   @IsNumber()
   @Min(15)
   defaultDeliveryMinutes?: number;
+
+  @ApiPropertyOptional({ type: [HeavyOrderRuleDto], description: 'Configurable heavy order thresholds per unit' })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => HeavyOrderRuleDto)
+  heavyOrderRules?: HeavyOrderRuleDto[];
 }
 
 export class UpdateMapsSettingsDto {

@@ -35,6 +35,7 @@ import { VerifyPaymentDto } from './dto/verify-payment.dto';
 import {
   BulkDeleteOrdersDto,
   BulkOrderStatusDto,
+  SetExtraDeliveryChargeDto,
   OverrideDeliveryFeeDto,
   SetDeliveryPinDto,
   CreateOrderDto,
@@ -234,6 +235,18 @@ export class AdminOrdersController {
     @CurrentUser() admin: User,
   ) {
     return this.orders.updateDeliveryTime(id, dto, admin.id);
+  }
+
+  @Patch(':id/extra-delivery-charge')
+  @ApiOperation({
+    summary: 'Set extra delivery charge and optional note for heavy or oversized order',
+  })
+  setExtraDeliveryCharge(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: SetExtraDeliveryChargeDto,
+    @CurrentUser() admin: User,
+  ) {
+    return this.orders.setExtraDeliveryCharge(id, dto, admin.id);
   }
 
   @Patch(':id/notes')

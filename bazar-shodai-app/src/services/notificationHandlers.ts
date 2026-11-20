@@ -6,10 +6,12 @@ import { haptics } from '@/services/haptics';
 export function handleNotificationPayload(data: Record<string, any> | undefined) {
   if (!data) return;
 
-  if (data.orderId) {
-    router.push(`/orders/${data.orderId}` as any);
-  } else if (data.deliveryId) {
+  if (data.deliveryId) {
     router.push(`/(rider)/order/${data.deliveryId}` as any);
+  } else if (data.screen === '/(rider)/order' || data.screen === '/(rider)/deliveries') {
+    router.push('/(rider)/deliveries' as any);
+  } else if (data.orderId) {
+    router.push(`/orders/${data.orderId}` as any);
   } else if (data.returnId) {
     router.push('/(account)/returns');
   } else if (data.ticketId) {

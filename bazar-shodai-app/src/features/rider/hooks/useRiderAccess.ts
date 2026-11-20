@@ -1,4 +1,6 @@
+import { useEffect } from 'react';
 import { useAuthStore } from '@/store/useAuthStore';
+import { syncPushTokenWithBackend } from '@/services/notifications';
 
 export function useRiderAccess() {
   const { isAuthenticated, user } = useAuthStore();
@@ -14,6 +16,12 @@ export function useRiderAccess() {
           Array.isArray((user as any).permissions) &&
           (user as any).permissions.includes('staff'))),
     );
+
+  useEffect(() => {
+    if (isStaffOrRider) {
+      void syncPushTokenWithBackend();
+    }
+  }, [isStaffOrRider]);
 
   return {
     isStaffOrRider,

@@ -17,6 +17,7 @@ import {
 } from '../mail';
 import { NotificationsService } from './notifications.service';
 import { AdminFeedService } from '../admin-feed/admin-feed.service';
+import { PushService } from '../push/push.service';
 import {
   Lang,
   fmtMoney,
@@ -79,6 +80,7 @@ export class OrderNotifierService {
     private notifications: NotificationsService,
     private config: ConfigService,
     private adminFeed: AdminFeedService,
+    private pushService: PushService,
   ) {}
 
   private langOf(order: FullOrder): Lang {
@@ -110,6 +112,15 @@ export class OrderNotifierService {
             data: { orderNumber: order.orderNumber },
           });
         }
+        await this.pushService.notifyAllStaff({
+          title: `🛍️ New Order — #${order.orderNumber}`,
+          body: `${order.shippingAddress?.fullName ?? order.user?.name ?? order.guestName ?? 'A customer'} ordered ${order.items.length} item(s), total ${formatMoney(order.total)} (${PAYMENT_LABEL[order.paymentMethod] ?? order.paymentMethod}).`,
+          data: {
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            screen: '/(rider)/order',
+          },
+        });
       }
       const email = await this.settings.get('email');
       const n = order.orderNumber;

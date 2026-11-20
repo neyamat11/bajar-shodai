@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { SettingsService, DeliverySettings } from '../../common/settings';
 import { MapsService } from '../../common/maps';
+import { DeliveryOriginsService } from '../../admin/settings/delivery-origins/delivery-origins.service';
 import { feeForDistance, haversineKm, withinRadius, isWithinShahrastiZone, isAbroadPoint, type LatLng } from '../../common/delivery/fee';
 
 export type DeliveryBlock =
@@ -36,6 +37,9 @@ export interface ShippingQuote {
   // Detected overseas location or manual delivery fee pending
   isAbroad?: boolean;
   isPendingFee?: boolean;
+  // Nearest origin point selected
+  originId?: string | null;
+  originName?: string | null;
 }
 
 export interface ShippingInput {
@@ -76,6 +80,7 @@ export class ShippingService {
   constructor(
     private settings: SettingsService,
     private maps: MapsService,
+    private originsService: DeliveryOriginsService,
   ) {}
 
   /** The point distances are measured from, or null until the admin sets it. */
@@ -109,7 +114,19 @@ export class ShippingService {
       radiusKm: d.serviceRadiusKm,
     };
     if (!d.enabled) return { ...base, block: 'DISABLED' };
-    const origin = this.origin(d);
+    let origin = this.origin(d);
+    let selectedOrigin: { id: string; name: string } | null = null;
+
+    if (input.lat != null && input.lng != null) {
+      try {
+        const nearest = await this.originsService.findNearest(input.lat, input.lng);
+        if (nearest) {
+          origin = { lat: nearest.latitude, lng: nearest.longitude };
+          selectedOrigin = { id: nearest.id, name: nearest.name };
+        }
+      } catch {}
+    }
+
     if (!origin) return { ...base, block: 'ORIGIN_NOT_SET' };
 
     // When customer is ordering from abroad or skipping location pin
@@ -166,6 +183,8 @@ export class ShippingService {
       isFree: qualifiesForFree,
       amountForFreeDelivery: threshold !== null && !qualifiesForFree ? round2(threshold - subtotal) : null,
       straightKm: inside.km,
+      originId: selectedOrigin?.id ?? null,
+      originName: selectedOrigin?.name ?? null,
     };
   }
 }

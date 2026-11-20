@@ -135,15 +135,23 @@ export function can(
 
 /**
  * True when the user is authorized to delete orders.
- * Allowed only for SuperAdmin, Admin, or Manager (by title or orders.delete permission).
+ * Allowed ONLY for SuperAdmin, Admin, or Manager (staffTitle containing 'manager').
+ * Regular staff (such as delivery man / rider, packer, etc.) must NEVER delete orders.
  */
 export function canDeleteOrders(user: {
   role: Role;
   staffTitle?: string | null;
   permissions?: string[] | null;
+  canDeliver?: boolean | null;
 }): boolean {
+  if (!user) return false;
+  // Delivery staff / riders must NEVER be able to delete orders
+  if (user.canDeliver) return false;
+  // SuperAdmin and Admin can delete orders
   if (FULL_ACCESS_ROLES.includes(user.role)) return true;
-  if (user.role !== 'STAFF') return false;
-  if (user.staffTitle && /manager/i.test(user.staffTitle)) return true;
-  return can(user, 'orders.delete');
+  // Only staff who are explicitly Managers can delete orders
+  if (user.role === 'STAFF' && user.staffTitle && /manager/i.test(user.staffTitle)) {
+    return true;
+  }
+  return false;
 }

@@ -94,6 +94,8 @@ export interface CheckoutQuote {
   pointsRedeemed: number;
   pointsEarned: number;
   orderWeightKg: number;
+  isHeavyOrder?: boolean;
+  heavyOrderReason?: string;
   loyalty: {
     enabled: boolean;
     pointsEarned: number;
@@ -215,6 +217,43 @@ export class CheckoutService {
       orderWeightKg,
     );
 
+    // Heavy order check based on configured unit thresholds (e.g. KG > 12)
+    let isHeavyOrder = false;
+    let heavyOrderReason = '';
+    try {
+      const deliverySettings = await this.settings.get('delivery');
+      const heavyRules = deliverySettings?.heavyOrderRules ?? [
+        { unit: 'kg', threshold: 12, isEnabled: true },
+        { unit: 'কেজি', threshold: 12, isEnabled: true },
+      ];
+      for (const rule of heavyRules) {
+        if (!rule.isEnabled || rule.threshold <= 0) continue;
+        const targetUnit = rule.unit.toLowerCase().trim();
+        let totalForUnit = 0;
+        for (const item of cartItems) {
+          const itemUnit = (item.product.unit?.shortLabel || '').toLowerCase().trim();
+          const itemUnitBn = (item.product.unit?.shortLabelBn || '').toLowerCase().trim();
+          if (
+            itemUnit === targetUnit ||
+            itemUnitBn === targetUnit ||
+            (targetUnit === 'kg' && (itemUnit === 'kg' || itemUnitBn === 'কেজি'))
+          ) {
+            totalForUnit += toNum(item.quantity);
+          }
+        }
+        if (totalForUnit > rule.threshold) {
+          isHeavyOrder = true;
+          heavyOrderReason = `${totalForUnit} ${rule.unit} (limit: ${rule.threshold} ${rule.unit})`;
+          break;
+        }
+      }
+    } catch {
+      if (orderWeightKg > 12) {
+        isHeavyOrder = true;
+        heavyOrderReason = `${orderWeightKg} kg (limit: 12 kg)`;
+      }
+    }
+
     const shipping = await this.shippingService.quote(subtotal, {
       lat: input.lat,
       lng: input.lng,
@@ -319,6 +358,8 @@ export class CheckoutService {
       pointsRedeemed,
       pointsEarned,
       orderWeightKg,
+      isHeavyOrder,
+      heavyOrderReason,
       loyalty: {
         enabled: loyaltySettings.enabled,
         pointsEarned,

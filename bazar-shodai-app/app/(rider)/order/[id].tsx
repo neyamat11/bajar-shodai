@@ -18,6 +18,7 @@ import { Radius } from '@/constants/layout';
 import { useRiderDeliveryDetail, useUpdateDeliveryStatus } from '@/features/rider/api/riderApi';
 import { DeliveryFailedModal } from '@/features/rider/components/DeliveryFailedModal';
 import { RiderDeliveryStatus, RiderFailReason } from '@/features/rider/types';
+import * as Clipboard from 'expo-clipboard';
 import { toast } from '@/store/useToastStore';
 import { haptics } from '@/services/haptics';
 
@@ -101,6 +102,22 @@ export default function RiderOrderDetailScreen() {
     Linking.openURL(url).catch(() => {
       toast.error('Navigation Error', 'Could not launch Google Maps');
     });
+  };
+
+  const handleCopyMapLink = async () => {
+    haptics.selection();
+    const lat = address?.latitude;
+    const lng = address?.longitude;
+    const addrQuery = encodeURIComponent(
+      `${address?.address || ''}, ${address?.city || ''}, Bangladesh`,
+    );
+    const url =
+      lat && lng
+        ? `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`
+        : `https://www.google.com/maps/search/?api=1&query=${addrQuery}`;
+
+    await Clipboard.setStringAsync(url);
+    toast.success('Link Copied', 'Google Maps link copied to clipboard');
   };
 
   const handleStepAccept = () => {
@@ -235,7 +252,12 @@ export default function RiderOrderDetailScreen() {
         {/* Address & Navigation Card */}
         <View style={styles.card}>
           <View style={styles.cardHeaderRow}>
-            <Text style={styles.cardHeaderTitle}>Delivery Destination</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              <Text style={styles.cardHeaderTitle}>Delivery Destination</Text>
+              {order.isHeavyOrder && (
+                <Badge label="🏋️ Heavy Order" variant="carrot" size="sm" />
+              )}
+            </View>
             <TouchableOpacity onPress={handleOpenMaps} style={styles.navLink}>
               <Icon name="Navigation" size={14} color="#0b6234" />
               <Text style={styles.navLinkText}>Google Maps</Text>
@@ -243,14 +265,28 @@ export default function RiderOrderDetailScreen() {
           </View>
           <Text style={styles.addressText}>{address?.address}</Text>
           {address?.city && <Text style={styles.cityText}>{address.city}</Text>}
+          {address?.latitude && address?.longitude && (
+            <Text style={{ fontSize: 11, color: '#6b7280', marginTop: 4, fontFamily: 'monospace' }}>
+              📍 {Number(address.latitude).toFixed(4)}, {Number(address.longitude).toFixed(4)}
+            </Text>
+          )}
 
-          <Button
-            title="Start Turn-by-Turn Navigation"
-            variant="outline"
-            size="sm"
-            onPress={handleOpenMaps}
-            style={{ marginTop: 10 }}
-          />
+          <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+            <Button
+              title="Navigate in Maps"
+              variant="primary"
+              size="sm"
+              onPress={handleOpenMaps}
+              style={{ flex: 1 }}
+            />
+            <Button
+              title="Copy Link"
+              variant="outline"
+              size="sm"
+              onPress={handleCopyMapLink}
+              style={{ flex: 1 }}
+            />
+          </View>
         </View>
 
         {/* Payment & Cash Collection Card */}

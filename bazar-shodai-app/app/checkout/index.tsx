@@ -216,6 +216,8 @@ export default function CheckoutScreen() {
     distanceKm: serverSummary?.shipping?.distanceKm ?? gpsLocation?.distanceKm,
     isPendingFee,
     isLocationPending,
+    isHeavyOrder: serverSummary?.isHeavyOrder,
+    heavyOrderReason: serverSummary?.heavyOrderReason,
     coupon: serverSummary?.coupon?.applied ? {
       code: serverSummary.coupon.code,
       discount: serverSummary.coupon.discount,

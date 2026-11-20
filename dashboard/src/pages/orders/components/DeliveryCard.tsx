@@ -177,12 +177,49 @@ function SetDeliveryTimeDialog({ order, onClose }: { order: OrderDetail; onClose
   );
 }
 
+function ExtraDeliveryChargeDialog({ order, onClose }: { order: OrderDetail; onClose: () => void }) {
+  const [extra, setExtra] = useState(String(order.extraDeliveryCharge ?? 0));
+  const [note, setNote] = useState(order.heavyOrderNote ?? "");
+  const save = useAct((body: { extraDeliveryCharge: number; heavyOrderNote?: string }) => ordersApi.setExtraDeliveryCharge(order.id, body), {
+    success: tr("Extra delivery charge updated and customer notified"),
+    invalidate: [["order", order.id], ["orders"]],
+    onSuccess: onClose,
+  });
+  const submit = () => {
+    const n = Number(extra);
+    if (!Number.isFinite(n) || n < 0) return toast.error(tr("Enter a valid extra charge"));
+    save.mutate({ extraDeliveryCharge: n, heavyOrderNote: note.trim() || undefined });
+  };
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent size="sm">
+        <DialogHeader>
+          <DialogTitle>🏋️ {tr("Extra Delivery Charge (Heavy Order)")}</DialogTitle>
+          <DialogDescription>{tr("Add manual extra delivery charge for this order. The customer will be notified with the new total.")}</DialogDescription>
+        </DialogHeader>
+        <DialogBody className="space-y-3">
+          <Field label={tr("Extra Charge (৳)")} required>
+            <Input type="number" min={0} value={extra} onChange={(e) => setExtra(e.target.value)} autoFocus />
+          </Field>
+          <Field label={tr("Note / Reason")}>
+            <Textarea rows={2} maxLength={200} value={note} onChange={(e) => setNote(e.target.value)} placeholder={tr("e.g. 5kg over threshold, bulky sack")} />
+          </Field>
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>{tr("Cancel")}</Button>
+          <Button loading={save.isPending} onClick={submit}>{tr("Save & Notify Customer")}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 /**
  * Where the order goes: a map with the shop, the delivery pin and the road between them,
  * the distance, the delivery charge (with the by-hand override), and one-tap navigation / call / WhatsApp.
  */
 export function DeliveryCard({ order, locked, phone, name, onEditAddress }: { order: OrderDetail; locked: boolean; phone: string | null; name: string | null; onEditAddress: () => void }) {
-  const [dlg, setDlg] = useState<null | "fee" | "request" | "deliveryTime">(null);
+  const [dlg, setDlg] = useState<null | "fee" | "request" | "deliveryTime" | "heavyExtra">(null);
   const [moving, setMoving] = useState(false);
   const [draft, setDraft] = useState<{ lat: number; lng: number } | null>(null);
 
@@ -378,6 +415,13 @@ export function DeliveryCard({ order, locked, phone, name, onEditAddress }: { or
             </KeyValue>
             {overridden && order.deliveryFee !== null && <KeyValue label={tr("Distance charge")}>{money(order.deliveryFee)}</KeyValue>}
             {overridden && order.deliveryFeeOverrideReason && <p className="mt-1 text-xs text-muted-foreground">Reason: {order.deliveryFeeOverrideReason}</p>}
+            {order.originPoint?.name && (
+              <KeyValue label={tr("Fulfilled from")}>
+                <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+                  📍 {order.originPoint.name}
+                </span>
+              </KeyValue>
+            )}
             {order.estimatedDelivery && (
               <KeyValue label={tr("Estimated delivery")}>
                 <span className="font-semibold text-emerald-700 dark:text-emerald-400">
@@ -394,6 +438,19 @@ export function DeliveryCard({ order, locked, phone, name, onEditAddress }: { or
 
           <div className="mt-3 flex flex-wrap gap-2">
             {pin && <Button size="xs" variant="outline" asChild><a href={`https://www.google.com/maps/dir/?api=1&destination=${pin.lat},${pin.lng}`} target="_blank" rel="noopener noreferrer"><Navigation />{" "}{tr("Navigate")}</a></Button>}
+            {pin && (
+              <Button
+                size="xs"
+                variant="outline"
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(`https://www.google.com/maps/dir/?api=1&destination=${pin.lat},${pin.lng}`);
+                  toast.success(tr("Google Maps navigation link copied"));
+                }}
+              >
+                <Copy className="size-3.5 mr-1" />{tr("Copy link")}
+              </Button>
+            )}
             {phoneDigits && <Button size="xs" variant="outline" asChild><a href={`tel:${phoneDigits}`}><Phone />{" "}{tr("Call")}</a></Button>}
             {phoneDigits && <Button size="xs" variant="outline" asChild><a href={`https://wa.me/${waNumber(phoneDigits)}`} target="_blank" rel="noopener noreferrer"><MessageCircle />{" "}{tr("WhatsApp")}</a></Button>}
             {!locked && !moving && <Button size="xs" variant="outline" onClick={() => { setMoving(true); setDraft(pin ?? (origin ? { lat: origin.lat, lng: origin.lng } : DEFAULT_CENTER)); }}><Crosshair /> {pin ? tr("Move pin") : tr("Place pin")}</Button>}
@@ -401,6 +458,28 @@ export function DeliveryCard({ order, locked, phone, name, onEditAddress }: { or
             {!locked && <Button size="xs" variant="outline" onClick={() => setDlg("request")}><Send />{" "}{tr("Request location")}</Button>}
             {!locked && <Button size="xs" variant="outline" onClick={() => setDlg("fee")}><Pencil />{" "}{tr("Change charge")}</Button>}
           </div>
+
+          {order.isHeavyOrder && (
+            <div className="mt-3 rounded border border-amber-500/30 bg-amber-500/10 p-3 text-[13px] text-amber-800 dark:text-amber-300">
+              <div className="flex items-center justify-between">
+                <span className="font-bold">🏋️ {tr("Heavy Order")}</span>
+                {!locked && (
+                  <Button size="xs" variant="outline" onClick={() => setDlg("heavyExtra")}>
+                    <Pencil className="size-3.5 mr-1" /> {tr("Set Extra Charge")}
+                  </Button>
+                )}
+              </div>
+              <p className="mt-1 text-xs">
+                {order.heavyOrderNote ? `${tr("Note")}: ${order.heavyOrderNote}` : tr("Order exceeds weight/unit thresholds. You can add extra delivery charge.")}
+              </p>
+              {Number(order.extraDeliveryCharge) > 0 && (
+                <p className="mt-1 font-semibold text-xs text-amber-900 dark:text-amber-200">
+                  {tr("Extra charge added")}: {money(order.extraDeliveryCharge)}
+                </p>
+              )}
+            </div>
+          )}
+
           {setPin.isError && <p className="mt-2 text-xs text-destructive">{errorMessage(setPin.error)}</p>}
         </>
       )}
@@ -408,6 +487,7 @@ export function DeliveryCard({ order, locked, phone, name, onEditAddress }: { or
       {dlg === "fee" && <OverrideFeeDialog order={order} onClose={() => setDlg(null)} />}
       {dlg === "request" && <RequestLocationDialog order={order} phone={phone} name={name} onClose={() => setDlg(null)} />}
       {dlg === "deliveryTime" && <SetDeliveryTimeDialog order={order} onClose={() => setDlg(null)} />}
+      {dlg === "heavyExtra" && <ExtraDeliveryChargeDialog order={order} onClose={() => setDlg(null)} />}
     </Section>
   );
 }

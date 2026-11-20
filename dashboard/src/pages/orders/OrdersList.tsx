@@ -56,7 +56,7 @@ const ORDER_VIEWS = [
   { name: "Phone & walk-in orders", query: "source=ADMIN" },
 ];
 
-const DEFAULTS = { search: "", status: "", stage: "", toVerify: "", needsFee: "", isAbroad: "", paymentStatus: "", paymentMethod: "", source: "", from: "", to: "", sortBy: "newest", page: "1" };
+const DEFAULTS = { search: "", status: "", stage: "", toVerify: "", needsFee: "", isAbroad: "", isHeavyOrder: "", paymentStatus: "", paymentMethod: "", source: "", from: "", to: "", sortBy: "newest", page: "1" };
 
 export default function OrdersList() {
   const me = useAuth((s) => s.user);
@@ -134,8 +134,8 @@ export default function OrdersList() {
     },
   });
 
-  const exportParams = { status: f.status, stage: f.stage, toVerify: f.toVerify, paymentStatus: f.paymentStatus, paymentMethod: f.paymentMethod, source: f.source, from: f.from, to: f.to, search: debounced };
-  const filtered = !!(f.search || f.status || f.stage || f.toVerify || f.paymentStatus || f.paymentMethod || f.source || f.from || f.to);
+  const exportParams = { status: f.status, stage: f.stage, toVerify: f.toVerify, isHeavyOrder: f.isHeavyOrder, paymentStatus: f.paymentStatus, paymentMethod: f.paymentMethod, source: f.source, from: f.from, to: f.to, search: debounced };
+  const filtered = !!(f.search || f.status || f.stage || f.toVerify || f.isHeavyOrder || f.paymentStatus || f.paymentMethod || f.source || f.from || f.to);
 
   const columns: Column<OrderSummary>[] = [
     {
@@ -146,8 +146,13 @@ export default function OrdersList() {
         <div>
           <p className="font-semibold">{o.orderNumber}</p>
           <p className="text-[11px] text-muted-foreground">{dateTime(o.placedAt)}</p>
-          {(o.deliveryFeePending || o.isAbroadOrder) && (
+          {(o.deliveryFeePending || o.isAbroadOrder || o.isHeavyOrder) && (
             <div className="flex flex-wrap gap-1 mt-1">
+              {o.isHeavyOrder && (
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30">
+                  🏋️ {tr("Heavy")}
+                </span>
+              )}
               {o.deliveryFeePending && (
                 <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
                   {tr("Needs Fee")}
@@ -305,6 +310,7 @@ export default function OrdersList() {
               <FilterSelect value={f.paymentStatus} onChange={(v) => setF({ paymentStatus: v })} all={tr("Any payment")} options={["PENDING", "PAID", "FAILED", "PARTIALLY_REFUNDED", "REFUNDED"].map((s) => ({ value: s, label: titleCase(s) }))} />
               <FilterSelect value={f.paymentMethod} onChange={(v) => setF({ paymentMethod: v })} all={tr("Any method")} options={[{ value: "CASH_ON_DELIVERY", label: tr("Cash on delivery") }, { value: "BKASH", label: "bKash" }, { value: "NAGAD", label: tr("Nagad") }, { value: "ROCKET", label: tr("Rocket") }]} />
               <FilterSelect value={f.source} onChange={(v) => setF({ source: v })} all={tr("All sources")} options={[{ value: "WEB", label: tr("Website") }, { value: "ADMIN", label: tr("Phone orders") }]} />
+              <FilterSelect value={f.isHeavyOrder} onChange={(v) => setF({ isHeavyOrder: v })} all={tr("All weights")} options={[{ value: "true", label: tr("🏋️ Heavy orders only") }]} />
               <FilterSelect value={f.sortBy} onChange={(v) => setF({ sortBy: v })} all={null} options={[{ value: "newest", label: tr("Newest first") }, { value: "oldest", label: tr("Oldest first") }, { value: "total-desc", label: tr("Highest total") }, { value: "total-asc", label: tr("Lowest total") }]} />
               <DateInput label={tr("From")} value={f.from} onChange={(v) => setF({ from: v })} />
               <DateInput label={tr("To")} value={f.to} onChange={(v) => setF({ to: v })} />

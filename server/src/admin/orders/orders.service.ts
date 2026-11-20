@@ -20,6 +20,7 @@ import {
   UpdateOrderNotesDto,
   UpdateShippingInfoDto,
   UpdateOrderDeliveryTimeDto,
+  SetExtraDeliveryChargeDto,
 } from './dto/order-admin.dto';
 import { recordReceivedPayment } from './order-payments';
 import { syncDeliveryWithOrder } from '../../common/delivery/delivery-sync';
@@ -90,6 +91,7 @@ export class AdminOrdersService {
       ...(q.source ? { source: q.source } : {}),
       ...(q.needsFee ? { deliveryFeePending: q.needsFee === 'true' } : {}),
       ...(q.isAbroad ? { isAbroadOrder: q.isAbroad === 'true' } : {}),
+      ...(q.isHeavyOrder ? { isHeavyOrder: q.isHeavyOrder === 'true' } : {}),
       ...((q.from || q.to) && {
         placedAt: {
           ...(q.from ? { gte: q.from } : {}),
@@ -266,6 +268,7 @@ export class AdminOrdersService {
             events: { orderBy: { createdAt: 'asc' } },
           },
         },
+        originPoint: true,
       },
     });
     if (!order) throw new NotFoundException('Order not found');
@@ -897,5 +900,79 @@ export class AdminOrdersService {
       blocked,
       results,
     };
+  }
+
+  async setExtraDeliveryCharge(
+    orderId: string,
+    dto: SetExtraDeliveryChargeDto,
+    adminId: string,
+  ) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { user: true, shippingAddress: true },
+    });
+    if (!order) throw new NotFoundException('Order not found');
+
+    const extra = Math.max(0, Number(dto.extraDeliveryCharge) || 0);
+    const subtotal = Number(order.subtotal);
+    const discount = Number(order.discountAmount);
+    const shipping = Number(order.shippingCost);
+    const tax = Number(order.taxAmount);
+    const pointsDiscount = Number(order.pointsDiscountAmount ?? 0);
+
+    const newTotal = Math.round((subtotal - discount + shipping + tax + extra - pointsDiscount) * 100) / 100;
+    const paid = Number(order.paidAmount);
+    const newDue = Math.max(0, Math.round((newTotal - paid) * 100) / 100);
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.order.update({
+        where: { id: orderId },
+        data: {
+          extraDeliveryCharge: extra,
+          heavyOrderNote: dto.heavyOrderNote?.trim() || null,
+          total: newTotal,
+          dueAmount: newDue,
+        },
+      });
+
+      await tx.orderStatusHistory.create({
+        data: {
+          orderId,
+          fromStatus: order.status,
+          toStatus: order.status,
+          note: `Extra delivery charge of ৳${extra} added by admin${dto.heavyOrderNote ? ` (${dto.heavyOrderNote.trim()})` : ''}`,
+          changedBy: 'admin',
+        },
+      });
+
+      await writeAudit(tx, {
+        adminId,
+        action: 'ORDER_EDITED',
+        entity: 'Order',
+        entityId: orderId,
+        oldValue: {
+          orderNumber: order.orderNumber,
+          extraDeliveryCharge: Number(order.extraDeliveryCharge),
+          total: Number(order.total),
+        },
+        newValue: {
+          orderNumber: order.orderNumber,
+          extraDeliveryCharge: extra,
+          total: newTotal,
+          note: dto.heavyOrderNote,
+        },
+      });
+    });
+
+    if (order.userId) {
+      await this.notifications.notifyInApp(order.userId, {
+        type: 'ORDER_UPDATED',
+        title: `Delivery charge updated — #${order.orderNumber}`,
+        body: `Extra delivery charge of ৳${extra} added. New total: ৳${newTotal.toFixed(0)}. You can cancel this order if you do not wish to proceed.`,
+        data: { orderId: order.id, orderNumber: order.orderNumber },
+      });
+    }
+
+    return this.findOne(orderId);
   }
 }

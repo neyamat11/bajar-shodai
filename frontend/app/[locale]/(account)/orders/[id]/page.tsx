@@ -165,6 +165,27 @@ function Detail() {
         <PlacedBannerGate order={order} />
       </Suspense>
 
+      {/* Heavy Order Notice Banner */}
+      {order.isHeavyOrder && (
+        <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-xs text-amber-800 dark:text-amber-200 shadow-xs">
+          <div className="flex items-start gap-2.5">
+            <span className="text-base leading-none">🏋️</span>
+            <div className="space-y-0.5">
+              <p className="font-bold text-sm">
+                {locale === "bn" ? "ভারী পণ্যের অর্ডার" : "Heavy Order"}
+              </p>
+              <p className="text-xs text-amber-800/90 dark:text-amber-200/90 leading-relaxed">
+                {order.heavyOrderNote
+                  ? order.heavyOrderNote
+                  : (locale === "bn"
+                      ? "আপনার অর্ডারে ভারী পণ্য রয়েছে। বিশেষ যানবাহনের প্রয়োজন হলে অ্যাডমিন অতিরিক্ত ডেলিভারি ফি যুক্ত করতে পারেন। ফি প্রযোজ্য হলে আপনি তা দেখতে ও যেকোনো সময় অর্ডার বাতিল করতে পারেন।"
+                      : "This order contains heavy items. If special transport is required, admin may add an extra delivery charge. You can cancel the order if you do not agree.")}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Dynamic Family Location Sharing Card (When location was skipped / pending) */}
       {(order.deliveryFeePending || (order.locationToken && !order.deliveryDistanceKm)) && (
         <div className="rounded-xl border-2 border-emerald-500/40 bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent p-5 sm:p-6 shadow-sm space-y-4">
@@ -333,6 +354,13 @@ function Detail() {
                   : order.shippingCost ? formatBDT(order.shippingCost) : t("free")
               }
             />
+            {!!order.extraDeliveryCharge && order.extraDeliveryCharge > 0 && (
+              <Row
+                label={locale === "bn" ? "অতিরিক্ত ডেলিভারি (ভারী পণ্য)" : "Extra Delivery (Heavy)"}
+                value={formatBDT(order.extraDeliveryCharge)}
+                tone="text-amber-700 dark:text-amber-300"
+              />
+            )}
             <div className="border-t border-border pt-3">
               <Row label={t("total")} value={formatBDT(order.total)} strong />
             </div>

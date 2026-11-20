@@ -143,6 +143,19 @@ export class UploadsService implements OnModuleInit, OnModuleDestroy {
     return this.url(thumbKey(key));
   }
 
+  /**
+   * Directly stores a raw file buffer (e.g. chat attachment, prescription)
+   * to Cloudflare R2 (or local disk fallback) and returns its public URL.
+   */
+  async uploadRaw(
+    key: string,
+    data: Buffer,
+    contentType = 'image/webp',
+  ): Promise<string> {
+    await this.writeFile(key, data, contentType);
+    return this.url(key);
+  }
+
   view(upload: Pick<Upload, 'id' | 'key' | 'width' | 'height'>): UploadView {
     return {
       id: upload.id,

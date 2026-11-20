@@ -61,16 +61,19 @@ describe('permissions', () => {
       expect(canDeleteOrders({ role: 'ADMIN' })).toBe(true);
     });
 
-    it('allows managers to delete orders by staffTitle or orders.delete permission', () => {
+    it('allows managers to delete orders by staffTitle', () => {
       expect(canDeleteOrders({ role: 'STAFF', staffTitle: 'Manager' })).toBe(true);
       expect(canDeleteOrders({ role: 'STAFF', staffTitle: 'Store Manager' })).toBe(true);
-      expect(canDeleteOrders(staff(['orders.delete']))).toBe(true);
+      expect(canDeleteOrders({ role: 'STAFF', staffTitle: 'Branch Manager' })).toBe(true);
     });
 
-    it('blocks regular staff, delivery riders, and customers from deleting orders', () => {
+    it('blocks delivery riders, general staff, and customers from deleting orders', () => {
       expect(canDeleteOrders({ role: 'USER' })).toBe(false);
-      expect(canDeleteOrders({ role: 'STAFF', staffTitle: 'Rider', permissions: [] })).toBe(false);
+      expect(canDeleteOrders({ role: 'STAFF', staffTitle: 'Rider', canDeliver: true })).toBe(false);
+      expect(canDeleteOrders({ role: 'STAFF', staffTitle: 'Delivery Staff', canDeliver: true })).toBe(false);
+      expect(canDeleteOrders({ role: 'STAFF', staffTitle: 'Manager', canDeliver: true })).toBe(false);
       expect(canDeleteOrders(staff(['orders.view', 'orders.manage']))).toBe(false);
+      expect(canDeleteOrders({ role: 'STAFF', staffTitle: 'Packer' })).toBe(false);
     });
   });
 });

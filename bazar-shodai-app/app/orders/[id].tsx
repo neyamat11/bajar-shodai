@@ -212,6 +212,25 @@ export default function OrderDetailScreen() {
           ) : null}
         </View>
 
+        {/* Heavy Order Notice Banner */}
+        {order.isHeavyOrder && (
+          <View style={styles.heavyOrderBanner}>
+            <Text style={{ fontSize: 16 }}>🏋️</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.heavyOrderBannerTitle}>
+                {isBn ? 'ভারী পণ্যের অর্ডার' : 'Heavy Order'}
+              </Text>
+              <Text style={styles.heavyOrderBannerSub}>
+                {order.heavyOrderNote
+                  ? order.heavyOrderNote
+                  : (isBn
+                      ? 'আপনার অর্ডারে ভারী পণ্য রয়েছে। বিশেষ যানবাহনের প্রয়োজন হলে অ্যাডমিন অতিরিক্ত ডেলিভারি ফি যুক্ত করতে পারেন। ফি প্রযোজ্য হলে আপনি তা দেখতে ও যেকোনো সময় অর্ডার বাতিল করতে পারেন।'
+                      : 'This order contains heavy items. If special transport is required, an extra delivery charge may be added. You can cancel the order if you do not agree.')}
+              </Text>
+            </View>
+          </View>
+        )}
+
         {/* Live Delivery Map & Rider Contact (if out for delivery) */}
         <LiveDeliveryMap
           rider={order.rider}
@@ -484,6 +503,15 @@ export default function OrderDetailScreen() {
             )}
           </View>
 
+          {!!order.extraDeliveryCharge && order.extraDeliveryCharge > 0 && (
+            <View style={styles.summaryRow}>
+              <Text style={{ fontSize: 13, color: '#b45309', fontWeight: '600' }}>
+                {isBn ? 'অতিরিক্ত ডেলিভারি (ভারী পণ্য)' : 'Extra Delivery (Heavy Order)'}
+              </Text>
+              <Price amount={order.extraDeliveryCharge} size="sm" />
+            </View>
+          )}
+
           <View style={styles.divider} />
 
           <View style={styles.totalRow}>
@@ -627,6 +655,27 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#0b6234',
     marginTop: 2,
+  },
+  heavyOrderBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    backgroundColor: '#fffbeb',
+    borderWidth: 1,
+    borderColor: '#f59e0b',
+    borderRadius: Radius.sm,
+    padding: 12,
+  },
+  heavyOrderBannerTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#92400e',
+  },
+  heavyOrderBannerSub: {
+    fontSize: 11.5,
+    color: '#b45309',
+    marginTop: 2,
+    lineHeight: 16,
   },
   slotInAddressRow: {
     flexDirection: 'row',

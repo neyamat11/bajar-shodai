@@ -27,6 +27,7 @@ import { BackInStockModule } from './common/back-in-stock';
 import { AdminFeedModule } from './common/admin-feed';
 import { CustomerModule } from './customer/customer.module';
 import { ChatModule } from './chat/chat.module';
+import { PushModule } from './common/push/push.module';
 
 import { MedExModule } from './common/medex';
 
@@ -63,6 +64,7 @@ import { MedExModule } from './common/medex';
     AdminModule,
     CustomerModule,
     ChatModule,
+    PushModule,
   ],
   controllers: [AppController],
   providers: [AppService],

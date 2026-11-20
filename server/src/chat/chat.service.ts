@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, Logger, NotFoundException } from '@nes
 import { PrismaService } from '../prisma/prisma.service';
 import { ChatConversationStatus, ChatSenderType } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
+import { UploadsService } from '../common/uploads';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import { randomUUID } from 'crypto';
@@ -25,6 +26,7 @@ export class ChatService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
+    private readonly uploadsService: UploadsService,
   ) {
     this.rootDir = path.resolve(this.config.get<string>('uploads.dir') ?? 'uploads');
     this.publicBase = this.config.get<string>('uploads.publicBaseUrl') ?? '';
@@ -42,9 +44,6 @@ export class ChatService {
       throw new BadRequestException('Image size must not exceed 5MB');
     }
 
-    const chatDir = path.join(this.rootDir, 'chat');
-    await fs.mkdir(chatDir, { recursive: true });
-
     try {
       const metadata = await sharp(file.buffer).metadata();
       if (!metadata.format || !ALLOWED_IMAGE_FORMATS.has(metadata.format)) {
@@ -52,16 +51,17 @@ export class ChatService {
       }
 
       const fileName = `${randomUUID()}.webp`;
-      const filePath = path.join(chatDir, fileName);
-
-      await sharp(file.buffer)
+      const webpBuffer = await sharp(file.buffer)
         .rotate()
         .resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true })
         .webp({ quality: 80 })
-        .toFile(filePath);
+        .toBuffer();
 
-      const relativeUrl = `/uploads/chat/${fileName}`;
-      const finalUrl = this.publicBase ? `${this.publicBase}${relativeUrl}` : relativeUrl;
+      const finalUrl = await this.uploadsService.uploadRaw(
+        `chat/${fileName}`,
+        webpBuffer,
+        'image/webp',
+      );
 
       return {
         url: finalUrl,

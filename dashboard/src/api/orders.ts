@@ -90,6 +90,11 @@ export interface OrderSummary {
   senderContactNumber?: string | null;
   locationToken?: string | null;
   locationUrl?: string | null;
+  isHeavyOrder?: boolean;
+  extraDeliveryCharge?: string | number | null;
+  heavyOrderNote?: string | null;
+  originPointId?: string | null;
+  originPoint?: { id: string; name: string; nameBn?: string | null; latitude: number; longitude: number } | null;
 }
 export interface Payment {
   id: string;
@@ -182,6 +187,8 @@ export interface OrderFilters {
   needsFee?: string;
   /** "true" = orders placed from abroad */
   isAbroad?: string;
+  /** "true" = heavy/oversized orders */
+  isHeavyOrder?: string;
   paymentStatus?: string;
   paymentMethod?: string;
   source?: string;
@@ -289,6 +296,8 @@ export const ordersApi = {
   setPin: (id: string, body: { latitude: number; longitude: number; placeName?: string; landmark?: string; recalculateShipping?: boolean }) =>
     api.put<OrderDetail>(`/admin/orders/${id}/delivery-pin`, body).then((r) => r.data),
   overrideFee: (id: string, body: { fee: number | null; reason?: string }) => api.put<OrderDetail>(`/admin/orders/${id}/delivery-fee`, body).then((r) => r.data),
+  setExtraDeliveryCharge: (id: string, body: { extraDeliveryCharge: number; heavyOrderNote?: string }) =>
+    api.patch<OrderDetail>(`/admin/orders/${id}/extra-delivery-charge`, body).then((r) => r.data),
   requestLocation: (body: { phone?: string; name?: string; orderId?: string }) => api.post<LocationRequest>("/admin/location-requests", body).then((r) => r.data),
   locationRequests: (orderId: string) => api.get<LocationRequest[]>("/admin/location-requests", { params: { orderId } }).then((r) => r.data),
   list: (f: OrderFilters) => api.get<Paged<OrderSummary>>("/admin/orders", { params: clean({ ...f }) }).then((r) => r.data),

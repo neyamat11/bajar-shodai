@@ -8,6 +8,7 @@ import { BrandLogo } from '@/components/ui/BrandLogo';
 import { toast } from '@/store/useToastStore';
 import { haptics } from '@/services/haptics';
 import { loginApi } from '@/features/auth/api/login';
+import { syncPushTokenWithBackend } from '@/services/notifications';
 import { useAuthStore } from '@/store/useAuthStore';
 import { getOrCreateGuestToken } from '@/utils/guestToken';
 import { Radius, TouchTarget } from '@/constants/layout';
@@ -53,6 +54,7 @@ export default function LoginScreen() {
       });
 
       await login(session);
+      void syncPushTokenWithBackend();
       haptics.success();
       toast.success(
         'Welcome Back!',

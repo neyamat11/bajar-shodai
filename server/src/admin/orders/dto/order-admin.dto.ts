@@ -70,6 +70,13 @@ export class OrderFilterDto {
   toVerify?: 'true';
 
   @ApiPropertyOptional({
+    description: 'true = only heavy/oversized orders exceeding unit weight thresholds',
+  })
+  @IsOptional()
+  @IsIn(['true', 'false'])
+  isHeavyOrder?: 'true' | 'false';
+
+  @ApiPropertyOptional({
     description: 'true = only orders awaiting delivery fee assignment',
   })
   @IsOptional()
@@ -144,6 +151,19 @@ export class ListOrdersDto extends OrderFilterDto {
   @IsOptional()
   @IsIn(ORDER_SORTS)
   sortBy?: (typeof ORDER_SORTS)[number];
+}
+
+export class SetExtraDeliveryChargeDto {
+  @ApiProperty({ example: 50, description: 'Extra delivery charge for heavy/oversized order' })
+  @IsNumber()
+  @Min(0)
+  extraDeliveryCharge: number;
+
+  @ApiPropertyOptional({ example: 'Order exceeds 12kg limit' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  heavyOrderNote?: string;
 }
 
 export class UpdateOrderStatusDto {

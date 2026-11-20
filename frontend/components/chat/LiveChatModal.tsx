@@ -7,13 +7,89 @@ import { assetUrl } from "@/lib/api/client";
 import {
   ArrowDown,
   ChevronDown,
+  ExternalLink,
   Image as ImageIcon,
+  ImageOff,
   Loader2,
   Paperclip,
   Send,
   X,
   ZoomIn,
 } from "lucide-react";
+
+function ChatModalImageAttachment({
+  url,
+  onOpenLightbox,
+}: {
+  url: string;
+  onOpenLightbox: (url: string) => void;
+}) {
+  const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
+  const [currentSrc, setCurrentSrc] = useState(() => assetUrl(url));
+  const [triedR2Fallback, setTriedR2Fallback] = useState(false);
+
+  const handleError = () => {
+    if (!triedR2Fallback) {
+      setTriedR2Fallback(true);
+      const match = url.match(/chat\/([^/]+\.webp)/i);
+      if (match) {
+        setCurrentSrc(`https://pub-ab845b0ea4fd4000948347bca9ac30a0.r2.dev/chat/${match[1]}`);
+        return;
+      }
+    }
+    setStatus("error");
+  };
+
+  if (status === "error") {
+    return (
+      <div className="my-1.5 flex items-center gap-2 rounded-lg border border-border/70 bg-background/60 p-2 text-xs text-muted-foreground shadow-2xs">
+        <ImageOff className="size-4 shrink-0 text-muted-foreground/70" />
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold text-foreground text-[11px] truncate">Photo Attachment</p>
+          <a
+            href={currentSrc}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-[10px] font-medium text-brand-fresh hover:underline"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <ExternalLink className="size-2.5" /> View file
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-2 overflow-hidden rounded-xl border border-black/10 dark:border-white/10 group relative max-w-[260px] bg-muted/20">
+      {status === "loading" && (
+        <div className="flex h-32 w-full items-center justify-center bg-muted/30 text-muted-foreground animate-pulse">
+          <Loader2 className="size-4 animate-spin text-muted-foreground/60" />
+        </div>
+      )}
+      <img
+        src={currentSrc}
+        alt="Attachment"
+        className={`max-h-48 w-full object-cover rounded-xl cursor-pointer transition-all duration-200 group-hover:scale-[1.02] ${
+          status === "loading" ? "hidden" : "block"
+        }`}
+        onLoad={() => setStatus("loaded")}
+        onError={handleError}
+        onClick={() => onOpenLightbox(currentSrc)}
+      />
+      {status === "loaded" && (
+        <button
+          type="button"
+          onClick={() => onOpenLightbox(currentSrc)}
+          className="absolute bottom-1.5 right-1.5 flex size-6 items-center justify-center rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/80 shadow-xs"
+          aria-label="View photo"
+        >
+          <ZoomIn className="size-3.5" />
+        </button>
+      )}
+    </div>
+  );
+}
 
 export default function LiveChatModal() {
   const {
@@ -194,22 +270,10 @@ export default function LiveChatModal() {
                 >
                   {/* Photo Attachment */}
                   {m.attachmentUrl && (
-                    <div className="mb-2 overflow-hidden rounded-lg border border-black/10 dark:border-white/10 group relative">
-                      <img
-                        src={assetUrl(m.attachmentUrl)}
-                        alt="Attachment"
-                        className="max-h-48 w-full object-cover rounded cursor-pointer transition-transform duration-200 group-hover:scale-105"
-                        onClick={() => setLightboxUrl(assetUrl(m.attachmentUrl))}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setLightboxUrl(assetUrl(m.attachmentUrl))}
-                        className="absolute bottom-1.5 right-1.5 flex h-6 w-6 items-center justify-center rounded bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                        aria-label="View photo"
-                      >
-                        <ZoomIn className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
+                    <ChatModalImageAttachment
+                      url={m.attachmentUrl}
+                      onOpenLightbox={setLightboxUrl}
+                    />
                   )}
 
                   {/* Text Content */}

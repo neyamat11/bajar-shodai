@@ -51,6 +51,9 @@ export interface CustomerOrderRecord {
   } | null;
   items: OrderItemRecord[];
   deliveryFeePending?: boolean;
+  isHeavyOrder?: boolean;
+  extraDeliveryCharge?: number;
+  heavyOrderNote?: string;
   isAbroadOrder?: boolean;
   senderCountry?: string | null;
   senderContactMethod?: string | null;

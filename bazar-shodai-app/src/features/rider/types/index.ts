@@ -35,6 +35,9 @@ export interface RiderDeliveryOrder {
   };
   items: RiderDeliveryItem[];
   customerNote?: string;
+  isHeavyOrder?: boolean;
+  extraDeliveryCharge?: number;
+  heavyOrderNote?: string;
 }
 
 export interface RiderDelivery {

@@ -11,6 +11,8 @@ export interface CheckoutSummaryData {
   distanceKm?: number;
   isPendingFee?: boolean;
   isLocationPending?: boolean;
+  isHeavyOrder?: boolean;
+  heavyOrderReason?: string;
   coupon?: {
     code: string;
     discount: number;
@@ -110,6 +112,19 @@ export function CheckoutOrderSummary({
             <Text style={styles.weightTitle}>ওজন সীমা অতিক্রম করেছে</Text>
             <Text style={styles.weightSub}>
               কার্টের মোট ওজন ({summary.loyalty.orderWeightKg} কেজি) সীমা ছাড়িয়ে যাওয়ায় নিয়মিত ডেলিভারি চার্জ প্রযোজ্য।
+            </Text>
+          </View>
+        </View>
+      )}
+
+      {/* Heavy Order Notice */}
+      {summary.isHeavyOrder && (
+        <View style={styles.heavyOrderBadge}>
+          <Text style={styles.milestoneIcon}>🏋️</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.heavyOrderTitle}>ভারী পণ্যের অর্ডার বিজ্ঞপ্তি (Heavy Order)</Text>
+            <Text style={styles.heavyOrderSub}>
+              আপনার অর্ডারে ১২ কেজির বেশি পণ্য রয়েছে। অতিরিক্ত ওজনের জন্য বিশেষ যানবাহন প্রয়োজন হলে অ্যাডমিন কর্তৃক অতিরিক্ত ডেলিভারি চার্জ যুক্ত হতে পারে। অ্যাডমিন নিশ্চিত করার পর আপনি চাইলে অর্ডার বাতিল করতে পারবেন।
             </Text>
           </View>
         </View>
@@ -330,6 +345,28 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#b45309',
     marginTop: 2,
+  },
+  heavyOrderBadge: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: '#fffbeb',
+    borderWidth: 1,
+    borderColor: '#f59e0b',
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 10,
+  },
+  heavyOrderTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#b45309',
+  },
+  heavyOrderSub: {
+    fontSize: 11,
+    color: '#92400e',
+    marginTop: 2,
+    lineHeight: 16,
   },
   pointsBox: {
     backgroundColor: '#f8fafc',

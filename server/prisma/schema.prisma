@@ -313,6 +313,7 @@ model User {
   chatConversations    ChatConversation[]      @relation("UserChatConversations")
   adminAssignedChats   ChatConversation[]      @relation("AdminAssignedChats")
   chatMessages         ChatMessage[]           @relation("UserChatMessages")
+  staffDevices         StaffDevice[]           @relation("StaffDevices")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1051,6 +1052,15 @@ model Order {
   isMilestoneFreeShipping Boolean              @default(false)
   orderWeightKg           Decimal?             @db.Decimal(8, 2)
   loyaltyTransactions     LoyaltyTransaction[]
+
+  // Heavy / oversized order
+  isHeavyOrder        Boolean  @default(false)
+  extraDeliveryCharge Decimal  @default(0) @db.Decimal(10, 2)
+  heavyOrderNote      String?
+
+  // Delivery origin point
+  originPointId String?
+  originPoint   DeliveryOrigin? @relation("OrderOrigin", fields: [originPointId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2052,3 +2062,35 @@ model HomeSectionItem {
   @@index([sectionId, displayOrder])
 }
 
+
+// ============================================================
+// DELIVERY ORIGINS
+// ============================================================
+
+model DeliveryOrigin {
+  id        String   @id @default(cuid())
+  name      String
+  nameBn    String?
+  latitude  Float
+  longitude Float
+  isDefault Boolean  @default(false)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders    Order[]  @relation("OrderOrigin")
+}
+
+// ============================================================
+// STAFF DEVICES (push-notification tokens)
+// ============================================================
+
+model StaffDevice {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation("StaffDevices", fields: [userId], references: [id], onDelete: Cascade)
+  pushToken String   @unique
+  platform  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

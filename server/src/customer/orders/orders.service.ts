@@ -351,6 +351,41 @@ export class OrdersService {
       const effectiveMinutes = Math.max(leadMinutes, roadMinutes);
       const estimatedDelivery = new Date(Date.now() + effectiveMinutes * 60 * 1000);
 
+      // Heavy order check based on configured unit thresholds (e.g. KG > 12)
+      let isHeavyOrder = false;
+      try {
+        const deliverySettings = await this.settings.get('delivery');
+        const heavyRules = deliverySettings?.heavyOrderRules ?? [
+          { unit: 'kg', threshold: 12, isEnabled: true },
+          { unit: 'কেজি', threshold: 12, isEnabled: true },
+        ];
+        for (const rule of heavyRules) {
+          if (!rule.isEnabled || rule.threshold <= 0) continue;
+          const targetUnit = rule.unit.toLowerCase().trim();
+          let totalForUnit = 0;
+          for (const item of cartItems) {
+            const itemUnit = (item.product.unit?.shortLabel || '').toLowerCase().trim();
+            const itemUnitBn = (item.product.unit?.shortLabelBn || '').toLowerCase().trim();
+            if (itemUnit === targetUnit || itemUnitBn === targetUnit || (targetUnit === 'kg' && (itemUnit === 'kg' || itemUnitBn === 'কেজি'))) {
+              totalForUnit += toNum(item.quantity);
+            }
+          }
+          if (totalForUnit > rule.threshold) {
+            isHeavyOrder = true;
+            break;
+          }
+        }
+      } catch {
+        const kgTotal = cartItems
+          .filter((i) => {
+            const u = (i.product.unit?.shortLabel || '').toLowerCase();
+            const ub = (i.product.unit?.shortLabelBn || '').toLowerCase();
+            return u === 'kg' || ub === 'কেজি';
+          })
+          .reduce((sum, i) => sum + toNum(i.quantity), 0);
+        if (kgTotal > 12) isHeavyOrder = true;
+      }
+
       const created = await tx.order.create({
         data: {
           orderNumber,
@@ -369,6 +404,9 @@ export class OrdersService {
           pointsDiscountAmount: quote.loyalty.pointsDiscountAmount,
           isMilestoneFreeShipping: quote.loyalty.milestone.freeShippingApplied,
           orderWeightKg: quote.orderWeightKg,
+          isHeavyOrder,
+          extraDeliveryCharge: 0,
+          originPointId: quote.shipping.originId ?? null,
           // Nothing is confirmed at placement time for either method:
           // COD is collected on delivery, and a manually submitted bKash
           // transaction ID is only confirmed once an admin verifies it

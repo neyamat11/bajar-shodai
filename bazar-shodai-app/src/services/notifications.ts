@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import { api } from '@/api/client';
 import { storage } from '@/utils/storage';
 import { setupAndroidNotificationChannels } from '@/constants/notificationChannels';
+import { useAuthStore } from '@/store/useAuthStore';
 
 const PUSH_TOKEN_KEY = 'bazar_push_token';
 
@@ -17,6 +18,46 @@ Notifications.setNotificationHandler({
     priority: Notifications.AndroidNotificationPriority.HIGH,
   }),
 });
+
+export async function syncPushTokenWithBackend(explicitToken?: string): Promise<void> {
+  const token = explicitToken || getCachedPushToken();
+  if (!token) return;
+
+  // 1. Register with customer notification endpoint
+  try {
+    await api.post('/customer/notifications/token', {
+      token,
+      platform: Platform.OS,
+    });
+  } catch {
+    // Fallback silently if offline
+  }
+
+  // 2. If user is staff/admin/superadmin, register token to staff push endpoint
+  try {
+    const userRole = useAuthStore.getState().user?.role?.toUpperCase();
+    if (userRole === 'STAFF' || userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') {
+      await api.post('/staff/push-token', {
+        pushToken: token,
+        platform: Platform.OS,
+      });
+    }
+  } catch {
+    // Fallback silently
+  }
+}
+
+export async function unregisterStaffPushTokenAsync(): Promise<void> {
+  const token = getCachedPushToken();
+  if (!token) return;
+  try {
+    await api.delete('/staff/push-token', {
+      data: { pushToken: token },
+    });
+  } catch {
+    // Silent fallback
+  }
+}
 
 export async function registerForPushNotificationsAsync(): Promise<string | null> {
   // Setup Android channels first
@@ -42,16 +83,7 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
 
     if (token) {
       storage.setString(PUSH_TOKEN_KEY, token);
-
-      // Attempt to register token with backend server
-      try {
-        await api.post('/customer/notifications/token', {
-          token,
-          platform: Platform.OS,
-        });
-      } catch {
-        // Fallback silently if endpoint is not implemented or offline
-      }
+      await syncPushTokenWithBackend(token);
     }
 
     return token;

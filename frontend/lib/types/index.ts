@@ -320,6 +320,10 @@ export interface Order {
   deliveryPlaceName?: string | null;
   deliveryLandmark?: string | null;
   deliveryFeePending?: boolean;
+  isHeavyOrder?: boolean;
+  extraDeliveryCharge?: number;
+  heavyOrderNote?: string | null;
+  originPointName?: string | null;
   isAbroadOrder?: boolean;
   senderCountry?: string | null;
   senderContactMethod?: 'WHATSAPP' | 'IMO' | 'PHONE' | null;

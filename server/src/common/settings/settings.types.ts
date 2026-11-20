@@ -122,6 +122,12 @@ export interface DeliverySlot {
   to: string;
 }
 
+export interface HeavyOrderRule {
+  unit: string;
+  threshold: number;
+  isEnabled: boolean;
+}
+
 // Delivery is priced by road distance from ONE point (the shop's origin: Kalibari Bazar,
 // by the Kalibari High School field / Sonali Bank Kalibari), not by zone:
 //   distance <= baseKm  -> baseCharge
@@ -159,6 +165,8 @@ export interface DeliverySettings {
   distanceCalculation: 'direct' | 'road';
   // Default delivery turnaround time in minutes for new orders (e.g. 60, 90, or 120 minutes for 1-2 hour delivery)
   defaultDeliveryMinutes: number;
+  // Heavy order surcharge rules (e.g. over 12kg)
+  heavyOrderRules?: HeavyOrderRule[];
 }
 
 export type MapProviderName = 'osm' | 'google';
@@ -327,6 +335,14 @@ export const DEFAULT_SETTINGS: SettingsMap = {
     restrictToZone: true,
     distanceCalculation: 'direct',
     defaultDeliveryMinutes: 90,
+    heavyOrderRules: [
+      { unit: 'kg', threshold: 12, isEnabled: true },
+      { unit: 'কেজি', threshold: 12, isEnabled: true },
+      { unit: 'প্যাকেট', threshold: 20, isEnabled: false },
+      { unit: 'packet', threshold: 20, isEnabled: false },
+      { unit: 'piece', threshold: 50, isEnabled: false },
+      { unit: 'liter', threshold: 15, isEnabled: false },
+    ],
   },
   maps: {
     provider: 'osm',

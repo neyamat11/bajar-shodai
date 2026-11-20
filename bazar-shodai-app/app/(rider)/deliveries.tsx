@@ -213,11 +213,16 @@ export default function RiderDeliveriesScreen() {
                     </Text>
                   </View>
 
-                  <Badge
-                    label={item.status.replace('_', ' ')}
-                    variant={getStatusBadgeVariant(item.status)}
-                    size="sm"
-                  />
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    {item.order.isHeavyOrder && (
+                      <Badge label="🏋️ Heavy" variant="carrot" size="sm" />
+                    )}
+                    <Badge
+                      label={item.status.replace('_', ' ')}
+                      variant={getStatusBadgeVariant(item.status)}
+                      size="sm"
+                    />
+                  </View>
                 </View>
 
                 {/* Address */}

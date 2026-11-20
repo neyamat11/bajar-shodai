@@ -31,6 +31,24 @@ export const reportsApi = {
 
 // ---------- settings ----------
 export interface DeliverySlot { id: string; label: string; labelBn: string; from: string; to: string }
+export interface HeavyOrderRule {
+  unit: string;
+  threshold: number;
+  isEnabled: boolean;
+}
+
+export interface DeliveryOrigin {
+  id: string;
+  name: string;
+  nameBn?: string | null;
+  latitude: number;
+  longitude: number;
+  isDefault: boolean;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface DeliverySettings {
   enabled: boolean;
   originLat: number | null;
@@ -54,6 +72,7 @@ export interface DeliverySettings {
   restrictToZone?: boolean;
   distanceCalculation?: "direct" | "road";
   defaultDeliveryMinutes?: number;
+  heavyOrderRules?: HeavyOrderRule[];
 }
 /** Secrets never come back: only a flag saying whether one is stored. */
 export interface MapsSettings {
@@ -126,6 +145,14 @@ export const settingsApi = {
   testMaps: () => api.post<MapsTestResult>("/admin/settings/maps/test").then((r) => r.data),
   mapsUsage: () => api.get<MapsUsage>("/admin/settings/maps/usage").then((r) => r.data),
   testEmail: (to: string, overrides: Record<string, unknown>) => api.post<{ message?: string }>("/admin/settings/email/test", { to, ...overrides }).then((r) => r.data),
+};
+
+export const deliveryOriginsApi = {
+  list: () => api.get<DeliveryOrigin[]>("/admin/settings/delivery-origins").then((r) => r.data),
+  create: (data: Partial<DeliveryOrigin>) => api.post<DeliveryOrigin>("/admin/settings/delivery-origins", data).then((r) => r.data),
+  update: (id: string, data: Partial<DeliveryOrigin>) => api.patch<DeliveryOrigin>(`/admin/settings/delivery-origins/${id}`, data).then((r) => r.data),
+  setDefault: (id: string) => api.patch<DeliveryOrigin>(`/admin/settings/delivery-origins/${id}/set-default`).then((r) => r.data),
+  delete: (id: string) => api.delete<{ success: boolean }>(`/admin/settings/delivery-origins/${id}`).then((r) => r.data),
 };
 
 // ---------- logs ----------

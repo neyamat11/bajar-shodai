@@ -230,6 +230,11 @@ export default function OrderDetailPage() {
               <KeyValue label={tr("Subtotal")}>{money(o.subtotal)}</KeyValue>
               <KeyValue label={`${tr("Discount")}${o.couponCode ? ` (${o.couponCode})` : ""}`}>− {money(o.discountAmount)}</KeyValue>
               <KeyValue label={tr("Delivery")}>{money(o.shippingCost)}</KeyValue>
+              {Number(o.extraDeliveryCharge) > 0 && (
+                <KeyValue label={tr("Extra Delivery (Heavy)")} className="text-amber-600 dark:text-amber-400">
+                  + {money(o.extraDeliveryCharge)}
+                </KeyValue>
+              )}
               <KeyValue label={tr("Total")} className="text-base"><span className="font-bold">{money(o.total)}</span></KeyValue>
               <KeyValue label={tr("Paid")}>{money(o.paidAmount)}</KeyValue>
               {refunded > 0 && <KeyValue label={tr("Refunded")}>{money(refunded)}</KeyValue>}

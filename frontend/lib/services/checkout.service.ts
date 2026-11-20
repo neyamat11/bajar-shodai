@@ -35,6 +35,8 @@ export interface CheckoutSummary {
   pointsRedeemed?: number;
   pointsEarned?: number;
   orderWeightKg?: number;
+  isHeavyOrder?: boolean;
+  heavyOrderReason?: string;
   loyalty?: LoyaltyQuote;
   shippingCost: number;
   taxAmount: number;

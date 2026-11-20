@@ -104,6 +104,23 @@ export default function OrderSummaryPanel({
           </div>
         )}
 
+        {/* Heavy Order Notice Banner */}
+        {summary?.isHeavyOrder && (
+          <div className="flex items-start gap-2.5 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-300">
+            <span className="text-base leading-none">🏋️</span>
+            <div>
+              <p className="font-bold">
+                {locale === 'bn' ? 'ভারী পণ্যের অর্ডার বিজ্ঞপ্তি' : 'Heavy Order Notice'}
+              </p>
+              <p className="mt-0.5 text-[11px] leading-relaxed text-amber-800/90 dark:text-amber-200/90">
+                {locale === 'bn'
+                  ? 'আপনার অর্ডারে ১২ কেজির বেশি পণ্য রয়েছে। অতিরিক্ত ওজনের জন্য বিশেষ যানবাহন প্রয়োজন হলে ডেলিভারির আগে অ্যাডমিন কর্তৃক অতিরিক্ত চার্জ যুক্ত হতে পারে। অ্যাডমিন নিশ্চিত করার পর আপনি চাইলে অর্ডার বাতিল করতে পারবেন।'
+                  : 'Your order contains heavy items (over 12 kg). An extra delivery charge may be added manually by admin before dispatch. You may review and cancel the order if you do not wish to proceed.'}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Loyalty Points Redemption Box */}
         {summary?.loyalty?.enabled && summary.loyalty.userPoints > 0 && (
           <div className="rounded-lg border border-border bg-card p-3 space-y-2">

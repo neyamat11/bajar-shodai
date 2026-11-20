@@ -13,6 +13,7 @@ import {
   ArrowDown,
   CheckCheck,
   ExternalLink,
+  ImageOff,
   Loader2,
   MessageSquare,
   Paperclip,
@@ -30,6 +31,91 @@ const QUICK_RESPONSES = [
   "অনুগ্রহ করে আপনার সঠিক ঠিকানা বা কোনো পরিচিত ল্যান্ডমার্ক জানান।",
   "ধন্যবাদ! আমরা এখনই বিষয়টি চেক করে জানাচ্ছি।",
 ];
+
+function ChatImageAttachment({
+  url,
+  onOpenLightbox,
+}: {
+  url: string;
+  onOpenLightbox: (url: string) => void;
+}) {
+  const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
+  const [currentSrc, setCurrentSrc] = useState(() => assetUrl(url));
+  const [triedR2Fallback, setTriedR2Fallback] = useState(false);
+
+  const handleError = () => {
+    // If fallback to R2 hasn't been tried and this looks like a chat webp file
+    if (!triedR2Fallback) {
+      setTriedR2Fallback(true);
+      const match = url.match(/chat\/([^/]+\.webp)/i);
+      if (match) {
+        // Fallback to Cloudflare R2 bucket directly
+        setCurrentSrc(`https://pub-ab845b0ea4fd4000948347bca9ac30a0.r2.dev/chat/${match[1]}`);
+        return;
+      }
+      const raw = url || "";
+      const cleanPath = raw.replace(/^https?:\/\/[^/]+/i, "");
+      const localBaseUrl = `${ASSET_BASE}${cleanPath.startsWith("/") ? "" : "/"}${cleanPath}`;
+      if (localBaseUrl !== currentSrc) {
+        setCurrentSrc(localBaseUrl);
+        return;
+      }
+    }
+    setStatus("error");
+  };
+
+  if (status === "error") {
+    return (
+      <div className="my-1.5 flex items-center gap-2.5 rounded-lg border border-border/70 bg-muted/40 p-2.5 text-xs text-muted-foreground shadow-2xs">
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+          <ImageOff className="size-4" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold text-foreground text-[12px] truncate">{tr("Photo Attachment")}</p>
+          <a
+            href={currentSrc}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline mt-0.5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <ExternalLink className="size-3" /> {tr("Open link")}
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-2 overflow-hidden rounded-xl border border-black/10 dark:border-white/10 group relative max-w-[280px] bg-muted/20">
+      {status === "loading" && (
+        <div className="flex h-36 w-full items-center justify-center bg-muted/40 text-muted-foreground animate-pulse">
+          <Loader2 className="size-5 animate-spin text-muted-foreground/60" />
+        </div>
+      )}
+      <img
+        src={currentSrc}
+        alt="Attachment"
+        className={`max-h-60 w-full object-cover rounded-xl cursor-pointer transition-all duration-200 group-hover:scale-[1.02] ${
+          status === "loading" ? "hidden" : "block"
+        }`}
+        onLoad={() => setStatus("loaded")}
+        onError={handleError}
+        onClick={() => onOpenLightbox(currentSrc)}
+      />
+      {status === "loaded" && (
+        <button
+          type="button"
+          onClick={() => onOpenLightbox(currentSrc)}
+          className="absolute bottom-2 right-2 size-7 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/80 shadow-sm"
+          title={tr("View photo")}
+        >
+          <ZoomIn className="size-3.5" />
+        </button>
+      )}
+    </div>
+  );
+}
 
 export default function LiveChat() {
   const user = useAuth((s) => s.user);
@@ -277,8 +363,6 @@ export default function LiveChat() {
 
   const activeConv = conversations.find((c) => c.id === activeConvId);
 
-  const getMediaUrl = (url?: string | null) => assetUrl(url);
-
   return (
     <div className="flex h-[calc(100vh-4.5rem)] flex-col gap-0 overflow-hidden rounded-xl border border-border bg-card shadow-sm lg:flex-row">
       {/* ── Left Sidebar: Conversations Feed ── */}
@@ -480,30 +564,10 @@ export default function LiveChat() {
                     >
                       {/* Photo Attachment */}
                       {m.attachmentUrl && (
-                        <div className="mb-2 overflow-hidden rounded-lg border border-black/10 dark:border-white/10 group relative max-w-[280px]">
-                          <img
-                            src={getMediaUrl(m.attachmentUrl)}
-                            alt="Attachment"
-                            className="max-h-56 w-full object-cover rounded cursor-pointer transition-transform duration-200 group-hover:scale-105"
-                            onClick={() => setLightboxUrl(getMediaUrl(m.attachmentUrl))}
-                            onError={(e) => {
-                              const target = e.currentTarget;
-                              if (!target.dataset.triedFallback) {
-                                target.dataset.triedFallback = "true";
-                                const raw = m.attachmentUrl || "";
-                                const cleanPath = raw.replace(/^https?:\/\/[^/]+/i, "");
-                                target.src = `${ASSET_BASE}${cleanPath.startsWith("/") ? "" : "/"}${cleanPath}`;
-                              }
-                            }}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setLightboxUrl(getMediaUrl(m.attachmentUrl))}
-                            className="absolute bottom-1.5 right-1.5 size-6 rounded bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <ZoomIn className="size-3.5" />
-                          </button>
-                        </div>
+                        <ChatImageAttachment
+                          url={m.attachmentUrl}
+                          onOpenLightbox={setLightboxUrl}
+                        />
                       )}
 
                       {/* Text */}

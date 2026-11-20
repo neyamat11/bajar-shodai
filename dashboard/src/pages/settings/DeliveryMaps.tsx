@@ -1,8 +1,26 @@
 import { lazy, Suspense, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Crosshair, Layers, Plus, Trash2, Zap } from "lucide-react";
-import { settingsApi, type DeliverySettings, type DeliverySlot, type MapsSettings, type MapsTestResult } from "@/api/system";
+import { Crosshair, Layers, Loader2, Pencil, Plus, Trash2, Zap } from "lucide-react";
+import {
+  deliveryOriginsApi,
+  settingsApi,
+  type DeliveryOrigin,
+  type DeliverySettings,
+  type DeliverySlot,
+  type MapsSettings,
+  type MapsTestResult,
+} from "@/api/system";
+import { errorMessage } from "@/api/client";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Field, Section } from "@/components/shared/Field";
 import { Button } from "@/components/ui/button";
 import { Input, Select, Switch } from "@/components/ui/input";
@@ -27,6 +45,250 @@ function feeFor(d: DeliverySettings, km: number) {
 
 const num = (v: string) => (v.trim() === "" ? NaN : Number(v));
 
+function DeliveryOriginsManager() {
+  const qc = useQueryClient();
+  const { data: origins = [], isLoading } = useQuery({
+    queryKey: ["delivery-origins"],
+    queryFn: deliveryOriginsApi.list,
+  });
+
+  const [editOrigin, setEditOrigin] = useState<Partial<DeliveryOrigin> | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const saveOrigin = useMutation({
+    mutationFn: (item: Partial<DeliveryOrigin>) => {
+      if (item.id) {
+        return deliveryOriginsApi.update(item.id, item);
+      }
+      return deliveryOriginsApi.create(item);
+    },
+    onSuccess: () => {
+      toast.success(tr("Dispatch point saved successfully"));
+      setIsDialogOpen(false);
+      setEditOrigin(null);
+      void qc.invalidateQueries({ queryKey: ["delivery-origins"] });
+    },
+    onError: (err: unknown) => {
+      toast.error(errorMessage(err));
+    },
+  });
+
+  const setDefault = useMutation({
+    mutationFn: (id: string) => deliveryOriginsApi.setDefault(id),
+    onSuccess: () => {
+      toast.success(tr("Default dispatch point updated"));
+      void qc.invalidateQueries({ queryKey: ["delivery-origins"] });
+    },
+    onError: (err: unknown) => {
+      toast.error(errorMessage(err));
+    },
+  });
+
+  const deleteOrigin = useMutation({
+    mutationFn: (id: string) => deliveryOriginsApi.delete(id),
+    onSuccess: () => {
+      toast.success(tr("Dispatch point deleted"));
+      void qc.invalidateQueries({ queryKey: ["delivery-origins"] });
+    },
+    onError: (err: unknown) => {
+      toast.error(errorMessage(err));
+    },
+  });
+
+  const openNew = () => {
+    setEditOrigin({
+      name: "",
+      nameBn: "",
+      latitude: 23.1017,
+      longitude: 91.0918,
+      isActive: true,
+      isDefault: false,
+    });
+    setIsDialogOpen(true);
+  };
+
+  const openEdit = (o: DeliveryOrigin) => {
+    setEditOrigin({ ...o });
+    setIsDialogOpen(true);
+  };
+
+  return (
+    <Section
+      title={tr("Dispatch & Origin Points (Multi-Origin Delivery)")}
+      description={tr(
+        "Manage dispatch points (e.g. Kalibari, Chitoshi Bazar). For every customer order, the nearest dispatch point is automatically chosen to calculate distance and delivery fee.",
+      )}
+      actions={
+        <Button type="button" size="sm" variant="brand" onClick={openNew} className="gap-1.5">
+          <Plus className="size-4" /> {tr("Add Dispatch Point")}
+        </Button>
+      }
+      className="xl:col-span-2"
+    >
+      {isLoading ? (
+        <div className="flex h-24 items-center justify-center">
+          <Loader2 className="size-5 animate-spin text-muted-foreground" />
+        </div>
+      ) : origins.length === 0 ? (
+        <p className="text-xs text-muted-foreground">{tr("No dispatch points configured. Click Add to create one.")}</p>
+      ) : (
+        <div className="overflow-x-auto rounded-lg border border-border">
+          <table className="w-full text-left text-xs">
+            <thead className="border-b border-border bg-muted/40 text-muted-foreground">
+              <tr>
+                <th className="px-3.5 py-2.5 font-semibold">{tr("Point Name")}</th>
+                <th className="px-3.5 py-2.5 font-semibold">{tr("Coordinates (Lat, Lng)")}</th>
+                <th className="px-3.5 py-2.5 font-semibold">{tr("Status")}</th>
+                <th className="px-3.5 py-2.5 font-semibold">{tr("Default")}</th>
+                <th className="px-3.5 py-2.5 text-right font-semibold">{tr("Actions")}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {origins.map((o) => (
+                <tr key={o.id} className="hover:bg-muted/30 transition-colors">
+                  <td className="px-3.5 py-2.5">
+                    <p className="font-medium text-foreground">{o.name}</p>
+                    {o.nameBn && <p className="text-[11px] text-muted-foreground">{o.nameBn}</p>}
+                  </td>
+                  <td className="px-3.5 py-2.5 font-mono text-[11px] text-muted-foreground">
+                    {Number(o.latitude).toFixed(4)}, {Number(o.longitude).toFixed(4)}
+                  </td>
+                  <td className="px-3.5 py-2.5">
+                    {o.isActive ? (
+                      <Badge variant="fresh">{tr("Active")}</Badge>
+                    ) : (
+                      <Badge variant="outline">{tr("Inactive")}</Badge>
+                    )}
+                  </td>
+                  <td className="px-3.5 py-2.5">
+                    {o.isDefault ? (
+                      <Badge variant="brand">{tr("Default")}</Badge>
+                    ) : (
+                      <Button
+                        type="button"
+                        size="xs"
+                        variant="ghost"
+                        onClick={() => setDefault.mutate(o.id)}
+                        loading={setDefault.isPending}
+                        className="text-[11px] h-6 px-2"
+                      >
+                        {tr("Make default")}
+                      </Button>
+                    )}
+                  </td>
+                  <td className="px-3.5 py-2.5 text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="xs"
+                        onClick={() => openEdit(o)}
+                        className="h-7 w-7 p-0"
+                      >
+                        <Pencil className="size-3.5" />
+                      </Button>
+                      {!o.isDefault && origins.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="xs"
+                          onClick={() => {
+                            if (window.confirm(tr("Delete this dispatch point?"))) {
+                              deleteOrigin.mutate(o.id);
+                            }
+                          }}
+                          className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </Button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Add / Edit Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent size="sm">
+          <DialogHeader>
+            <DialogTitle>
+              {editOrigin?.id ? tr("Edit Dispatch Point") : tr("New Dispatch Point")}
+            </DialogTitle>
+          </DialogHeader>
+          <DialogBody className="space-y-3.5 text-xs">
+            <Field label={tr("Point Name (English)")} hint={tr("e.g. Chitoshi Bazar, Shahrasti")}>
+              <Input
+                value={editOrigin?.name ?? ""}
+                onChange={(e) => setEditOrigin((s) => ({ ...s, name: e.target.value }))}
+                placeholder="Chitoshi Bazar"
+              />
+            </Field>
+            <Field label={tr("Point Name (Bangla)")} hint={tr("e.g. চিতোষী বাজার")}>
+              <Input
+                value={editOrigin?.nameBn ?? ""}
+                onChange={(e) => setEditOrigin((s) => ({ ...s, nameBn: e.target.value }))}
+                placeholder="চিতোষী বাজার"
+              />
+            </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label={tr("Latitude")}>
+                <Input
+                  type="number"
+                  step="0.0001"
+                  value={editOrigin?.latitude ?? ""}
+                  onChange={(e) => setEditOrigin((s) => ({ ...s, latitude: Number(e.target.value) }))}
+                  placeholder="23.1017"
+                />
+              </Field>
+              <Field label={tr("Longitude")}>
+                <Input
+                  type="number"
+                  step="0.0001"
+                  value={editOrigin?.longitude ?? ""}
+                  onChange={(e) => setEditOrigin((s) => ({ ...s, longitude: Number(e.target.value) }))}
+                  placeholder="91.0918"
+                />
+              </Field>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-border p-3">
+              <div>
+                <p className="font-medium text-foreground">{tr("Active point")}</p>
+                <p className="text-[11px] text-muted-foreground">{tr("Available for nearest calculation")}</p>
+              </div>
+              <Switch
+                checked={editOrigin?.isActive ?? true}
+                onCheckedChange={(isActive) => setEditOrigin((s) => ({ ...s, isActive }))}
+              />
+            </div>
+          </DialogBody>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+              {tr("Cancel")}
+            </Button>
+            <Button
+              type="button"
+              variant="brand"
+              loading={saveOrigin.isPending}
+              onClick={() => {
+                if (!editOrigin?.name?.trim()) return toast.error(tr("Enter point name"));
+                if (typeof editOrigin.latitude !== "number" || isNaN(editOrigin.latitude)) return toast.error(tr("Enter valid latitude"));
+                if (typeof editOrigin.longitude !== "number" || isNaN(editOrigin.longitude)) return toast.error(tr("Enter valid longitude"));
+                saveOrigin.mutate(editOrigin);
+              }}
+            >
+              {tr("Save Point")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Section>
+  );
+}
+
 export function DeliveryForm({ v, tileUrl }: { v: DeliverySettings; tileUrl: string }) {
   const [f, setF] = useState({
     ...v,
@@ -43,6 +305,7 @@ export function DeliveryForm({ v, tileUrl }: { v: DeliverySettings; tileUrl: str
     restrictToZone: v.restrictToZone ?? true,
     distanceCalculation: v.distanceCalculation ?? "direct",
     defaultDeliveryMinutes: String(v.defaultDeliveryMinutes ?? 90),
+    heavyOrderRules: v.heavyOrderRules ?? [{ unit: "kg", threshold: 12, isEnabled: true }],
   });
   const [satellite, setSatellite] = useState(true);
   const [previewKm, setPreviewKm] = useState("6");
@@ -89,6 +352,7 @@ export function DeliveryForm({ v, tileUrl }: { v: DeliverySettings; tileUrl: str
       distanceCalculation: f.distanceCalculation ?? "direct",
       defaultDeliveryMinutes: num(f.defaultDeliveryMinutes) || 90,
       slots: f.slots.map((s) => ({ ...s, id: s.id.trim(), label: s.label.trim(), labelBn: s.labelBn.trim() })),
+      heavyOrderRules: f.heavyOrderRules,
     });
   };
 
@@ -96,6 +360,8 @@ export function DeliveryForm({ v, tileUrl }: { v: DeliverySettings; tileUrl: str
 
   return (
     <div className="grid items-start gap-4 xl:grid-cols-2 [&>button]:justify-self-start xl:[&>button]:col-span-2">
+      <DeliveryOriginsManager />
+
       {!hasPin && (
         <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2.5 text-[13px] font-medium text-amber-700 dark:text-amber-300 xl:col-span-2">
           {tr("The shop pin is not set yet, so customers cannot check out. Click the map where Kalibari Bazar is (the satellite view helps you find the school field) and press Save.")}
@@ -273,6 +539,111 @@ export function DeliveryForm({ v, tileUrl }: { v: DeliverySettings; tileUrl: str
           checked={f.restrictToZone}
           onChange={(restrictToZone) => setF({ ...f, restrictToZone })}
         />
+      </Section>
+
+      <Section
+        title={tr("Heavy Order Surcharge & Unit Thresholds")}
+        description={tr(
+          "Set unit weight/quantity thresholds. When cart exceeds the limit (e.g. >12 kg), a notice informs the customer at checkout, and admin can manually set the extra delivery charge in the order detail.",
+        )}
+        actions={
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() =>
+              setF((s) => ({
+                ...s,
+                heavyOrderRules: [
+                  ...(s.heavyOrderRules || []),
+                  { unit: "packet", threshold: 25, isEnabled: true },
+                ],
+              }))
+            }
+          >
+            <Plus className="size-4" /> {tr("Add Unit Rule")}
+          </Button>
+        }
+        className="xl:col-span-2"
+      >
+        <div className="space-y-2.5">
+          {(f.heavyOrderRules || []).map((rule, idx) => (
+            <div
+              key={idx}
+              className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card p-3"
+            >
+              <div className="w-32">
+                <Field label={idx === 0 ? tr("Unit") : undefined}>
+                  <Input
+                    value={rule.unit}
+                    onChange={(e) => {
+                      const val = e.target.value.toLowerCase();
+                      setF((s) => ({
+                        ...s,
+                        heavyOrderRules: s.heavyOrderRules?.map((r, i) =>
+                          i === idx ? { ...r, unit: val } : r,
+                        ),
+                      }));
+                    }}
+                    placeholder="kg"
+                  />
+                </Field>
+              </div>
+
+              <div className="w-36">
+                <Field label={idx === 0 ? tr("Threshold limit") : undefined}>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={rule.threshold}
+                    onChange={(e) => {
+                      const val = Number(e.target.value) || 0;
+                      setF((s) => ({
+                        ...s,
+                        heavyOrderRules: s.heavyOrderRules?.map((r, i) =>
+                          i === idx ? { ...r, threshold: val } : r,
+                        ),
+                      }));
+                    }}
+                  />
+                </Field>
+              </div>
+
+              <div className="flex items-center gap-2 pt-2 sm:pt-4">
+                <Switch
+                  checked={rule.isEnabled}
+                  onCheckedChange={(isEnabled) => {
+                    setF((s) => ({
+                      ...s,
+                      heavyOrderRules: s.heavyOrderRules?.map((r, i) =>
+                        i === idx ? { ...r, isEnabled } : r,
+                      ),
+                    }));
+                  }}
+                />
+                <span className="text-xs font-medium">
+                  {rule.isEnabled ? tr("Active") : tr("Inactive")}
+                </span>
+              </div>
+
+              <div className="ml-auto pt-2 sm:pt-4">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() =>
+                    setF((s) => ({
+                      ...s,
+                      heavyOrderRules: s.heavyOrderRules?.filter((_, i) => i !== idx),
+                    }))
+                  }
+                >
+                  <Trash2 className="size-4" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
       </Section>
 
       <Button loading={save.isPending} onClick={submit}>{tr("Save delivery settings")}</Button>
