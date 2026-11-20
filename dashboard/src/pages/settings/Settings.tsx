@@ -238,7 +238,7 @@ function EmailForm({ v }: { v: S["email"] }) {
   const [resendKey, setResendKey] = useState("");
   const [to, setTo] = useState("");
   const body = () => ({
-    provider: f.provider, fromName: f.fromName, fromEmail: f.fromEmail, replyTo: nz(f.replyTo),
+    provider: f.provider, fromName: f.fromName, fromEmail: nz(f.fromEmail), replyTo: nz(f.replyTo),
     smtpHost: nz(f.smtpHost), smtpPort: f.smtpPort ? Number(f.smtpPort) : null, smtpSecure: f.smtpSecure, smtpUser: nz(f.smtpUser),
     ...(smtpPass ? { smtpPass } : {}), ...(resendKey ? { resendApiKey: resendKey } : {}),
     adminNotificationEmail: nz(f.adminNotificationEmail),
