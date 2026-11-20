@@ -109,7 +109,7 @@ export default function RegisterScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 20 }} keyboardShouldPersistTaps="handled">
-        <View className="items-center mt-6 mb-8">
+        <View style={styles.logoContainer}>
           <BrandLogo size="xl" />
         </View>
 
@@ -120,13 +120,15 @@ export default function RegisterScreen() {
         ) : null}
 
         {/* 1-Click Google Sign-In */}
-        <GoogleAuthButton
-          onSuccess={() => {
-            router.replace('/(tabs)');
-          }}
-          onError={(msg) => setErrorMessage(msg)}
-          disabled={isSubmitting}
-        />
+        <View style={styles.googleButtonWrapper}>
+          <GoogleAuthButton
+            onSuccess={() => {
+              router.replace('/(tabs)');
+            }}
+            onError={(msg) => setErrorMessage(msg)}
+            disabled={isSubmitting}
+          />
+        </View>
 
         {/* Divider: OR CONTINUE WITH */}
         <View style={styles.dividerRow}>
@@ -257,6 +259,15 @@ export default function RegisterScreen() {
 }
 
 const styles = StyleSheet.create({
+  logoContainer: {
+    alignItems: 'center',
+    paddingTop: 12,
+    paddingBottom: 24,
+  },
+  googleButtonWrapper: {
+    paddingTop: 16,
+    marginBottom: 4,
+  },
   inputBox: {
     flexDirection: 'row',
     alignItems: 'center',

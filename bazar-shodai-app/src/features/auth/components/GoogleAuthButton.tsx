@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, StyleProp, ViewStyle } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
@@ -23,9 +23,10 @@ export interface GoogleAuthButtonProps {
   onSuccess?: () => void;
   onError?: (msg: string) => void;
   disabled?: boolean;
+  style?: StyleProp<ViewStyle>;
 }
 
-export function GoogleAuthButton({ onSuccess, onError, disabled = false }: GoogleAuthButtonProps) {
+export function GoogleAuthButton({ onSuccess, onError, disabled = false, style }: GoogleAuthButtonProps) {
   const { isBn } = useTranslation();
   const login = useAuthStore((s) => s.login);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -135,7 +136,7 @@ export function GoogleAuthButton({ onSuccess, onError, disabled = false }: Googl
       activeOpacity={0.8}
       disabled={disabled || isProcessing}
       onPress={handlePress}
-      style={styles.button}
+      style={[styles.button, style]}
       className="bg-card border border-border"
       accessibilityRole="button"
       accessibilityLabel={isBn ? 'গুগল দিয়ে চালিয়ে যান' : 'Continue with Google'}
