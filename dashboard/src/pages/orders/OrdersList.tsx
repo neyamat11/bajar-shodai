@@ -26,6 +26,8 @@ import { SavedViews } from "@/components/shared/SavedViews";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { tr } from "@/i18n";
+import { useAuth } from "@/store/auth";
+import { canDeleteOrders } from "@/lib/access";
 
 const LOCKED: OrderStatus[] = ["DELIVERED", "CANCELLED", "RETURNED", "REFUNDED"];
 /** the usual path first, then side exits; the server still checks every move */
@@ -57,6 +59,7 @@ const ORDER_VIEWS = [
 const DEFAULTS = { search: "", status: "", stage: "", toVerify: "", needsFee: "", isAbroad: "", paymentStatus: "", paymentMethod: "", source: "", from: "", to: "", sortBy: "newest", page: "1" };
 
 export default function OrdersList() {
+  const me = useAuth((s) => s.user);
   const navigate = useNavigate();
   const [f, setF] = useUrlState(DEFAULTS);
   const debounced = f.search; // SearchInput waits for a pause in typing before it changes the URL
@@ -230,7 +233,7 @@ export default function OrdersList() {
       sk: "icon",
       align: "right",
       cell: (o) => {
-        const canDelete = !["DELIVERED", "SHIPPED", "IN_TRANSIT", "OUT_FOR_DELIVERY"].includes(o.status);
+        const canDelete = canDeleteOrders(me) && !["DELIVERED", "SHIPPED", "IN_TRANSIT", "OUT_FOR_DELIVERY"].includes(o.status);
         return (
           <div onClick={(e) => e.stopPropagation()}>
             <DropdownMenu>
@@ -321,10 +324,12 @@ export default function OrdersList() {
         <Button size="sm" variant="brand" onClick={() => { setBulkStatus("CONFIRMED"); bulk.mutate("CONFIRMED"); }} loading={bulk.isPending}>{tr("Confirm")}</Button>
         <Button size="sm" variant="secondary" onClick={() => { setBulkStatus("SHIPPED"); bulk.mutate("SHIPPED"); }} loading={bulk.isPending}>{tr("Mark shipped")}</Button>
         <Button size="sm" variant="secondary" onClick={() => setBulkOpen(true)}>{tr("Change status…")}</Button>
-        <Button size="sm" variant="destructive" onClick={() => setBulkDelOpen(true)} className="gap-1.5 font-medium">
-          <Trash2 className="size-3.5" />
-          {tr("Delete selected")}
-        </Button>
+        {canDeleteOrders(me) && (
+          <Button size="sm" variant="destructive" onClick={() => setBulkDelOpen(true)} className="gap-1.5 font-medium">
+            <Trash2 className="size-3.5" />
+            {tr("Delete selected")}
+          </Button>
+        )}
       </BulkBar>
 
       <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>

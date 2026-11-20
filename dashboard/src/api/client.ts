@@ -187,10 +187,15 @@ export function assetUrl(url?: string | null): string {
   if (url.startsWith("data:") || url.startsWith("blob:")) return url;
   // Strip localhost/127.0.0.1 prefix left over from dev-stored data
   const clean = url.replace(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i, "");
-  // Already an absolute URL pointing to a real host — use it directly
-  if (/^https?:\/\//i.test(clean)) return clean;
-  // Relative path: prepend the API server base
-  return `${ASSET_BASE}${clean.startsWith("/") ? "" : "/"}${clean}`;
+  // If clean became a relative path or was relative: prepend the API server base
+  if (!/^https?:\/\//i.test(clean)) {
+    return `${ASSET_BASE}${clean.startsWith("/") ? "" : "/"}${clean}`;
+  }
+  // If running on HTTPS, ensure image URL is also HTTPS to avoid Mixed Content blocking
+  if (typeof window !== "undefined" && window.location.protocol === "https:" && clean.startsWith("http://")) {
+    return clean.replace(/^http:\/\//i, "https://");
+  }
+  return clean;
 }
 
 // ---- paged lists: the API answers { data, meta } ----

@@ -10,6 +10,7 @@ export const PERMISSIONS = [
     label: 'Change orders (status, items, payments, phone orders)',
   },
   { key: 'orders.assign', group: 'Orders', label: 'Give orders to riders' },
+  { key: 'orders.delete', group: 'Orders', label: 'Delete orders' },
   {
     key: 'delivery.manage',
     group: 'Deliveries',
@@ -67,6 +68,7 @@ export const ROLE_PRESETS: Record<
       'orders.view',
       'orders.manage',
       'orders.assign',
+      'orders.delete',
       'delivery.manage',
       'products.view',
       'products.manage',
@@ -129,4 +131,19 @@ export function can(
   if (anyOf.length === 0) return true;
   const mine = permissionsOf(user);
   return anyOf.some((p) => mine.includes(p));
+}
+
+/**
+ * True when the user is authorized to delete orders.
+ * Allowed only for SuperAdmin, Admin, or Manager (by title or orders.delete permission).
+ */
+export function canDeleteOrders(user: {
+  role: Role;
+  staffTitle?: string | null;
+  permissions?: string[] | null;
+}): boolean {
+  if (FULL_ACCESS_ROLES.includes(user.role)) return true;
+  if (user.role !== 'STAFF') return false;
+  if (user.staffTitle && /manager/i.test(user.staffTitle)) return true;
+  return can(user, 'orders.delete');
 }

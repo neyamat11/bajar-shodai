@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import { Link } from "react-router";
 import { io, Socket } from "socket.io-client";
-import { ASSET_BASE, tokens } from "@/api/client";
+import { ASSET_BASE, tokens, assetUrl } from "@/api/client";
 import { useAuth } from "@/store/auth";
 import { tr } from "@/i18n";
 import type {
@@ -277,11 +277,7 @@ export default function LiveChat() {
 
   const activeConv = conversations.find((c) => c.id === activeConvId);
 
-  const getMediaUrl = (url?: string | null) => {
-    if (!url) return "";
-    if (url.startsWith("http://") || url.startsWith("https://")) return url;
-    return `${ASSET_BASE}${url.startsWith("/") ? "" : "/"}${url}`;
-  };
+  const getMediaUrl = (url?: string | null) => assetUrl(url);
 
   return (
     <div className="flex h-[calc(100vh-4.5rem)] flex-col gap-0 overflow-hidden rounded-xl border border-border bg-card shadow-sm lg:flex-row">
@@ -484,12 +480,21 @@ export default function LiveChat() {
                     >
                       {/* Photo Attachment */}
                       {m.attachmentUrl && (
-                        <div className="mb-2 overflow-hidden rounded-lg border border-black/10 dark:border-white/10 group relative">
+                        <div className="mb-2 overflow-hidden rounded-lg border border-black/10 dark:border-white/10 group relative max-w-[280px]">
                           <img
                             src={getMediaUrl(m.attachmentUrl)}
                             alt="Attachment"
                             className="max-h-56 w-full object-cover rounded cursor-pointer transition-transform duration-200 group-hover:scale-105"
                             onClick={() => setLightboxUrl(getMediaUrl(m.attachmentUrl))}
+                            onError={(e) => {
+                              const target = e.currentTarget;
+                              if (!target.dataset.triedFallback) {
+                                target.dataset.triedFallback = "true";
+                                const raw = m.attachmentUrl || "";
+                                const cleanPath = raw.replace(/^https?:\/\/[^/]+/i, "");
+                                target.src = `${ASSET_BASE}${cleanPath.startsWith("/") ? "" : "/"}${cleanPath}`;
+                              }
+                            }}
                           />
                           <button
                             type="button"

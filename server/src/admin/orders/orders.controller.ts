@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   HttpCode,
   HttpStatus,
@@ -26,6 +27,7 @@ import { InvoiceService } from '../../common/invoice';
 import { JwtAuthGuard, PermissionsGuard } from '../../common/guards';
 import { RequirePermissions } from '../../common/decorators';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { canDeleteOrders } from '../../common/permissions';
 import { AdminOrdersService } from './orders.service';
 import { OrderEditService } from './order-edit.service';
 import { OrderPaymentsService } from './order-payments.service';
@@ -170,6 +172,11 @@ export class AdminOrdersController {
       'Bulk delete multiple orders by their IDs. Delivered or in-transit orders are skipped/blocked.',
   })
   bulkDelete(@Body() dto: BulkDeleteOrdersDto, @CurrentUser() admin: User) {
+    if (!canDeleteOrders(admin)) {
+      throw new ForbiddenException(
+        'Only superadmin, admin or manager can delete orders',
+      );
+    }
     return this.orders.bulkDelete(dto.ids, admin.id);
   }
 
@@ -337,6 +344,11 @@ export class AdminOrdersController {
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() admin: User,
   ) {
+    if (!canDeleteOrders(admin)) {
+      throw new ForbiddenException(
+        'Only superadmin, admin or manager can delete orders',
+      );
+    }
     return this.orders.remove(id, admin.id);
   }
 }

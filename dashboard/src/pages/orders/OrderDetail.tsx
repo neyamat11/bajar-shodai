@@ -27,6 +27,8 @@ import { RecordPaymentDialog, RefundDialog } from "./components/PaymentDialogs";
 import { DetailPageSkeleton } from "@/components/shared/skeletons";
 import { OrderProgress } from "./components/OrderProgress";
 import { tr } from "@/i18n";
+import { useAuth } from "@/store/auth";
+import { canDeleteOrders } from "@/lib/access";
 
 const LOCKED: OrderStatus[] = ["DELIVERED", "CANCELLED", "RETURNED", "REFUNDED"];
 
@@ -111,6 +113,7 @@ function NotesCard({ order }: { order: Order }) {
 export default function OrderDetailPage() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
+  const me = useAuth((s) => s.user);
   const q = useQuery({ queryKey: ["order", id], queryFn: () => ordersApi.get(id), enabled: !!id });
   const [dlg, setDlg] = useState<null | "status" | "address" | "items" | "weights" | "pay" | "refund" | "verifyPaid" | "verifyFailed">(null);
   const [delOpen, setDelOpen] = useState(false);
@@ -170,7 +173,7 @@ export default function OrderDetailPage() {
               </Button>
             )}
             <Button size="sm" variant={next ? "outline" : "default"} onClick={() => setDlg("status")}>{tr("Change status")}</Button>
-            {!["DELIVERED", "SHIPPED", "IN_TRANSIT", "OUT_FOR_DELIVERY"].includes(o.status) && (
+            {canDeleteOrders(me) && !["DELIVERED", "SHIPPED", "IN_TRANSIT", "OUT_FOR_DELIVERY"].includes(o.status) && (
               <Button size="sm" variant="destructive" onClick={() => setDelOpen(true)}>
                 <Trash2 />{" "}{tr("Delete")}
               </Button>

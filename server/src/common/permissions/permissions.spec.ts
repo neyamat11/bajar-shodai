@@ -2,6 +2,7 @@ import {
   ALL_PERMISSIONS,
   ROLE_PRESETS,
   can,
+  canDeleteOrders,
   permissionsOf,
 } from './permissions';
 
@@ -51,6 +52,25 @@ describe('permissions', () => {
       role: 'STAFF',
       canDeliver: true,
       permissions: [],
+    });
+  });
+
+  describe('canDeleteOrders', () => {
+    it('allows superadmin and admin to delete orders', () => {
+      expect(canDeleteOrders({ role: 'SUPER_ADMIN' })).toBe(true);
+      expect(canDeleteOrders({ role: 'ADMIN' })).toBe(true);
+    });
+
+    it('allows managers to delete orders by staffTitle or orders.delete permission', () => {
+      expect(canDeleteOrders({ role: 'STAFF', staffTitle: 'Manager' })).toBe(true);
+      expect(canDeleteOrders({ role: 'STAFF', staffTitle: 'Store Manager' })).toBe(true);
+      expect(canDeleteOrders(staff(['orders.delete']))).toBe(true);
+    });
+
+    it('blocks regular staff, delivery riders, and customers from deleting orders', () => {
+      expect(canDeleteOrders({ role: 'USER' })).toBe(false);
+      expect(canDeleteOrders({ role: 'STAFF', staffTitle: 'Rider', permissions: [] })).toBe(false);
+      expect(canDeleteOrders(staff(['orders.view', 'orders.manage']))).toBe(false);
     });
   });
 });
