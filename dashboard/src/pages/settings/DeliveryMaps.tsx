@@ -57,10 +57,11 @@ function DeliveryOriginsManager() {
 
   const saveOrigin = useMutation({
     mutationFn: (item: Partial<DeliveryOrigin>) => {
-      if (item.id) {
-        return deliveryOriginsApi.update(item.id, item);
+      const { id, createdAt, updatedAt, ...cleanItem } = item;
+      if (id) {
+        return deliveryOriginsApi.update(id, cleanItem);
       }
-      return deliveryOriginsApi.create(item);
+      return deliveryOriginsApi.create(cleanItem);
     },
     onSuccess: () => {
       toast.success(tr("Dispatch point saved successfully"));

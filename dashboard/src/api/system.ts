@@ -149,8 +149,10 @@ export const settingsApi = {
 
 export const deliveryOriginsApi = {
   list: () => api.get<DeliveryOrigin[]>("/admin/settings/delivery-origins").then((r) => r.data),
-  create: (data: Partial<DeliveryOrigin>) => api.post<DeliveryOrigin>("/admin/settings/delivery-origins", data).then((r) => r.data),
-  update: (id: string, data: Partial<DeliveryOrigin>) => api.patch<DeliveryOrigin>(`/admin/settings/delivery-origins/${id}`, data).then((r) => r.data),
+  create: ({ id, createdAt, updatedAt, ...data }: Partial<DeliveryOrigin>) =>
+    api.post<DeliveryOrigin>("/admin/settings/delivery-origins", data).then((r) => r.data),
+  update: (id: string, { id: _id, createdAt, updatedAt, ...data }: Partial<DeliveryOrigin>) =>
+    api.patch<DeliveryOrigin>(`/admin/settings/delivery-origins/${id}`, data).then((r) => r.data),
   setDefault: (id: string) => api.patch<DeliveryOrigin>(`/admin/settings/delivery-origins/${id}/set-default`).then((r) => r.data),
   delete: (id: string) => api.delete<{ success: boolean }>(`/admin/settings/delivery-origins/${id}`).then((r) => r.data),
 };

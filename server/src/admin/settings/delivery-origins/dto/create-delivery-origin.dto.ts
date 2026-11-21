@@ -34,4 +34,13 @@ export class CreateDeliveryOriginDto {
   @IsOptional()
   @IsBoolean()
   isDefault?: boolean;
+
+  @IsOptional()
+  id?: string;
+
+  @IsOptional()
+  createdAt?: string;
+
+  @IsOptional()
+  updatedAt?: string;
 }

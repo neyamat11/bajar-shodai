@@ -21,7 +21,8 @@ export class DeliveryOriginsService {
   }
 
   async create(dto: CreateDeliveryOriginDto) {
-    if (dto.isDefault) {
+    const { id: _id, createdAt: _c, updatedAt: _u, ...cleanDto } = dto as any;
+    if (cleanDto.isDefault) {
       await this.prisma.deliveryOrigin.updateMany({
         where: { isDefault: true },
         data: { isDefault: false },
@@ -29,15 +30,16 @@ export class DeliveryOriginsService {
     } else {
       const count = await this.prisma.deliveryOrigin.count();
       if (count === 0) {
-        dto.isDefault = true;
+        cleanDto.isDefault = true;
       }
     }
-    return this.prisma.deliveryOrigin.create({ data: dto });
+    return this.prisma.deliveryOrigin.create({ data: cleanDto });
   }
 
   async update(id: string, dto: UpdateDeliveryOriginDto) {
     await this.findOne(id);
-    if (dto.isDefault) {
+    const { id: _id, createdAt: _c, updatedAt: _u, ...cleanDto } = dto as any;
+    if (cleanDto.isDefault) {
       await this.prisma.deliveryOrigin.updateMany({
         where: { isDefault: true },
         data: { isDefault: false },
@@ -45,7 +47,7 @@ export class DeliveryOriginsService {
     }
     return this.prisma.deliveryOrigin.update({
       where: { id },
-      data: dto,
+      data: cleanDto,
     });
   }
 
