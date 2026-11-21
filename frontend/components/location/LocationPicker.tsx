@@ -155,6 +155,8 @@ export default function LocationPicker({
       return;
     }
     const picked: PickedLocation = { lat: fix.lat, lng: fix.lng, accuracyM: fix.accuracyM, source: "GPS" };
+    onSkipLocationChange?.(false);
+    onIsAbroadOrderChange?.(false);
     onChange(picked);
     setFitKey(key5(picked));
     // the press is the consent: the place is saved for the next order
@@ -166,9 +168,11 @@ export default function LocationPicker({
         }
       })
       .catch(() => undefined);
-  }, [geo, onChange, subtotal, locale, maps?.dynamicPlaceNames]);
+  }, [geo, onChange, subtotal, locale, maps?.dynamicPlaceNames, onSkipLocationChange, onIsAbroadOrderChange]);
 
   function movePin(p: GeoPoint) {
+    onSkipLocationChange?.(false);
+    onIsAbroadOrderChange?.(false);
     onChange({ lat: p.lat, lng: p.lng, accuracyM: null, source: "PIN", landmark: value?.landmark ?? null });
   }
 
@@ -232,114 +236,6 @@ export default function LocationPicker({
         </p>
       )}
 
-      {/* Skip Location / Abroad Active Form (shown when customer chooses to order without pin) */}
-      {skipLocation && (
-        <div className="rounded-lg border-2 border-brand-fresh/40 bg-card p-4 space-y-3.5 shadow-sm">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-fresh/15 text-brand-fresh">
-                <Globe className="h-4 w-4" aria-hidden="true" />
-              </span>
-              <div>
-                <p className="text-xs font-bold text-foreground">
-                  {isAbroadOrder
-                    ? (locale === "bn" ? "প্রবাসী অর্ডার (লোকেশন সেট ছাড়া)" : "Abroad Order (No location set needed)")
-                    : (locale === "bn" ? "লোকেশন সেট ছাড়া অর্ডার" : "Order without Location Set")}
-                </p>
-                <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
-                  {locale === "bn" ? "ডেলিভারি ফি: নির্দিষ্ট হয়নি (স্টোর থেকে যাচাই) (৳—)" : "Delivery Fee: Not specified (Store verification) (৳—)"}
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => onSkipLocationChange?.(false)}
-              className="text-xs font-bold text-muted-foreground hover:text-foreground underline"
-            >
-              {locale === "bn" ? "ম্যাপে পিন দিন" : "Use map pin"}
-            </button>
-          </div>
-
-          <div className="pt-2 border-t border-border space-y-3">
-            <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-foreground">
-              <input
-                type="checkbox"
-                checked={isAbroadOrder}
-                onChange={(e) => onIsAbroadOrderChange?.(e.target.checked)}
-                className="h-4 w-4 rounded border-border text-brand-fresh focus:ring-brand-fresh"
-              />
-              <span>{locale === "bn" ? "আমি দেশের বাইরে (প্রবাসী) থেকে অর্ডার করছি" : "I am ordering from abroad (প্রবাসী)"}</span>
-            </label>
-
-            {isAbroadOrder && (
-              <div className="space-y-3 pt-1">
-                <div>
-                  <label className="block text-xs font-semibold text-foreground mb-1">
-                    {locale === "bn" ? "আপনার বর্তমান দেশ *" : "Your Country *"}
-                  </label>
-                  <input
-                    type="text"
-                    value={senderCountry}
-                    onChange={(e) => onSenderCountryChange?.(e.target.value)}
-                    placeholder={locale === "bn" ? "যেমন: সৌদি আরব, দুবাই, কাতার, মালয়েশিয়া" : "e.g. Saudi Arabia, UAE, Qatar, Oman, UK"}
-                    className="w-full rounded border border-border bg-background px-3 py-2 text-xs text-foreground focus:border-brand-fresh focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-foreground mb-1">
-                    {locale === "bn" ? "যোগাযোগের মাধ্যম *" : "Contact Method *"}
-                  </label>
-                  <div className="flex gap-4">
-                    <label className="flex items-center gap-1.5 text-xs text-foreground cursor-pointer font-medium">
-                      <input
-                        type="radio"
-                        name="contactMethod"
-                        value="WHATSAPP"
-                        checked={senderContactMethod !== "IMO"}
-                        onChange={() => onSenderContactMethodChange?.("WHATSAPP")}
-                        className="text-brand-fresh focus:ring-brand-fresh"
-                      />
-                      <span>WhatsApp</span>
-                    </label>
-                    <label className="flex items-center gap-1.5 text-xs text-foreground cursor-pointer font-medium">
-                      <input
-                        type="radio"
-                        name="contactMethod"
-                        value="IMO"
-                        checked={senderContactMethod === "IMO"}
-                        onChange={() => onSenderContactMethodChange?.("IMO")}
-                        className="text-brand-fresh focus:ring-brand-fresh"
-                      />
-                      <span>IMO</span>
-                    </label>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-foreground mb-1">
-                    {senderContactMethod === "IMO" ? "IMO" : "WhatsApp"}{" "}
-                    {locale === "bn" ? "নম্বর (কান্ট্রি কোড সহ) *" : "Number (with country code) *"}
-                  </label>
-                  <input
-                    type="tel"
-                    value={senderContactNumber}
-                    onChange={(e) => onSenderContactNumberChange?.(e.target.value)}
-                    placeholder="+966 50 123 4567"
-                    className="w-full rounded border border-border bg-background px-3 py-2 text-xs text-foreground font-mono focus:border-brand-fresh focus:outline-none"
-                  />
-                  <p className="mt-1 text-[11px] text-muted-foreground">
-                    {locale === "bn"
-                      ? "অর্ডারের তথ্য ও ডেলিভারি যাচাই করতে স্টোর থেকে এই নম্বরে যোগাযোগ করা হবে।"
-                      : "Store staff will reach out to this number to verify the order and recipient details."}
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
       {/* 1. the big button */}
       <button
         type="button"
@@ -350,6 +246,98 @@ export default function LocationPicker({
         {geo.loading ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /> : <Crosshair className="h-5 w-5" aria-hidden="true" />}
         {geo.loading ? t("finding") : value?.source === "GPS" ? t("shareAgain") : t("share")}
       </button>
+
+      {/* Clean Abroad Order Checkbox (cross-platform parity with mobile) */}
+      <div className="rounded-lg border border-border bg-card p-3.5 transition-colors hover:border-brand-fresh/40">
+        <label className="flex items-start gap-3 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={Boolean(isAbroadOrder)}
+            onChange={(e) => {
+              const checked = e.target.checked;
+              onIsAbroadOrderChange?.(checked);
+              onSkipLocationChange?.(checked);
+            }}
+            className="mt-0.5 h-4 w-4 rounded border-border text-brand-fresh focus:ring-brand-fresh"
+          />
+          <div className="flex-1">
+            <span className="block text-sm font-bold text-foreground">
+              {locale === "bn" ? "আমি দেশের বাইরে (প্রবাসী) থেকে অর্ডার করছি" : "I am ordering from abroad (প্রবাসী)"}
+            </span>
+            <span className="block text-xs text-muted-foreground mt-0.5">
+              {isAbroadOrder
+                ? (locale === "bn" ? "লোকেশন সেট লাগবে না • ডেলিভারি ফি স্টোর থেকে যাচাই করা হবে (৳—)" : "No location set needed • Delivery fee verified by store (৳—)")
+                : (locale === "bn" ? "প্রবাসী হলে টিক দিন, লোকেশন সেট ছাড়াই অর্ডার সম্পন্ন করতে পারবেন" : "Tick if abroad, order can be completed without setting location")}
+            </span>
+          </div>
+        </label>
+
+        {isAbroadOrder && (
+          <div className="space-y-3 pt-3 mt-3 border-t border-border">
+            <div>
+              <label className="block text-xs font-semibold text-foreground mb-1">
+                {locale === "bn" ? "আপনার বর্তমান দেশ *" : "Your Country *"}
+              </label>
+              <input
+                type="text"
+                value={senderCountry}
+                onChange={(e) => onSenderCountryChange?.(e.target.value)}
+                placeholder={locale === "bn" ? "যেমন: সৌদি আরব, দুবাই, কাতার, মালয়েশিয়া" : "e.g. Saudi Arabia, UAE, Qatar, Oman, UK"}
+                className="w-full rounded border border-border bg-background px-3 py-2 text-xs text-foreground focus:border-brand-fresh focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-foreground mb-1">
+                {locale === "bn" ? "যোগাযোগের মাধ্যম *" : "Contact Method *"}
+              </label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-1.5 text-xs text-foreground cursor-pointer font-medium">
+                  <input
+                    type="radio"
+                    name="contactMethod"
+                    value="WHATSAPP"
+                    checked={senderContactMethod !== "IMO"}
+                    onChange={() => onSenderContactMethodChange?.("WHATSAPP")}
+                    className="text-brand-fresh focus:ring-brand-fresh"
+                  />
+                  <span>WhatsApp</span>
+                </label>
+                <label className="flex items-center gap-1.5 text-xs text-foreground cursor-pointer font-medium">
+                  <input
+                    type="radio"
+                    name="contactMethod"
+                    value="IMO"
+                    checked={senderContactMethod === "IMO"}
+                    onChange={() => onSenderContactMethodChange?.("IMO")}
+                    className="text-brand-fresh focus:ring-brand-fresh"
+                  />
+                  <span>IMO</span>
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-foreground mb-1">
+                {senderContactMethod === "IMO" ? "IMO" : "WhatsApp"}{" "}
+                {locale === "bn" ? "নম্বর (কান্ট্রি কোড সহ) *" : "Number (with country code) *"}
+              </label>
+              <input
+                type="tel"
+                value={senderContactNumber}
+                onChange={(e) => onSenderContactNumberChange?.(e.target.value)}
+                placeholder="+966 50 123 4567"
+                className="w-full rounded border border-border bg-background px-3 py-2 text-xs text-foreground font-mono focus:border-brand-fresh focus:outline-none"
+              />
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                {locale === "bn"
+                  ? "অর্ডারের তথ্য ও ডেলিভারি যাচাই করতে স্টোর থেকে এই নম্বরে যোগাযোগ করা হবে।"
+                  : "Store staff will reach out to this number to verify the order and recipient details."}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
       {/* Location (GPS) Guidance Modal */}
       {showLocationModal && (
         <div

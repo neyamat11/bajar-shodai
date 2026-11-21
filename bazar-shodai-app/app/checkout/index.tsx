@@ -319,6 +319,8 @@ export default function CheckoutScreen() {
         accuracyM: coords.accuracy ?? undefined,
       });
       setDynamicDeliveryFee(localFee);
+      setSkipLocation(false);
+      setIsAbroadOrder(false);
       setLocationBlock(null);
       haptics.success();
 
@@ -422,6 +424,7 @@ export default function CheckoutScreen() {
       accuracyM: 10,
     });
     setSkipLocation(false);
+    setIsAbroadOrder(false);
     setLocationBlock(null);
 
     try {
@@ -517,21 +520,22 @@ export default function CheckoutScreen() {
 
   // Step 2 Validation & Next
   const handleContinueToPayment = () => {
-    if (!skipLocation && locationBlock === 'OUT_OF_AREA') {
-      toast.error('ডেলিভারি সীমার বাইরে', 'আপনার নির্বাচিত অবস্থান আমাদের ডেলিভারি সীমার বাইরে।');
-      return;
-    }
-    // Location is optional: if no pin is selected and skip wasn't explicitly toggled, proceed with skipLocation = true (Store verification)
-    if (!skipLocation && !gpsLocation) {
-      setSkipLocation(true);
-    }
-    if (skipLocation && isAbroadOrder) {
+    if (isAbroadOrder) {
       if (!senderCountry.trim()) {
         toast.warning('দেশ উল্লেখ করুন', 'অনুগ্রহ করে আপনার বর্তমান দেশ লিখুন (যেমন: সৌদি আরব, দুবাই)');
         return;
       }
       if (!senderContactNumber.trim()) {
         toast.warning('নম্বর আবশ্যক', 'অনুগ্রহ করে কান্ট্রি কোড সহ আপনার হোয়াটসঅ্যাপ/ইমো নম্বর দিন');
+        return;
+      }
+    } else {
+      if (!gpsLocation) {
+        toast.warning('লোকেশন আবশ্যক', 'আপনার বর্তমান লোকেশন দিন অথবা প্রবাসী হলে বক্সে টিক দিন।');
+        return;
+      }
+      if (locationBlock === 'OUT_OF_AREA') {
+        toast.error('ডেলিভারি সীমার বাইরে', 'আপনার নির্বাচিত অবস্থান আমাদের ডেলিভারি সীমার বাইরে।');
         return;
       }
     }
@@ -872,146 +876,102 @@ export default function CheckoutScreen() {
                 </View>
               )}
 
-              {/* Skip Location / Abroad Option */}
-              {!skipLocation && (
+              {/* Clean Abroad Order Checkbox */}
+              <View style={styles.abroadCard}>
                 <TouchableOpacity
-                  style={styles.skipPinBtn}
+                  style={styles.abroadCheckboxRow}
                   onPress={() => {
-                    setSkipLocation(true);
+                    const next = !isAbroadOrder;
+                    setIsAbroadOrder(next);
+                    setSkipLocation(next);
                     haptics.selection();
                   }}
                   activeOpacity={0.8}
                 >
-                  <Icon name="Globe" size={18} color="#0b6234" />
+                  <Icon
+                    name={isAbroadOrder ? 'CheckSquare' : 'Square'}
+                    size={20}
+                    color="#0b6234"
+                  />
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.skipPinBtnTitle}>
-                      প্রবাসী অথবা দূর থেকে অর্ডার? লোকেশন সেট ছাড়া অর্ডার করুন
-                    </Text>
-                    <Text style={styles.skipPinBtnSub}>
-                      ডেলিভারি চার্জ পরে স্টোর থেকে নিশ্চিত করা হবে (৳—)
-                    </Text>
-                  </View>
-                  <Icon name="ChevronRight" size={16} color="#0b6234" />
-                </TouchableOpacity>
-              )}
-
-              {/* Skip Location / Abroad Order Card */}
-              {skipLocation && (
-                <View style={styles.abroadCard}>
-                  <View style={styles.abroadHeader}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
-                      <Icon name="Globe" size={18} color="#0b6234" />
-                      <Text style={styles.abroadTitle}>
-                        {isAbroadOrder ? 'প্রবাসী অর্ডার (লোকেশন সেট ছাড়া)' : 'লোকেশন সেট ছাড়া অর্ডার'}
-                      </Text>
-                    </View>
-                    <TouchableOpacity onPress={() => setSkipLocation(false)}>
-                      <Text style={styles.abroadCancelText}>ম্যাপে লোকেশন দিন</Text>
-                    </TouchableOpacity>
-                  </View>
-                  <Text style={styles.abroadFeeNotice}>
-                    ডেলিভারি ফি: নির্দিষ্ট হয়নি (স্টোর থেকে যাচাই) (৳—)
-                  </Text>
-
-                  <TouchableOpacity
-                    style={styles.checkboxRow}
-                    onPress={() => setIsAbroadOrder(!isAbroadOrder)}
-                    activeOpacity={0.8}
-                  >
-                    <Icon
-                      name={isAbroadOrder ? 'CheckSquare' : 'Square'}
-                      size={18}
-                      color="#0b6234"
-                    />
-                    <Text style={styles.checkboxText}>
+                    <Text style={styles.abroadCheckboxTitle}>
                       আমি দেশের বাইরে (প্রবাসী) থেকে অর্ডার করছি
                     </Text>
-                  </TouchableOpacity>
+                    <Text style={styles.abroadCheckboxSub}>
+                      {isAbroadOrder
+                        ? 'লোকেশন সেট লাগবে না • ডেলিভারি ফি স্টোর থেকে যাচাই করা হবে (৳—)'
+                        : 'প্রবাসী হলে টিক দিন, লোকেশন সেট ছাড়াই অর্ডার সম্পন্ন করতে পারবেন'}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
 
-                  {isAbroadOrder && (
-                    <View style={styles.abroadFields}>
-                      <View style={styles.fieldGroup}>
-                        <Text style={styles.fieldLabel}>আপনার বর্তমান দেশ *</Text>
-                        <TextInput
-                          style={styles.input}
-                          value={senderCountry}
-                          onChangeText={setSenderCountry}
-                          placeholder="যেমন: সৌদি আরব, দুবাই, কাতার, মালয়েশিয়া"
-                          placeholderTextColor="#9ca3af"
-                        />
-                      </View>
+                {isAbroadOrder && (
+                  <View style={styles.abroadFields}>
+                    <View style={styles.fieldGroup}>
+                      <Text style={styles.fieldLabel}>আপনার বর্তমান দেশ *</Text>
+                      <TextInput
+                        style={styles.input}
+                        value={senderCountry}
+                        onChangeText={setSenderCountry}
+                        placeholder="যেমন: সৌদি আরব, দুবাই, কাতার, মালয়েশিয়া"
+                        placeholderTextColor="#9ca3af"
+                      />
+                    </View>
 
-                      <View style={styles.fieldGroup}>
-                        <Text style={styles.fieldLabel}>যোগাযোগের মাধ্যম *</Text>
-                        <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
-                          <TouchableOpacity
+                    <View style={styles.fieldGroup}>
+                      <Text style={styles.fieldLabel}>যোগাযোগের মাধ্যম *</Text>
+                      <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
+                        <TouchableOpacity
+                          style={[
+                            styles.platformPill,
+                            senderContactMethod === 'WHATSAPP' && styles.platformPillActive,
+                          ]}
+                          onPress={() => setSenderContactMethod('WHATSAPP')}
+                        >
+                          <Text
                             style={[
-                              styles.platformPill,
-                              senderContactMethod === 'WHATSAPP' && styles.platformPillActive,
+                              styles.platformPillText,
+                              senderContactMethod === 'WHATSAPP' && styles.platformPillTextActive,
                             ]}
-                            onPress={() => setSenderContactMethod('WHATSAPP')}
                           >
-                            <Text
-                              style={[
-                                styles.platformPillText,
-                                senderContactMethod === 'WHATSAPP' && styles.platformPillTextActive,
-                              ]}
-                            >
-                              WhatsApp
-                            </Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
+                            WhatsApp
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[
+                            styles.platformPill,
+                            senderContactMethod === 'IMO' && styles.platformPillActive,
+                          ]}
+                          onPress={() => setSenderContactMethod('IMO')}
+                        >
+                          <Text
                             style={[
-                              styles.platformPill,
-                              senderContactMethod === 'IMO' && styles.platformPillActive,
+                              styles.platformPillText,
+                              senderContactMethod === 'IMO' && styles.platformPillTextActive,
                             ]}
-                            onPress={() => setSenderContactMethod('IMO')}
                           >
-                            <Text
-                              style={[
-                                styles.platformPillText,
-                                senderContactMethod === 'IMO' && styles.platformPillTextActive,
-                              ]}
-                            >
-                              IMO
-                            </Text>
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-
-                      <View style={styles.fieldGroup}>
-                        <Text style={styles.fieldLabel}>
-                          {senderContactMethod === 'IMO' ? 'ইমো' : 'হোয়াটসঅ্যাপ'} নম্বর (কান্ট্রি কোড সহ) *
-                        </Text>
-                        <TextInput
-                          style={styles.input}
-                          value={senderContactNumber}
-                          onChangeText={setSenderContactNumber}
-                          placeholder="+966 50 123 4567"
-                          placeholderTextColor="#9ca3af"
-                          keyboardType="phone-pad"
-                        />
+                            IMO
+                          </Text>
+                        </TouchableOpacity>
                       </View>
                     </View>
-                  )}
-                </View>
-              )}
 
-              {!skipLocation && !gpsLocation && (
-                <TouchableOpacity
-                  style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 4 }}
-                  onPress={() => {
-                    setSkipLocation(true);
-                    haptics.selection();
-                    setCurrentStep(3);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={{ fontSize: 13, fontWeight: '600', color: '#0b6234', textDecorationLine: 'underline' }}>
-                    লোকেশন সেট ছাড়া এগিয়ে যান →
-                  </Text>
-                </TouchableOpacity>
-              )}
+                    <View style={styles.fieldGroup}>
+                      <Text style={styles.fieldLabel}>
+                        {senderContactMethod === 'IMO' ? 'ইমো' : 'হোয়াটসঅ্যাপ'} নম্বর (কান্ট্রি কোড সহ) *
+                      </Text>
+                      <TextInput
+                        style={styles.input}
+                        value={senderContactNumber}
+                        onChangeText={setSenderContactNumber}
+                        placeholder="+966 50 123 4567"
+                        placeholderTextColor="#9ca3af"
+                        keyboardType="phone-pad"
+                      />
+                    </View>
+                  </View>
+                )}
+              </View>
             </View>
           )}
 
@@ -1381,60 +1341,35 @@ const styles = StyleSheet.create({
     color: '#dc2626',
     flex: 1,
   },
-  skipPinBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#f0fdf4',
-    borderWidth: 1,
-    borderColor: '#86efac',
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 10,
-  },
-  skipPinBtnTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#0b6234',
-  },
-  skipPinBtnSub: {
-    fontSize: 10.5,
-    color: '#15803d',
-    marginTop: 2,
-  },
   abroadCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#ffffff',
     borderWidth: 1,
-    borderColor: '#cbd5e1',
+    borderColor: '#e2e8f0',
     borderRadius: 12,
     padding: 12,
     marginBottom: 10,
   },
-  abroadHeader: {
+  abroadCheckboxRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 4,
+    alignItems: 'flex-start',
+    gap: 10,
   },
-  abroadTitle: {
+  abroadCheckboxTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#0b6234',
+    color: '#0f172a',
   },
-  abroadCancelText: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    color: '#0b6234',
-    textDecorationLine: 'underline',
-  },
-  abroadFeeNotice: {
+  abroadCheckboxSub: {
     fontSize: 11,
-    color: '#d97706',
-    fontWeight: '600',
-    marginBottom: 8,
+    color: '#64748b',
+    marginTop: 2,
+    lineHeight: 16,
   },
   abroadFields: {
-    marginTop: 8,
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
   },
   platformPill: {
     paddingHorizontal: 16,

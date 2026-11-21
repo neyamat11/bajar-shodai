@@ -119,7 +119,7 @@ export default function OrderReview({ summary, address, paymentMethod, deliveryS
               <Globe className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               {address.isAbroadOrder
                 ? (locale === "bn" ? `প্রবাসী অর্ডার (${address.senderCountry}) · ডেলিভারি চার্জ দোকান থেকে নিশ্চিত করা হবে` : `Abroad Order (${address.senderCountry}) · Delivery fee to be confirmed by store`)
-                : (locale === "bn" ? "লোকেশন পিন ছাড়া অর্ডার · ডেলিভারি চার্জ দোকান থেকে নিশ্চিত করা হবে" : "Order without pin · Delivery fee to be confirmed by store")}
+                : (locale === "bn" ? "লোকেশন সেট ছাড়া অর্ডার · ডেলিভারি চার্জ দোকান থেকে নিশ্চিত করা হবে" : "Order without location set · Delivery fee to be confirmed by store")}
             </p>
             {address.isAbroadOrder && address.senderContactNumber && (
               <p className="text-muted-foreground">
