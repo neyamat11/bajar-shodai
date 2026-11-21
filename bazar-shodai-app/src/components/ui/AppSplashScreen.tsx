@@ -109,17 +109,6 @@ export function AppSplashScreen({
         {/* Dynamic Admin-Configured Logo */}
         <BrandLogo size="2xl" showTagline={false} testID="splash-brand-logo" />
 
-        {/* Tagline */}
-        <Text
-          style={[
-            styles.tagline,
-            { color: isDark ? '#a7f3d0' : '#0b6234' },
-          ]}
-          numberOfLines={2}
-        >
-          {storeTagline}
-        </Text>
-
         {/* Subtle Brand Loading Spinner */}
         <View style={styles.spinnerContainer}>
           <ActivityIndicator size="small" color={isDark ? '#34d399' : '#0b6234'} />

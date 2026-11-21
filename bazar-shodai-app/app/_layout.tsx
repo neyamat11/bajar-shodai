@@ -299,7 +299,7 @@ function RootNavigationLayout() {
   );
 }
 
-export { ErrorBoundary } from '@/components/shared/ErrorBoundary';
+export { ErrorBoundary } from 'expo-router';
 
 export default function RootLayout() {
   const { fontsLoaded, fontError } = useAppFonts();
