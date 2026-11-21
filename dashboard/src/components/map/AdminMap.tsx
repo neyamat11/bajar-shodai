@@ -1,8 +1,22 @@
-import { lazy, Suspense, useState } from "react";
+import { Component, lazy, Suspense, useState, type ReactNode } from "react";
 import type { MapViewProps } from "./types";
 
 const AdminOsmMap = lazy(() => import("./AdminOsmMap"));
 const AdminGoogleMap = lazy(() => import("./AdminGoogleMap"));
+
+class MapErrorBoundary extends Component<{ fallback: ReactNode; children: ReactNode }, { hasError: boolean }> {
+  state = { hasError: false };
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(err: unknown) {
+    console.warn("Google Map failed, falling back to OpenStreetMap:", err);
+  }
+  render() {
+    if (this.state.hasError) return this.props.fallback;
+    return this.props.children;
+  }
+}
 
 /**
  * Unified Admin Map.
@@ -17,13 +31,15 @@ export default function AdminMap(props: MapViewProps) {
   return (
     <Suspense fallback={<div className="h-full w-full min-h-[200px] animate-pulse bg-muted" />}>
       {useGoogle ? (
-        <AdminGoogleMap
-          {...props}
-          onAuthError={() => {
-            setGoogleFailed(true);
-            props.onAuthError?.();
-          }}
-        />
+        <MapErrorBoundary fallback={<AdminOsmMap {...props} />}>
+          <AdminGoogleMap
+            {...props}
+            onAuthError={() => {
+              setGoogleFailed(true);
+              props.onAuthError?.();
+            }}
+          />
+        </MapErrorBoundary>
       ) : (
         <AdminOsmMap {...props} />
       )}

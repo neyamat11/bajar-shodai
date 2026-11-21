@@ -61,28 +61,22 @@ export default function AdminGoogleMap(p: MapViewProps) {
   useEffect(() => {
     const dismissGoogleError = () => {
       // 1. Auto-click OK button inside Google Maps development/billing modal if rendered
-      const buttons = document.querySelectorAll<HTMLButtonElement>(".gm-err-content button, .gm-err-container button");
+      const buttons = document.querySelectorAll<HTMLButtonElement>(
+        ".gm-err-content button, .gm-err-container button, .dismissButton"
+      );
       buttons.forEach((btn) => {
         try {
           btn.click();
         } catch {}
       });
 
-      // 2. Hide and remove known Google error containers
-      const errEls = document.querySelectorAll<HTMLElement>(".gm-err-container, .gm-err-content, .gm-err-autocomplete, .gm-style-moc");
+      // 2. Hide and remove known Google error containers ONLY (never query body div!)
+      const errEls = document.querySelectorAll<HTMLElement>(
+        ".gm-err-container, .gm-err-content, .gm-err-autocomplete, .gm-style-moc"
+      );
       errEls.forEach((el) => {
         el.style.display = "none";
         el.remove();
-      });
-
-      // 3. Fallback scan for any dialog div containing the error message text
-      const allDivs = document.querySelectorAll<HTMLElement>("body div");
-      allDivs.forEach((d) => {
-        const text = d.innerText;
-        if (text && text.indexOf("This page can't load Google Maps correctly") !== -1) {
-          d.style.display = "none";
-          d.remove();
-        }
       });
     };
 

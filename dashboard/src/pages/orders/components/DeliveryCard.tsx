@@ -454,14 +454,14 @@ export function DeliveryCard({ order, locked, phone, name, onEditAddress }: { or
             )}
             {order.deliverySlot && <KeyValue label={tr("Time slot")}>{order.deliverySlot}</KeyValue>}
           </dl>
-          {pin && origins.data && origins.data.filter((o) => o.isActive).length > 0 && (
+          {pin && origins.data && Array.isArray(origins.data) && origins.data.filter((o) => o && o.isActive && o.latitude != null && o.longitude != null).length > 0 && (
             <div className="mt-2.5 rounded border border-border bg-muted/30 p-2.5 text-xs">
               <div className="font-semibold text-muted-foreground mb-1.5 flex items-center justify-between">
                 <span>{tr("Direct Distance from Dispatch Points:")}</span>
               </div>
               <div className="space-y-1">
                 {origins.data
-                  .filter((o) => o.isActive)
+                  .filter((o) => o && o.isActive && o.latitude != null && o.longitude != null)
                   .map((orig) => {
                     const dist = haversineDistKm({ lat: orig.latitude, lng: orig.longitude }, pin);
                     const isFulfilled =
