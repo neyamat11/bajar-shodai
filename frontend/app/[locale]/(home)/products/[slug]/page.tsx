@@ -14,9 +14,9 @@ import type { Locale } from "@/lib/locale";
 // the title/description and the page itself both need the product: fetch it once per request
 const getProductBySlug = cache(fetchProduct);
 
-export const revalidate = 300;
+export const revalidate = 3600;
 
-// no pages are built ahead of time; each one is built on its first visit and then kept (and refreshed every 5 minutes)
+// no pages are built ahead of time; each one is built on its first visit and then kept (and refreshed on demand or every hour)
 export function generateStaticParams() {
   return [];
 }

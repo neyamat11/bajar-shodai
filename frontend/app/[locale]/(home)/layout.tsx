@@ -16,8 +16,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return { description: t("description") };
 }
 
-// Shared server cache: the shop pages are rebuilt at most every 5 minutes (and at once when the admin changes something, see /api/revalidate).
-export const revalidate = 300;
+// Shared server cache: pages are cached and refreshed on demand via /api/revalidate (and periodically every hour).
+export const revalidate = 3600;
 
 export default async function HomeLayout({
   children,

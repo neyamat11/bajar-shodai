@@ -9,9 +9,9 @@ import { Suspense } from "react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Locale } from "@/lib/locale";
 
-export const revalidate = 300;
+export const revalidate = 3600;
 
-// no pages are built ahead of time; each one is built on its first visit and then kept (and refreshed every 5 minutes)
+// no pages are built ahead of time; each one is built on its first visit and then kept (and refreshed on demand or every hour)
 export function generateStaticParams() {
   return [];
 }

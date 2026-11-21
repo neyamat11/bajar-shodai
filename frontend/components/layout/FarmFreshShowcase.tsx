@@ -102,7 +102,7 @@ export default function FarmFreshShowcase({ hide }: { hide?: boolean } = {}) {
         {/* Background Meadow with Generous Headroom for Bag Handles */}
         <div className="absolute inset-0 z-0">
           <Image
-            src="/images/footer/farm_fresh_meadow.jpg"
+            src="/images/footer/farm_fresh_meadow.webp"
             alt="Bazar Shodai farm fresh vegetables showcase"
             fill
             priority

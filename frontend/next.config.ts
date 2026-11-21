@@ -37,6 +37,8 @@ const nextConfig: NextConfig = {
     staleTimes: { dynamic: 600, static: 1800 },
   },
   images: {
+    // Serve images directly from Cloudflare R2 and static storage without Vercel serverless transformation overhead
+    unoptimized: true,
     // when the API runs on this machine (local development), allow the optimizer to fetch from it
     dangerouslyAllowLocalIP: ["localhost", "127.0.0.1"].includes(api.hostname),
     remotePatterns: [
