@@ -8,7 +8,7 @@ import { Input, Textarea } from "@/components/ui/input";
 import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Field, KeyValue, Section } from "@/components/shared/Field";
 import { ordersApi, type OrderDetail } from "@/api/orders";
-import { settingsApi } from "@/api/system";
+import { settingsApi, deliveryOriginsApi } from "@/api/system";
 import { errorMessage } from "@/api/client";
 import { useAct } from "@/hooks/useAct";
 import { money } from "@/lib/format";
@@ -21,6 +21,18 @@ const minutes = (s: number) => (s < 90 ? tr("about 1 min") : tr("about {{n}} min
 const digits = (p: string) => p.replace(/[^\d]/g, "");
 /** "01712345678" → "8801712345678" for wa.me links */
 const waNumber = (p: string) => (digits(p).startsWith("88") ? digits(p) : `88${digits(p).replace(/^0*/, "0")}`);
+
+function haversineDistKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+  const R = 6371;
+  const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+  const dLng = ((b.lng - a.lng) * Math.PI) / 180;
+  const lat1 = (a.lat * Math.PI) / 180;
+  const lat2 = (b.lat * Math.PI) / 180;
+  const sinDlat = Math.sin(dLat / 2);
+  const sinDlng = Math.sin(dLng / 2);
+  const h = sinDlat * sinDlat + Math.cos(lat1) * Math.cos(lat2) * sinDlng * sinDlng;
+  return Math.round(2 * R * Math.asin(Math.min(1, Math.sqrt(h))) * 100) / 100;
+}
 
 function OverrideFeeDialog({ order, onClose }: { order: OrderDetail; onClose: () => void }) {
   const [fee, setFee] = useState(order.deliveryFeeOverride ?? order.shippingCost);
@@ -229,6 +241,7 @@ export function DeliveryCard({ order, locked, phone, name, onEditAddress }: { or
   const pin = useMemo(() => (lat !== null && lng !== null ? { lat, lng } : null), [lat, lng]);
 
   const settings = useQuery({ queryKey: ["settings"], queryFn: settingsApi.get });
+  const origins = useQuery({ queryKey: ["delivery-origins"], queryFn: deliveryOriginsApi.list, staleTime: 60_000 });
   const route = useQuery({ queryKey: ["order-route", order.id, lat, lng], queryFn: () => ordersApi.route(order.id), enabled: !!pin, staleTime: 5 * 60_000 });
   const shared = useQuery({ queryKey: ["order-locations", order.id], queryFn: () => ordersApi.locationRequests(order.id), refetchInterval: 30_000 });
 
@@ -251,7 +264,14 @@ export function DeliveryCard({ order, locked, phone, name, onEditAddress }: { or
 
   const km = order.deliveryDistanceKm !== null ? Number(order.deliveryDistanceKm) : null;
   const overridden = order.deliveryFeeOverride !== null;
-  const origin = route.data?.available ? route.data.origin ?? null : settings.data?.delivery.originLat != null ? { lat: settings.data.delivery.originLat, lng: settings.data.delivery.originLng! } : null;
+  const origin = order.originPoint
+    ? { lat: order.originPoint.latitude, lng: order.originPoint.longitude }
+    : route.data?.available
+      ? route.data.origin ?? null
+      : settings.data?.delivery.originLat != null
+        ? { lat: settings.data.delivery.originLat, lng: settings.data.delivery.originLng! }
+        : null;
+  const originLabel = order.originPoint?.name ?? "Kalibari Bazar";
   const shown = draft ?? pin;
   const phoneDigits = phone ? digits(phone) : "";
 
@@ -361,7 +381,7 @@ export function DeliveryCard({ order, locked, phone, name, onEditAddress }: { or
                   center={shown ?? DEFAULT_CENTER}
                   marker={shown}
                   origin={origin}
-                  originLabel="Kalibari Bazar"
+                  originLabel={originLabel}
                   route={route.data?.available && !moving ? route.data.path ?? null : null}
                   draggable={moving}
                   onMarkerChange={setDraft}
@@ -398,7 +418,7 @@ export function DeliveryCard({ order, locked, phone, name, onEditAddress }: { or
               {order.distanceEstimated && <Badge className="ml-2" variant="warning">{tr("estimate")}</Badge>}
             </KeyValue>
             {order.deliveryDirectDistanceKm != null && (
-              <KeyValue label={tr("Direct distance (Kalibari)")}>
+              <KeyValue label={order.originPoint?.name ? `${tr("Direct distance")} (${order.originPoint.name})` : tr("Direct distance")}>
                 <span className="font-semibold text-emerald-700 dark:text-emerald-400">{Number(order.deliveryDirectDistanceKm)} km</span>
               </KeyValue>
             )}
@@ -434,6 +454,41 @@ export function DeliveryCard({ order, locked, phone, name, onEditAddress }: { or
             )}
             {order.deliverySlot && <KeyValue label={tr("Time slot")}>{order.deliverySlot}</KeyValue>}
           </dl>
+          {pin && origins.data && origins.data.filter((o) => o.isActive).length > 0 && (
+            <div className="mt-2.5 rounded border border-border bg-muted/30 p-2.5 text-xs">
+              <div className="font-semibold text-muted-foreground mb-1.5 flex items-center justify-between">
+                <span>{tr("Direct Distance from Dispatch Points:")}</span>
+              </div>
+              <div className="space-y-1">
+                {origins.data
+                  .filter((o) => o.isActive)
+                  .map((orig) => {
+                    const dist = haversineDistKm({ lat: orig.latitude, lng: orig.longitude }, pin);
+                    const isFulfilled =
+                      (order.originPointId && order.originPointId === orig.id) ||
+                      (!order.originPointId && orig.isDefault) ||
+                      (order.originPoint?.name === orig.name);
+                    return (
+                      <div key={orig.id} className="flex items-center justify-between py-0.5">
+                        <span className="flex items-center gap-1.5">
+                          <span className={isFulfilled ? "font-bold text-foreground" : "text-muted-foreground"}>
+                            {orig.name}
+                          </span>
+                          {isFulfilled && (
+                            <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-emerald-500/40 text-emerald-700 dark:text-emerald-400 font-semibold">
+                              📍 {tr("Fulfilled")}
+                            </Badge>
+                          )}
+                        </span>
+                        <span className={`font-mono ${isFulfilled ? "font-bold text-emerald-700 dark:text-emerald-400" : "text-muted-foreground"}`}>
+                          {dist} km
+                        </span>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
           {order.distanceEstimated && <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">{tr("No road route was found, so the distance is the straight line × a factor. Check the pin, or add a routing key in Settings → Maps.")}</p>}
 
           <div className="mt-3 flex flex-wrap gap-2">

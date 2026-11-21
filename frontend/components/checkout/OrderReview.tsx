@@ -128,7 +128,15 @@ export default function OrderReview({ summary, address, paymentMethod, deliveryS
             )}
           </div>
         )}
-        {summary.shipping.distanceKm !== null && <p className="text-xs text-muted-foreground">{t("distanceLine", { km: formatNumber(summary.shipping.distanceKm, locale, 1) })}</p>}
+        {summary.shipping.distanceKm !== null && (
+          <p className="text-xs text-muted-foreground">
+            {(summary.shipping.originNameBn || summary.shipping.originName)
+              ? (locale === "bn"
+                  ? `${summary.shipping.originNameBn || summary.shipping.originName} থেকে ${formatNumber(summary.shipping.distanceKm, locale, 1)} কিমি`
+                  : `${formatNumber(summary.shipping.distanceKm, locale, 1)} km from ${summary.shipping.originName || summary.shipping.originNameBn}`)
+              : t("distanceLine", { km: formatNumber(summary.shipping.distanceKm, locale, 1) })}
+          </p>
+        )}
       </section>
 
       <section className="rounded bg-muted border border-border p-4 text-sm text-foreground/80">

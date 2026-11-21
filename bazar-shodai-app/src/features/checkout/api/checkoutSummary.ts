@@ -52,6 +52,9 @@ export interface CheckoutSummaryResponse {
     isPendingFee?: boolean;
     amountForFreeDelivery?: number;
     freeDeliveryThreshold?: number;
+    originId?: string | null;
+    originName?: string | null;
+    originNameBn?: string | null;
   };
   coupon: {
     applied: boolean;

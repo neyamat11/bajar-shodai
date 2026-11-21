@@ -35,6 +35,14 @@ describe('ShippingService.quote', () => {
     expect(qNoFactor.directDistanceKm).toBe(5.56);
     expect(qNoFactor.roadDistanceKm).toBe(9);
     expect(qNoFactor.calculatedFee).toBe(60);
+
+    // When calculated distance (direct * factor = 7.23 km) is greater than road distance (6.5 km),
+    // cap the charged distance to the road distance (6.5 km)
+    const qCappedAtRoad = await make({ distanceCalculation: 'direct', routeFactor: 1.3 }, { km: 6.5, seconds: 900, estimated: false }).service.quote(500, { lat: 23.25, lng: 90.9 });
+    expect(qCappedAtRoad.distanceKm).toBe(6.5);
+    expect(qCappedAtRoad.directDistanceKm).toBe(5.56);
+    expect(qCappedAtRoad.roadDistanceKm).toBe(6.5);
+    expect(qCappedAtRoad.calculatedFee).toBe(70);
   });
 
   it('prices by road distance with the formula', async () => {

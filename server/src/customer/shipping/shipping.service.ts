@@ -40,6 +40,7 @@ export interface ShippingQuote {
   // Nearest origin point selected
   originId?: string | null;
   originName?: string | null;
+  originNameBn?: string | null;
 }
 
 export interface ShippingInput {
@@ -115,14 +116,14 @@ export class ShippingService {
     };
     if (!d.enabled) return { ...base, block: 'DISABLED' };
     let origin = this.origin(d);
-    let selectedOrigin: { id: string; name: string } | null = null;
+    let selectedOrigin: { id: string; name: string; nameBn?: string | null } | null = null;
 
     if (input.lat != null && input.lng != null) {
       try {
         const nearest = await this.originsService.findNearest(input.lat, input.lng);
         if (nearest) {
           origin = { lat: nearest.latitude, lng: nearest.longitude };
-          selectedOrigin = { id: nearest.id, name: nearest.name };
+          selectedOrigin = { id: nearest.id, name: nearest.name, nameBn: nearest.nameBn };
         }
       } catch {}
     }
@@ -164,7 +165,19 @@ export class ShippingService {
     const isDirect = (d.distanceCalculation ?? 'direct') === 'direct';
     const factor = typeof d.routeFactor === 'number' && d.routeFactor > 0 ? d.routeFactor : 1;
     const directWithFactorKm = Math.round(directKm * factor * 100) / 100;
-    const chargedKm = isDirect ? directWithFactorKm : roadKm;
+
+    // If calculated distance (direct * factor) is more than actual road distance,
+    // cap the charged distance to the road distance (i.e. chargedKm = roadKm).
+    let chargedKm: number;
+    if (isDirect) {
+      if (!route.estimated && roadKm > 0 && directWithFactorKm > roadKm) {
+        chargedKm = roadKm;
+      } else {
+        chargedKm = directWithFactorKm;
+      }
+    } else {
+      chargedKm = roadKm;
+    }
     const fee = feeForDistance(chargedKm, d);
 
     const qualifiesForFree = !!input.allItemsFreeShipping || (threshold !== null && subtotal >= threshold);
@@ -185,6 +198,7 @@ export class ShippingService {
       straightKm: inside.km,
       originId: selectedOrigin?.id ?? null,
       originName: selectedOrigin?.name ?? null,
+      originNameBn: selectedOrigin?.nameBn ?? null,
     };
   }
 }

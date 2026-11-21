@@ -23,6 +23,9 @@ export interface ShippingQuote {
   durationSec?: number | null;
   isAbroad?: boolean;
   isPendingFee?: boolean;
+  originId?: string | null;
+  originName?: string | null;
+  originNameBn?: string | null;
 }
 
 export interface SharedLocationResponse {

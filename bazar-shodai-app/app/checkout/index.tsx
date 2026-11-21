@@ -91,6 +91,8 @@ export default function CheckoutScreen() {
     placeNameBn?: string;
     distanceKm?: number;
     accuracyM?: number;
+    originName?: string | null;
+    originNameBn?: string | null;
   } | null>(null);
   const [isLocating, setIsLocating] = useState(false);
   const [locationBlock, setLocationBlock] = useState<string | null>(null);
@@ -361,6 +363,8 @@ export default function CheckoutScreen() {
           placeNameBn: res.location?.placeNameBn || res.placeNameBn,
           distanceKm: distance,
           accuracyM: coords.accuracy ?? undefined,
+          originName: res.quote?.originName,
+          originNameBn: res.quote?.originNameBn,
         }));
 
         if (res.quote?.calculatedFee !== undefined) {
@@ -456,6 +460,8 @@ export default function CheckoutScreen() {
         placeNameBn: res.location?.placeNameBn || res.placeNameBn,
         distanceKm: distance,
         accuracyM: 10,
+        originName: res.quote?.originName,
+        originNameBn: res.quote?.originNameBn,
       });
 
       if (res.quote?.calculatedFee !== undefined) {
@@ -845,7 +851,7 @@ export default function CheckoutScreen() {
                   </Text>
                   <Text style={styles.gpsBtnSub}>
                     {gpsLocation
-                      ? `${gpsLocation.placeName || 'শাহরাস্তি'} • কেন্দ্র থেকে ${gpsLocation.distanceKm !== undefined ? gpsLocation.distanceKm.toFixed(1) : '0'} কিমি`
+                      ? `${gpsLocation.placeName || 'শাহরাস্তি'} • ${(gpsLocation.originNameBn || gpsLocation.originName || serverSummary?.shipping?.originNameBn || serverSummary?.shipping?.originName || 'দোকান')} থেকে ${gpsLocation.distanceKm !== undefined ? gpsLocation.distanceKm.toFixed(1) : '0'} কিমি`
                       : 'ডেলিভারি চার্জ ও সঠিক অবস্থান নিশ্চিত করতে প্রেস করুন'}
                   </Text>
                 </View>
@@ -1062,7 +1068,7 @@ export default function CheckoutScreen() {
                   {skipLocation
                     ? (isAbroadOrder ? '🌐 প্রবাসী অর্ডার (লোকেশন সেট ছাড়া)' : '🌐 লোকেশন সেট ছাড়া অর্ডার')
                     : gpsLocation?.placeName
-                      ? `📍 ${gpsLocation.placeName} (${gpsLocation.distanceKm !== undefined ? gpsLocation.distanceKm.toFixed(1) : ''} কিমি)`
+                      ? `📍 ${gpsLocation.placeName} (${(gpsLocation.originNameBn || gpsLocation.originName || serverSummary?.shipping?.originNameBn || serverSummary?.shipping?.originName) ? `${gpsLocation.originNameBn || gpsLocation.originName || serverSummary?.shipping?.originNameBn || serverSummary?.shipping?.originName} থেকে ` : ''}${gpsLocation.distanceKm !== undefined ? gpsLocation.distanceKm.toFixed(1) : ''} কিমি)`
                       : '📍 ম্যাপ পিন যুক্ত হয়েছে'}
                 </Text>
               </View>

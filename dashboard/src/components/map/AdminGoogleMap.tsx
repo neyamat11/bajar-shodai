@@ -59,19 +59,78 @@ export default function AdminGoogleMap(p: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const dismissGoogleError = () => {
+      // 1. Auto-click OK button inside Google Maps development/billing modal if rendered
+      const buttons = document.querySelectorAll<HTMLButtonElement>(".gm-err-content button, .gm-err-container button");
+      buttons.forEach((btn) => {
+        try {
+          btn.click();
+        } catch {}
+      });
+
+      // 2. Hide and remove known Google error containers
+      const errEls = document.querySelectorAll<HTMLElement>(".gm-err-container, .gm-err-content, .gm-err-autocomplete, .gm-style-moc");
+      errEls.forEach((el) => {
+        el.style.display = "none";
+        el.remove();
+      });
+
+      // 3. Fallback scan for any dialog div containing the error message text
+      const allDivs = document.querySelectorAll<HTMLElement>("body div");
+      allDivs.forEach((d) => {
+        const text = d.innerText;
+        if (text && text.indexOf("This page can't load Google Maps correctly") !== -1) {
+          d.style.display = "none";
+          d.remove();
+        }
+      });
+    };
+
+    // Run immediate pass
+    dismissGoogleError();
+
+    // Hook window.gm_authFailure
     const prevAuthFailure = (window as unknown as { gm_authFailure?: () => void }).gm_authFailure;
     (window as unknown as { gm_authFailure?: () => void }).gm_authFailure = () => {
+      dismissGoogleError();
       p.onAuthError?.();
-      document.querySelectorAll(".gm-err-container, .gm-err-content").forEach((el) => el.remove());
       if (typeof prevAuthFailure === "function") prevAuthFailure();
     };
+
+    // Watch for Google Maps dynamically appending modal dialogs into the DOM
+    const observer = new MutationObserver(() => {
+      dismissGoogleError();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    const checkInterval = setInterval(dismissGoogleError, 200);
+    const timeout = setTimeout(() => clearInterval(checkInterval), 6000);
+
     return () => {
+      observer.disconnect();
+      clearInterval(checkInterval);
+      clearTimeout(timeout);
       (window as unknown as { gm_authFailure?: () => void }).gm_authFailure = prevAuthFailure;
     };
   }, [p.onAuthError]);
 
   return (
     <APIProvider apiKey={key} onError={() => p.onAuthError?.()}>
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+            .gm-err-container,
+            .gm-err-content,
+            .gm-err-autocomplete,
+            .gm-style-moc {
+              display: none !important;
+              visibility: hidden !important;
+              opacity: 0 !important;
+              pointer-events: none !important;
+            }
+          `,
+        }}
+      />
       <div
         ref={containerRef}
         className={`relative z-0 ${p.className ?? ""}`}

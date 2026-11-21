@@ -406,6 +406,11 @@ export default function OrderDetailScreen() {
           <Text style={styles.recipientName}>{order.shippingAddress.fullName}</Text>
           <Text style={styles.recipientPhone}>{order.shippingAddress.phone}</Text>
           <Text style={styles.recipientAddress}>{order.shippingAddress.address}</Text>
+          {(order as any).deliveryDistanceKm != null && (
+            <Text style={{ fontSize: 12, color: '#6b7280', marginTop: 3 }}>
+              {((order as any).originPoint?.nameBn || (order as any).originPoint?.name || (isBn ? 'দোকান' : 'Shop'))} {isBn ? 'থেকে' : 'from'} {Number((order as any).deliveryDistanceKm).toFixed(1)} {isBn ? 'কিমি' : 'km'}
+            </Text>
+          )}
           {formatDeliveryWindow(order.estimatedDelivery, order.deliverySlot, isBn ? 'bn' : 'en') ? (
             <View style={styles.slotInAddressRow}>
               <Icon name="Clock" size={13} color="#0b6234" />

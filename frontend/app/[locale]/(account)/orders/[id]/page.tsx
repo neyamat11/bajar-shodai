@@ -400,7 +400,15 @@ function Detail() {
                 </p>
               )}
               {order.deliveryPlaceName && <p className="text-muted-foreground">{order.deliveryPlaceName}</p>}
-              {order.deliveryDistanceKm != null && <p className="text-xs text-muted-foreground">{tc("distanceLine", { km: formatNumber(order.deliveryDistanceKm, locale, 1) })}</p>}
+              {order.deliveryDistanceKm != null && (
+                <p className="text-xs text-muted-foreground">
+                  {order.originPointName
+                    ? (locale === "bn"
+                        ? `${order.originPointName} থেকে ${formatNumber(order.deliveryDistanceKm, locale, 1)} কিমি`
+                        : `${formatNumber(order.deliveryDistanceKm, locale, 1)} km from ${order.originPointName}`)
+                    : tc("distanceLine", { km: formatNumber(order.deliveryDistanceKm, locale, 1) })}
+                </p>
+              )}
               <p className="text-muted-foreground">{addr.phone}</p>
             </address>
             {order.isAbroadOrder && (

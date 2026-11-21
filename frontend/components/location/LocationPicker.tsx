@@ -144,7 +144,8 @@ export default function LocationPicker({
   }, [valueKey, needsName, subtotal, skipLocation]);
 
   const origin = delivery?.origin ? { lat: delivery.origin.lat, lng: delivery.origin.lng } : null;
-  const shopName = delivery?.origin ? (locale === "bn" ? delivery.origin.labelBn : delivery.origin.label).split(",")[0] : "";
+  const defaultShopName = delivery?.origin ? (locale === "bn" ? delivery.origin.labelBn : delivery.origin.label).split(",")[0] : "";
+  const shopName = (locale === "bn" ? (quote?.originNameBn || quote?.originName) : (quote?.originName || quote?.originNameBn)) || defaultShopName;
 
   const shareMyLocation = useCallback(async () => {
     setShowLocationModal(false);

@@ -260,6 +260,9 @@ export interface DeliveryQuote {
   radiusKm: number;
   isAbroad?: boolean;
   isPendingFee?: boolean;
+  originId?: string | null;
+  originName?: string | null;
+  originNameBn?: string | null;
 }
 
 // Where an order is delivered (checkout form)

@@ -98,6 +98,7 @@ export class OrdersService {
         items: true,
         statusHistory: { orderBy: { createdAt: 'desc' } },
         shippingAddress: true,
+        originPoint: true,
       },
       orderBy: { placedAt: 'desc' },
     });
@@ -112,6 +113,7 @@ export class OrdersService {
         items: true,
         statusHistory: { orderBy: { createdAt: 'asc' } },
         shippingAddress: true,
+        originPoint: true,
         payments: true,
         delivery: {
           select: {
