@@ -21,9 +21,8 @@ interface Step {
 
 const STEP_KEYS = [
   { id: 1, label: "stepShipping", shortLabel: "stepShippingShort" },
-  { id: 2, label: "stepLocation", shortLabel: "stepLocationShort" },
-  { id: 3, label: "stepPayment", shortLabel: "stepPaymentShort" },
-  { id: 4, label: "stepReview", shortLabel: "stepReviewShort" },
+  { id: 2, label: "stepPayment", shortLabel: "stepPaymentShort" },
+  { id: 3, label: "stepReview", shortLabel: "stepReviewShort" },
 ] as const;
 
 interface StepIndicatorProps {

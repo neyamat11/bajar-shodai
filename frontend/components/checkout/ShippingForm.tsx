@@ -28,6 +28,17 @@ interface ShippingFormProps {
   onPickSaved?: (location: PickedLocation | null) => void;
   subtotal?: number;
   onSubmit: (data: DeliveryDetails, saveToBook?: boolean) => void;
+  skipLocation?: boolean;
+  onSkipLocationChange?: (skip: boolean) => void;
+  isAbroadOrder?: boolean;
+  onIsAbroadOrderChange?: (abroad: boolean) => void;
+  senderCountry?: string;
+  onSenderCountryChange?: (c: string) => void;
+  senderContactMethod?: "WHATSAPP" | "IMO" | "PHONE";
+  onSenderContactMethodChange?: (m: "WHATSAPP" | "IMO" | "PHONE") => void;
+  senderContactNumber?: string;
+  onSenderContactNumberChange?: (n: string) => void;
+  onQuote?: (quote: DeliveryQuote | null, loading: boolean) => void;
 }
 
 type Errors = Partial<Record<keyof DeliveryDetails | "location", string>>;
@@ -61,7 +72,26 @@ const asPin = (a: SavedAddress): PickedLocation | null =>
   a.latitude != null && a.longitude != null ? { lat: a.latitude, lng: a.longitude, accuracyM: a.accuracyM, source: a.locationSource ?? "PIN", placeName: a.placeName, landmark: a.landmark } : null;
 
 /** Step 1 — who, where on the map, and house details. */
-export default function ShippingForm({ initialData, saved, location, onLocation, onPickSaved, subtotal = 0, onSubmit }: ShippingFormProps) {
+export default function ShippingForm({
+  initialData,
+  saved,
+  location,
+  onLocation,
+  onPickSaved,
+  subtotal = 0,
+  onSubmit,
+  skipLocation = false,
+  onSkipLocationChange,
+  isAbroadOrder = false,
+  onIsAbroadOrderChange,
+  senderCountry = "",
+  onSenderCountryChange,
+  senderContactMethod = "WHATSAPP",
+  onSenderContactMethodChange,
+  senderContactNumber = "",
+  onSenderContactNumberChange,
+  onQuote,
+}: ShippingFormProps) {
   const t = useTranslations("Checkout");
   const { user } = useAuth();
   const [f, setF] = useState<DeliveryDetails>({
@@ -92,8 +122,10 @@ export default function ShippingForm({ initialData, saved, location, onLocation,
     if (f.fullName.trim().length < 2) e.fullName = t("errName");
     if (!/^(\+?88)?01[3-9]\d{8}$/.test(latinDigits(f.phone).replace(/[\s-]/g, ""))) e.phone = t("errPhone");
     if (!f.address.trim()) e.address = t("errAddress");
-    if (!location) e.location = t("errLocation");
-    else if (quote?.block === "OUT_OF_AREA") e.location = t("errOutOfArea");
+    if (!skipLocation) {
+      if (!location) e.location = t("errLocation");
+      else if (quote?.block === "OUT_OF_AREA") e.location = t("errOutOfArea");
+    }
     return e;
   }
 
@@ -207,8 +239,19 @@ export default function ShippingForm({ initialData, saved, location, onLocation,
           }}
           addressText={f.address.trim()}
           subtotal={subtotal}
-          onQuote={(q) => {
+          skipLocation={skipLocation}
+          onSkipLocationChange={onSkipLocationChange}
+          isAbroadOrder={isAbroadOrder}
+          onIsAbroadOrderChange={onIsAbroadOrderChange}
+          senderCountry={senderCountry}
+          onSenderCountryChange={onSenderCountryChange}
+          senderContactMethod={senderContactMethod}
+          onSenderContactMethodChange={onSenderContactMethodChange}
+          senderContactNumber={senderContactNumber}
+          onSenderContactNumberChange={onSenderContactNumberChange}
+          onQuote={(q, loading) => {
             setQuote(q);
+            onQuote?.(q, loading);
             if (q?.block === "OUT_OF_AREA") {
               setErrors((e) => ({ ...e, location: t("errOutOfArea") }));
             } else if (errors.location === t("errOutOfArea")) {
@@ -265,7 +308,7 @@ export default function ShippingForm({ initialData, saved, location, onLocation,
         type="submit"
         className="w-full py-4 rounded-lg bg-brand-fresh text-foreground font-black text-base hover:bg-brand-fresh/90 active:scale-[0.97] transition-all shadow-[0_8px_24px_rgba(69,162,44,0.3)]"
       >
-        {t("continueLocation")}
+        {t("continuePayment")}
       </button>
     </form>
   );

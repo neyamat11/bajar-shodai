@@ -2,7 +2,6 @@
 
 import { useRouter } from "@/i18n/navigation";
 import { useAuthModal } from "@/components/auth/AuthModal";
-import LocationStep from "@/components/checkout/LocationStep";
 import OrderReview from "@/components/checkout/OrderReview";
 import OrderSummaryPanel from "@/components/checkout/OrderSummaryPanel";
 import { CheckoutBodySkeleton } from "@/components/skeletons/CheckoutSkeletons";
@@ -60,7 +59,7 @@ function Checkout() {
   const [senderCountry, setSenderCountry] = useState("");
   const [senderContactMethod, setSenderContactMethod] = useState<"WHATSAPP" | "IMO" | "PHONE">("WHATSAPP");
   const [senderContactNumber, setSenderContactNumber] = useState("");
-  const [payment, setPayment] = useState<PaymentMethod | null>(null);
+  const [payment, setPayment] = useState<PaymentMethod>("Cash on Delivery");
   const [txn, setTxn] = useState("");
   const [sender, setSender] = useState("");
   const [coupon, setCoupon] = useState(() => getStoredCoupon());
@@ -185,6 +184,12 @@ function Checkout() {
 
   const rawMethods = (settings?.payment?.methods?.length ? settings.payment.methods : (summary?.paymentMethods?.length ? summary.paymentMethods : ["CASH_ON_DELIVERY"]));
   const methods: PaymentMethod[] = Array.from(new Set(rawMethods.map((m) => LABEL[m] || LABEL[m?.toUpperCase?.()] || (m as PaymentMethod)).filter(Boolean)));
+
+  useEffect(() => {
+    if ((!payment || !methods.includes(payment)) && methods.length > 0) {
+      setPayment(methods.includes("Cash on Delivery") ? "Cash on Delivery" : methods[0]);
+    }
+  }, [methods, payment]);
   const address: CheckoutAddress | null = details
     ? {
         ...details,
@@ -248,6 +253,17 @@ function Checkout() {
               onLocation={setLocation}
               onPickSaved={(pin) => setLocation(pin)}
               subtotal={summary?.subtotal ?? 0}
+              skipLocation={skipLocation}
+              onSkipLocationChange={setSkipLocation}
+              isAbroadOrder={isAbroadOrder}
+              onIsAbroadOrderChange={setIsAbroadOrder}
+              senderCountry={senderCountry}
+              onSenderCountryChange={setSenderCountry}
+              senderContactMethod={senderContactMethod}
+              onSenderContactMethodChange={setSenderContactMethod}
+              senderContactNumber={senderContactNumber}
+              onSenderContactNumberChange={setSenderContactNumber}
+              onQuote={onQuote}
               onSubmit={async (d, saveToBook) => {
                 setDetails(d);
                 if (saveToBook && user && location) {
@@ -275,31 +291,6 @@ function Checkout() {
           )}
 
           {step === 2 && (
-            <LocationStep
-              location={location}
-              onLocation={setLocation}
-              quote={quote}
-              quoting={quoting}
-              onQuote={onQuote}
-              subtotal={summary?.subtotal ?? 0}
-              slot={slot}
-              onSlot={setSlot}
-              onBack={() => setStep(1)}
-              onContinue={() => setStep(3)}
-              skipLocation={skipLocation}
-              onSkipLocationChange={setSkipLocation}
-              isAbroadOrder={isAbroadOrder}
-              onIsAbroadOrderChange={setIsAbroadOrder}
-              senderCountry={senderCountry}
-              onSenderCountryChange={setSenderCountry}
-              senderContactMethod={senderContactMethod}
-              onSenderContactMethodChange={setSenderContactMethod}
-              senderContactNumber={senderContactNumber}
-              onSenderContactNumberChange={setSenderContactNumber}
-            />
-          )}
-
-          {step === 3 && (
             <PaymentSelector
               methods={methods}
               accounts={{
@@ -314,12 +305,12 @@ function Checkout() {
               onTransactionIdChange={setTxn}
               senderNumber={sender}
               onSenderNumberChange={setSender}
-              onBack={() => setStep(2)}
-              onContinue={() => setStep(4)}
+              onBack={() => setStep(1)}
+              onContinue={() => setStep(3)}
             />
           )}
 
-          {step === 4 && address && payment && summary && (
+          {step === 3 && address && payment && summary && (
             <OrderReview
               summary={summary}
               address={address}
@@ -329,7 +320,7 @@ function Checkout() {
               bkashSenderNumber={MOBILE_METHODS.includes(payment) ? sender.replace(/[\s-]/g, "") : undefined}
               couponCode={summary.coupon?.applied ? summary.coupon.code : undefined}
               redeemPoints={usePoints ? summary.loyalty?.pointsRedeemed : undefined}
-              onBack={() => setStep(3)}
+              onBack={() => setStep(2)}
               onOrderPlaced={() => {
                 placed.current = true;
                 clearStoredCoupon();
