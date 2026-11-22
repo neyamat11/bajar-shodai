@@ -153,7 +153,7 @@ export function MedicinePurchaseSheet({
   const isMinStripOnly =
     (product.discountEligibility || globalDiscountEligibility) === 'MIN_STRIP_ONLY';
   const insets = useSafeAreaInsets();
-  const bottomSafePadding = Math.max(insets.bottom, Platform.OS === 'android' ? 24 : 12);
+  const bottomSafePadding = Math.max(insets.bottom, Platform.OS === 'android' ? 56 : 16) + 8;
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>

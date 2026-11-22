@@ -42,7 +42,7 @@ function QuickViewSheetContent({ product, onClose }: QuickViewSheetContentProps)
   const { t } = useTranslation();
   const isBn = getAppLanguage() === 'bn';
   const insets = useSafeAreaInsets();
-  const bottomSafePadding = Math.max(insets.bottom, Platform.OS === 'android' ? 32 : 16);
+  const bottomSafePadding = Math.max(insets.bottom, Platform.OS === 'android' ? 56 : 16) + 12;
 
   const addItem = useCartStore((s) => s.addItem);
   const { data: wishlist = [] } = useWishlist();

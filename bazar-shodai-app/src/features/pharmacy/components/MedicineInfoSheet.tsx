@@ -32,7 +32,7 @@ export function MedicineInfoSheet({
 }: MedicineInfoSheetProps) {
   const isRx = meta?.isPrescriptionRequired ?? false;
   const insets = useSafeAreaInsets();
-  const bottomSafePadding = Math.max(insets.bottom, Platform.OS === 'android' ? 24 : 16);
+  const bottomSafePadding = Math.max(insets.bottom, Platform.OS === 'android' ? 56 : 16) + 8;
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
