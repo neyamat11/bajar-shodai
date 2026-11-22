@@ -382,7 +382,7 @@ export interface CartContextValue {
   cartTotal: number;
   isOpen: boolean;
   openCart: () => void;
-  closeCart: () => void;
+  closeCart: (options?: { navigating?: boolean }) => void;
 }
 
 export interface WishlistContextValue {

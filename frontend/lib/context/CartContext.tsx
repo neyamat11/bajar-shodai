@@ -10,6 +10,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { formatQuantity } from "@/lib/format";
 import { round3 } from "@/lib/quantity";
 import type { Locale } from "@/lib/locale";
+import { usePathname } from "@/i18n/navigation";
 
 const EMPTY: Cart = { items: [], updatedAt: "" };
 
@@ -25,10 +26,60 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const t = useTranslations("Cart");
   const tCard = useTranslations("Product.card");
   const locale = useLocale() as Locale;
+  const pathname = usePathname();
   const [cart, setCart] = useState<Cart>(EMPTY);
   const [loading, setLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
+  const drawerPushedRef = useRef(false);
   const seq = useRef(0);
+
+  const openCart = useCallback(() => {
+    if (typeof window !== "undefined" && !drawerPushedRef.current) {
+      try {
+        window.history.pushState({ drawer: "cart" }, "", window.location.href);
+        drawerPushedRef.current = true;
+      } catch {
+        // Ignore in environments without history support
+      }
+    }
+    setIsOpen(true);
+  }, []);
+
+  const closeCart = useCallback((options?: { navigating?: boolean } | unknown) => {
+    const isNavigating = typeof options === "object" && options !== null && "navigating" in options && Boolean((options as { navigating?: boolean }).navigating);
+    if (typeof window !== "undefined" && drawerPushedRef.current) {
+      drawerPushedRef.current = false;
+      try {
+        if (isNavigating) {
+          window.history.replaceState(null, "", window.location.href);
+        } else {
+          window.history.back();
+        }
+      } catch {
+        // Ignore
+      }
+    }
+    setIsOpen(false);
+  }, []);
+
+  // Listen for browser popstate (phone hardware back button, browser back button, or swipe back)
+  useEffect(() => {
+    const handlePopState = () => {
+      if (drawerPushedRef.current) {
+        drawerPushedRef.current = false;
+        setIsOpen(false);
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  // When route changes, dismiss drawer seamlessly and clear history ref
+  useEffect(() => {
+    drawerPushedRef.current = false;
+    setIsOpen(false);
+  }, [pathname]);
 
   const refreshCart = useCallback(async () => {
     const mine = ++seq.current;
@@ -197,9 +248,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const value: CartContextValue = useMemo(
     () => ({
       cart, loading, addToCart, removeFromCart, updateQuantity, clearCart, refreshCart, cartCount, cartTotal,
-      isOpen, openCart: () => setIsOpen(true), closeCart: () => setIsOpen(false),
+      isOpen, openCart, closeCart,
     }),
-    [cart, loading, addToCart, removeFromCart, updateQuantity, clearCart, refreshCart, cartCount, cartTotal, isOpen],
+    [cart, loading, addToCart, removeFromCart, updateQuantity, clearCart, refreshCart, cartCount, cartTotal, isOpen, openCart, closeCart],
   );
 
   const actions = useMemo(() => ({ addToCart }), [addToCart]);

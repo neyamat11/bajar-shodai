@@ -22,7 +22,7 @@ export default function CartSidebar() {
   const locale = useLocale() as Locale;
   const money = (n: number) => formatMoney(n, locale);
   const { cart, cartCount, cartTotal, isOpen, closeCart } = useCart();
-  const checkout = useCheckoutEntry(closeCart);
+  const checkout = useCheckoutEntry(() => closeCart({ navigating: true }));
   const { user } = useAuth();
   const panelRef = useRef<HTMLDivElement>(null);
   const [input, setInput] = useState("");
@@ -80,7 +80,7 @@ export default function CartSidebar() {
       <div
         aria-hidden="true"
         data-lenis-prevent
-        onClick={closeCart}
+        onClick={() => closeCart()}
         className={[
           "fixed inset-0 z-[2100] bg-brand-deep/60 backdrop-blur-sm transition-opacity duration-500",
           isOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0",
@@ -116,7 +116,7 @@ export default function CartSidebar() {
             </div>
           </div>
           <button
-            onClick={closeCart}
+            onClick={() => closeCart()}
             aria-label={t("close")}
             className="relative flex h-9 w-9 items-center justify-center rounded border border-white/20 text-white/90 transition-colors hover:bg-white/10"
           >
@@ -140,7 +140,7 @@ export default function CartSidebar() {
             </div>
             <Link
               href="/products"
-              onClick={closeCart}
+              onClick={() => closeCart({ navigating: true })}
               className="group inline-flex items-center gap-2 rounded bg-primary px-6 py-3 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90"
             >
               {t("startShopping")}
@@ -284,10 +284,10 @@ export default function CartSidebar() {
                 {!checkout.checking && <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />}
               </button>
               <div className="flex items-center justify-between text-sm">
-                <Link href="/cart" onClick={closeCart} className="font-semibold text-primary hover:underline dark:text-accent-text">
+                <Link href="/cart" onClick={() => closeCart({ navigating: true })} className="font-semibold text-primary hover:underline dark:text-accent-text">
                   {t("viewFull")}
                 </Link>
-                <Link href="/products" onClick={closeCart} className="text-muted-foreground transition-colors hover:text-foreground">
+                <Link href="/products" onClick={() => closeCart({ navigating: true })} className="text-muted-foreground transition-colors hover:text-foreground">
                   {t("continueShopping")}
                 </Link>
               </div>
