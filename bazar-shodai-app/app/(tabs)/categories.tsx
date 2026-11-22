@@ -22,6 +22,7 @@ import { useQuickViewStore } from '@/store/useQuickViewStore';
 import { toast } from '@/store/useToastStore';
 import { haptics } from '@/services/haptics';
 import { assetUrl } from '@/utils/format';
+import { useHardwareBack } from '@/hooks/useHardwareBack';
 
 type SortOption = 'popular' | 'newest' | 'price_asc' | 'price_desc';
 
@@ -145,15 +146,44 @@ export default function ShopScreen() {
     setSortBy(opt);
   };
 
+  const handleBack = () => {
+    void haptics.selection().catch(() => {});
+    if (selectedSubCategorySlug) {
+      setSelectedSubCategorySlug(null);
+      return true;
+    }
+    if (selectedCategorySlug) {
+      setSelectedCategorySlug(null);
+      return true;
+    }
+    // Return to the central Home tab
+    router.navigate('/(tabs)');
+    return true;
+  };
+
+  useHardwareBack(handleBack);
+
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.container}>
       {/* ── Top Header ────────────────────────────────────────────── */}
       <View style={styles.header}>
-        <View>
-          <Text style={styles.headerTitle}>Shop • শপ</Text>
-          <Text style={styles.headerSubtitle}>
-            {activeCategory ? (activeCategory.nameBn || activeCategory.name) : 'All Products • সব পণ্য'}
-          </Text>
+        <View style={styles.headerLeft}>
+          <TouchableOpacity
+            onPress={handleBack}
+            style={styles.backBtn}
+            delayPressIn={0}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Back to Home"
+          >
+            <Icon name="ArrowLeft" size={20} color="#0b6234" />
+          </TouchableOpacity>
+          <View>
+            <Text style={styles.headerTitle}>Shop • শপ</Text>
+            <Text style={styles.headerSubtitle}>
+              {activeCategory ? (activeCategory.nameBn || activeCategory.name) : 'All Products • সব পণ্য'}
+            </Text>
+          </View>
         </View>
 
         <TouchableOpacity
@@ -461,6 +491,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderBottomWidth: 1,
     borderBottomColor: '#f1f5f9',
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  backBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    backgroundColor: '#f0fdf4',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#dcfce7',
   },
   headerTitle: {
     fontSize: 18,

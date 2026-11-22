@@ -3,12 +3,17 @@ import { Tabs } from 'expo-router/tabs';
 import { TabBar } from '@/navigation/TabBar';
 import { useAppTheme } from '@/components/theme/ThemeProvider';
 
+export const unstable_settings = {
+  initialRouteName: 'index',
+};
+
 export default function TabsLayout() {
   const { colors } = useAppTheme();
 
   return (
     <Tabs
       tabBar={(props) => <TabBar {...props} />}
+      backBehavior="initialRoute"
       screenOptions={{
         headerShown: false,
         animation: 'fade',
