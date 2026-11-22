@@ -2,8 +2,8 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Bazar Shodai - বাজার সদাই',
-    short_name: 'Bazar Shodai',
+    name: 'Bajar Shodai - বাজার সদাই',
+    short_name: 'Bajar Shodai',
     description: 'Fresh groceries, fish, vegetables and daily essentials delivered directly to your doorstep in Shahrasti.',
     start_url: '/',
     display: 'standalone',

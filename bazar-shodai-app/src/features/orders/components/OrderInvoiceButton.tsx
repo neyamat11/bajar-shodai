@@ -20,7 +20,7 @@ export function OrderInvoiceButton({ orderId, orderNumber }: OrderInvoiceButtonP
       const invoiceUrl = `https://bazarshodai.com/orders/${orderNumber}/invoice`;
       await Share.share({
         title: `Invoice #${orderNumber}`,
-        message: `Order Invoice #${orderNumber} from Bazar Shodai: ${invoiceUrl}`,
+        message: `Order Invoice #${orderNumber} from Bajar Shodai: ${invoiceUrl}`,
         url: invoiceUrl,
       });
       toast.success('Invoice Ready', 'Invoice link shared');

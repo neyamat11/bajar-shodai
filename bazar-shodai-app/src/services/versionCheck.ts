@@ -45,7 +45,7 @@ export async function checkAppVersion(): Promise<void> {
     if (forceUpdate || (minVersion && compareSemver(minVersion, APP_VERSION) > 0)) {
       Alert.alert(
         'Update Required',
-        'A critical new version of Bazar Shodai is available. Please update the app to continue shopping safely.',
+        'A critical new version of Bajar Shodai is available. Please update the app to continue shopping safely.',
         [
           {
             text: 'Update Now',

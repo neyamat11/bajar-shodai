@@ -29,7 +29,7 @@ export function setupNotificationListeners(): () => void {
   // 1. Foreground notification arrival listener
   const notificationReceivedSub = Notifications.addNotificationReceivedListener((notification) => {
     haptics.success();
-    const title = notification.request.content.title || 'Bazar Shodai Update';
+    const title = notification.request.content.title || 'Bajar Shodai Update';
     const body = notification.request.content.body || '';
 
     toast.info(title, body);

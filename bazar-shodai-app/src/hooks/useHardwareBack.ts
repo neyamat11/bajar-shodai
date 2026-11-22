@@ -28,7 +28,7 @@ export function useHardwareBack(onBackPress?: () => boolean) {
  */
 export function useRootDoubleTapToExit(
   isRootScreen = true,
-  exitMessage = 'Press back again to exit Bazar Shodai',
+  exitMessage = 'Press back again to exit Bajar Shodai',
   exitTimeoutMs = 2000,
 ) {
   const router = useRouter();

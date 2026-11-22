@@ -57,10 +57,10 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     description: t("description"),
     keywords: t("keywords").split("|"),
     openGraph: {
-      siteName: "Bazar Shodai",
+      siteName: "Bajar Shodai",
       type: "website",
       locale: locale === "en" ? "en_BD" : "bn_BD",
-      images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Bazar Shodai" }],
+      images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Bajar Shodai" }],
     },
   };
 }

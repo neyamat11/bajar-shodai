@@ -1,6 +1,6 @@
 import { Link } from "@/i18n/navigation";
 
-// Bazar Shodai lockup: the wide logo (cart mark + বাজার সদাই). The artwork has a
+// Bajar Shodai lockup: the wide logo (cart mark + বাজার সদাই). The artwork has a
 // white background, so in light mode it is multiplied into the page colour and in
 // dark mode (or on surfaces that stay dark) it sits on a small white tile.
 export default function BrandLogo({
@@ -34,7 +34,7 @@ export default function BrandLogo({
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={src}
-          alt="Bazar Shodai"
+          alt="Bajar Shodai"
           width={1400}
           height={420}
           className={`${dims.img} w-auto object-contain ${onDark ? "" : "mix-blend-multiply dark:mix-blend-normal"}`}
@@ -53,7 +53,7 @@ export default function BrandLogo({
   );
 
   return asLink ? (
-    <Link href="/" aria-label="Bazar Shodai home" className="inline-flex">
+    <Link href="/" aria-label="Bajar Shodai home" className="inline-flex">
       {body}
     </Link>
   ) : (

@@ -32,7 +32,7 @@ export function resolveMapProvider(params: {
 const DEFAULT_HUB = {
   lat: 23.2117,
   lng: 90.9634,
-  label: 'Bazar Shodai Hub (Shahrasti)',
+  label: 'Bajar Shodai Hub (Shahrasti)',
 };
 
 /**
@@ -154,7 +154,7 @@ export function CheckoutMapView({
                 strokeColor: '#ffffff',
                 strokeWeight: 2,
               },
-              title: '${origin.label || 'Bazar Shodai'}'
+              title: '${origin.label || 'Bajar Shodai'}'
             });
 
             // Delivery Service Radius

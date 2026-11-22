@@ -25,10 +25,10 @@ describe('AppController', () => {
   });
 
   describe('root', () => {
-    it('reports that the Bazar Shodai API is running', () => {
+    it('reports that the Bajar Shodai API is running', () => {
       const res = appController.getHello();
       expect(res.success).toBe(true);
-      expect(res.message).toBe('Bazar Shodai API is running');
+      expect(res.message).toBe('Bajar Shodai API is running');
     });
   });
 });

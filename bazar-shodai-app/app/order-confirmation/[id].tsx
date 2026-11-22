@@ -40,7 +40,7 @@ export default function OrderConfirmationScreen() {
   const handleShareWhatsApp = () => {
     const text = isBn
       ? `আসসালামু আলাইকুম, বাজার সদাই থেকে অর্ডারের (${order?.orderNumber || orderId}) সঠিক ডেলিভারির জন্য অনুগ্রহ করে এই লিংকে ক্লিক করে বাসার লোকেশন পিন করুন: ${shareUrl}`
-      : `Hello! Please click this link to pin our exact delivery location for our Bazar Shodai order (${order?.orderNumber || orderId}): ${shareUrl}`;
+      : `Hello! Please click this link to pin our exact delivery location for our Bajar Shodai order (${order?.orderNumber || orderId}): ${shareUrl}`;
     const url = `whatsapp://send?text=${encodeURIComponent(text)}`;
     Linking.canOpenURL(url).then((supported) => {
       if (supported) {

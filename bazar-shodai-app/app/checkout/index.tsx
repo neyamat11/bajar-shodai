@@ -191,12 +191,14 @@ export default function CheckoutScreen() {
   const sub = subtotal();
   const isLocationSelected = !!gpsLocation;
   const isLocationPending = !isLocationSelected && !skipLocation;
-  const isPendingFee = skipLocation || serverSummary?.shipping?.isPendingFee || (!isLocationSelected && !serverSummary?.shipping?.available);
+  const isPendingFee = skipLocation || Boolean(serverSummary?.shipping?.isPendingFee);
   const baseDelivery = dynamicDeliveryFee !== null ? dynamicDeliveryFee : deliveryCharge;
   const currentDelivery = isPendingFee || isLocationPending ? 0 : baseDelivery;
   const effectiveDeliveryCost = (isPendingFee || isLocationPending)
     ? 0
-    : (serverSummary?.shippingCost !== undefined ? serverSummary.shippingCost : currentDelivery);
+    : (serverSummary?.shipping?.available && serverSummary?.shippingCost !== undefined
+        ? serverSummary.shippingCost
+        : currentDelivery);
 
   const siteThreshold = siteSettings?.delivery?.freeDeliveryThreshold ?? null;
   const isThresholdFree = typeof siteThreshold === 'number' && siteThreshold > 0 && sub >= siteThreshold;
@@ -209,7 +211,9 @@ export default function CheckoutScreen() {
   const pointsDiscount = usePoints ? (serverSummary?.pointsDiscountAmount ?? 0) : 0;
   const grandTotal = isLocationPending || isPendingFee
     ? Math.max(0, sub - couponDiscount - pointsDiscount)
-    : (serverSummary?.total ?? Math.max(0, sub - couponDiscount - pointsDiscount + effectiveDeliveryCost));
+    : (serverSummary?.shipping?.available && serverSummary?.total !== undefined
+        ? serverSummary.total
+        : Math.max(0, sub - couponDiscount - pointsDiscount + effectiveDeliveryCost));
 
   const summaryData: CheckoutSummaryData = useMemo(() => ({
     subtotal: serverSummary?.subtotal ?? sub,

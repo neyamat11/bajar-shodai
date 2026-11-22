@@ -229,7 +229,7 @@ export default function SettingsScreen() {
         </View>
 
         {/* Legal & About */}
-        <Text style={styles.sectionHeader}>About Bazar Shodai</Text>
+        <Text style={styles.sectionHeader}>About Bajar Shodai</Text>
         <View style={styles.card}>
           <View style={styles.row}>
             <View style={styles.iconCircle}>

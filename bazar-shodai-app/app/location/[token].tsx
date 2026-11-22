@@ -107,7 +107,7 @@ export default function LocationShareTokenScreen() {
             </View>
 
             <Text style={styles.cardTitle}>
-              {info?.shopName || 'Bazar Shodai'} Delivery Request
+              {info?.shopName || 'Bajar Shodai'} Delivery Request
             </Text>
             <Text style={styles.cardSubtitle}>
               {info?.requesterName

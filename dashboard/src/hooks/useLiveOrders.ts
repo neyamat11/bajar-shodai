@@ -6,7 +6,7 @@ import { notificationLink, notificationsApi } from "@/api/notifications";
 import { useUi } from "@/store/ui";
 import { ShoppingBag } from "lucide-react";
 
-const BASE_TITLE = "Bazar Shodai Admin";
+const BASE_TITLE = "Bajar Shodai Admin";
 let audio: AudioContext | null = null;
 
 /** A short two-note chime made with the browser's own synth (no sound file needed). */

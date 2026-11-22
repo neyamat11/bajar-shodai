@@ -297,7 +297,7 @@ export function mapQuestion(q: Raw, productId?: string): Question {
     askerName: q.user?.name ?? 'Customer',
     questionText: q.question,
     answerText: q.answer ?? undefined,
-    answererName: q.answer ? 'Bazar Shodai Team' : undefined,
+    answererName: q.answer ? 'Bajar Shodai Team' : undefined,
     date: q.createdAt,
   };
 }

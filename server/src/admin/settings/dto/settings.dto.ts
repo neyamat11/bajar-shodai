@@ -410,7 +410,7 @@ export class UpdateEmailSettingsDto {
   @IsIn(['none', 'smtp', 'resend'])
   provider?: 'none' | 'smtp' | 'resend';
 
-  @ApiPropertyOptional({ example: 'Bazar Shodai' })
+  @ApiPropertyOptional({ example: 'Bajar Shodai' })
   @IsOptional()
   @IsString()
   @MaxLength(100)

@@ -75,7 +75,7 @@ export default function RegisterScreen() {
       haptics.success();
       toast.success(
         'Account Created!',
-        `Welcome to Bazar Shodai, ${session.user?.name ?? trimmedName}!`,
+        `Welcome to Bajar Shodai, ${session.user?.name ?? trimmedName}!`,
       );
 
       router.replace('/(tabs)');
@@ -232,7 +232,7 @@ export default function RegisterScreen() {
             {agreeTerms && <Icon name="Check" size={12} color="#ffffff" />}
           </View>
           <Text className="text-xs text-muted-foreground flex-1">
-            I agree to the Terms of Service & Privacy Policy of Bazar Shodai.
+            I agree to the Terms of Service & Privacy Policy of Bajar Shodai.
           </Text>
         </TouchableOpacity>
 

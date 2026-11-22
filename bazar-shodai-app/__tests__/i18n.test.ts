@@ -6,7 +6,7 @@ describe('i18n translation engine', () => {
   });
 
   it('translates nested key accurately in English', () => {
-    expect(t('common.appName')).toBe('Bazar Shodai');
+    expect(t('common.appName')).toBe('Bajar Shodai');
     expect(t('nav.home')).toBe('Home');
     expect(t('cart.title')).toBe('My Shopping Bag');
   });

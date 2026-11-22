@@ -389,7 +389,7 @@ export default function AccountScreen() {
 
         {/* App Info */}
         <View style={styles.footerInfo}>
-          <Text style={styles.footerVersion}>Bazar Shodai Mobile • v1.0.0</Text>
+          <Text style={styles.footerVersion}>Bajar Shodai Mobile • v1.0.0</Text>
           <Text style={styles.footerSub}>Designed for Shahrasti, Chandpur</Text>
         </View>
       </ScrollView>

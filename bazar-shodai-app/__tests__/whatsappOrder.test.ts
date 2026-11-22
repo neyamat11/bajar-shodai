@@ -63,7 +63,7 @@ describe('WhatsApp Order Utility (Mobile App)', () => {
       });
 
       expect(msg).toContain('Fresh Milk 1L');
-      expect(msg).toContain('Hello! I would like to order this product from Bazar Shodai:');
+      expect(msg).toContain('Hello! I would like to order this product from Bajar Shodai:');
       expect(msg).toContain('https://bajarshodai.com/products/fresh-milk-1l');
     });
 

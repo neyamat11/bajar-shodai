@@ -51,7 +51,7 @@ function AppContent() {
               বাজার সদাই
             </Text>
           </View>
-          <Text className="text-base text-foreground font-semibold">Bazar Shodai Mobile</Text>
+          <Text className="text-base text-foreground font-semibold">Bajar Shodai Mobile</Text>
           <Text className="text-xs text-muted-foreground mt-0.5 text-center">
             Fresh grocery delivered directly to your doorstep in Shahrasti
           </Text>

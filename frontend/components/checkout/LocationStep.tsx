@@ -2,13 +2,10 @@
 
 import LocationPicker from "@/components/location/LocationPicker";
 import { shareLocation } from "@/lib/services/delivery.service";
-import type { DeliverySlot } from "@/lib/services/site.service";
 import type { DeliveryQuote, PickedLocation } from "@/lib/types";
 import type { Locale } from "@/lib/locale";
 import { ArrowLeft } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
-import { getDeliveryConfig } from "@/lib/services/delivery.service";
 
 interface Props {
   location: PickedLocation | null;
@@ -17,8 +14,8 @@ interface Props {
   quoting: boolean;
   onQuote: (q: DeliveryQuote | null, loading: boolean) => void;
   subtotal: number;
-  slot: string;
-  onSlot: (id: string) => void;
+  slot?: string;
+  onSlot?: (id: string) => void;
   onBack: () => void;
   onContinue: () => void;
   skipLocation?: boolean;
@@ -33,7 +30,7 @@ interface Props {
   onSenderContactNumberChange?: (num: string) => void;
 }
 
-/** Step 2 — where on the map, and when. The charge shows as soon as the pin is placed; Continue waits for a place we can deliver to. */
+/** Step 2 — where on the map. The charge shows as soon as the pin is placed; Continue waits for a place we can deliver to. */
 export default function LocationStep({
   location,
   onLocation,
@@ -41,8 +38,6 @@ export default function LocationStep({
   quoting,
   onQuote,
   subtotal,
-  slot,
-  onSlot,
   onBack,
   onContinue,
   skipLocation = false,
@@ -58,14 +53,6 @@ export default function LocationStep({
 }: Props) {
   const t = useTranslations("Checkout");
   const locale = useLocale() as Locale;
-  const [slots, setSlots] = useState<DeliverySlot[]>([]);
-  useEffect(() => {
-    let alive = true;
-    void getDeliveryConfig().then((d) => alive && setSlots(d.slots)).catch(() => undefined);
-    return () => {
-      alive = false;
-    };
-  }, []);
 
   const isAbroadValid = !isAbroadOrder || Boolean(senderContactNumber?.trim());
   const ready = (skipLocation && isAbroadValid && !quoting) || (!!location && !!quote?.available && !quoting);
@@ -105,22 +92,6 @@ export default function LocationStep({
         senderContactNumber={senderContactNumber}
         onSenderContactNumberChange={onSenderContactNumberChange}
       />
-
-      {slots.length > 0 && (
-        <fieldset>
-          <legend className="mb-2 text-sm font-semibold text-foreground">{t("slotTitle")}</legend>
-          <div className="flex flex-wrap gap-2" role="radiogroup">
-            <button type="button" role="radio" aria-checked={slot === ""} onClick={() => onSlot("")} className={`rounded border-2 px-3 py-2 text-xs font-bold transition-colors ${slot === "" ? "border-brand-fresh bg-brand-fresh/10 text-foreground" : "border-border bg-card text-muted-foreground hover:border-brand-fresh/60"}`}>
-              {t("slotAny")}
-            </button>
-            {slots.map((s) => (
-              <button key={s.id} type="button" role="radio" aria-checked={slot === s.id} onClick={() => onSlot(s.id)} className={`rounded border-2 px-3 py-2 text-xs font-bold transition-colors ${slot === s.id ? "border-brand-fresh bg-brand-fresh/10 text-foreground" : "border-border bg-card text-muted-foreground hover:border-brand-fresh/60"}`}>
-                {locale === "bn" ? s.labelBn : s.label}
-              </button>
-            ))}
-          </div>
-        </fieldset>
-      )}
 
       {!ready && (
         <p className="text-xs font-medium text-muted-foreground">

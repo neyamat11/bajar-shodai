@@ -27,7 +27,7 @@ const SIZE_MAP = {
 };
 
 /**
- * Dynamic Brand Logo for Bazar Shodai.
+ * Dynamic Brand Logo for Bajar Shodai.
  * Automatically loads the remote logo configured by the store owner in the dashboard
  * via `/customer/settings` (`site.logoUrl`), and falls back to the bundled high-resolution
  * local asset if no remote logo is configured or during offline / network error.
@@ -52,7 +52,7 @@ export function BrandLogo({
   const logoHeight = customHeight ?? dims.height;
 
   const remoteLogoUrl = settings?.site?.logoUrl?.trim();
-  const storeName = settings?.site?.storeName || 'Bazar Shodai';
+  const storeName = settings?.site?.storeName || 'Bajar Shodai';
   const tagline = settings?.site?.tagline;
 
   // Prioritize remote logo configured in admin settings; fallback to bundled official logo asset

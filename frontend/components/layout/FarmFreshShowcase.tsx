@@ -103,7 +103,7 @@ export default function FarmFreshShowcase({ hide }: { hide?: boolean } = {}) {
         <div className="absolute inset-0 z-0">
           <Image
             src="/images/footer/farm_fresh_meadow.webp"
-            alt="Bazar Shodai farm fresh vegetables showcase"
+            alt="Bajar Shodai farm fresh vegetables showcase"
             fill
             priority
             sizes="100vw"

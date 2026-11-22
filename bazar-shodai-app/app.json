@@ -21,11 +21,11 @@
       "buildNumber": "1",
       "jsEngine": "hermes",
       "infoPlist": {
-        "CFBundleDisplayName": "Bazar Shodai",
-        "NSCameraUsageDescription": "Bazar Shodai needs camera access so you can take photos of damaged items for refund claims and upload medicine prescriptions.",
-        "NSPhotoLibraryUsageDescription": "Bazar Shodai needs photo library access so you can upload medicine prescriptions, avatar pictures, and return evidence.",
-        "NSLocationWhenInUseUsageDescription": "Bazar Shodai needs your location to deliver fresh groceries directly to your exact doorstep in Shahrasti.",
-        "NSFaceIDUsageDescription": "Bazar Shodai uses Face ID for fast and secure biometric checkout authentication."
+        "CFBundleDisplayName": "Bajar Shodai",
+        "NSCameraUsageDescription": "Bajar Shodai needs camera access so you can take photos of damaged items for refund claims and upload medicine prescriptions.",
+        "NSPhotoLibraryUsageDescription": "Bajar Shodai needs photo library access so you can upload medicine prescriptions, avatar pictures, and return evidence.",
+        "NSLocationWhenInUseUsageDescription": "Bajar Shodai needs your location to deliver fresh groceries directly to your exact doorstep in Shahrasti.",
+        "NSFaceIDUsageDescription": "Bajar Shodai uses Face ID for fast and secure biometric checkout authentication."
       }
     },
     "android": {
@@ -74,13 +74,13 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Bazar Shodai needs your location to deliver fresh groceries directly to your exact doorstep."
+          "locationWhenInUsePermission": "Bajar Shodai needs your location to deliver fresh groceries directly to your exact doorstep."
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "Bazar Shodai needs photo library access to upload prescriptions and return evidence photos."
+          "photosPermission": "Bajar Shodai needs photo library access to upload prescriptions and return evidence photos."
         }
       ],
       [
@@ -93,7 +93,7 @@
       [
         "expo-local-authentication",
         {
-          "faceIDPermission": "Allow Bazar Shodai to use Face ID for biometric authentication."
+          "faceIDPermission": "Allow Bajar Shodai to use Face ID for biometric authentication."
         }
       ],
       [

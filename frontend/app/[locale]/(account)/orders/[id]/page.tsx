@@ -239,7 +239,7 @@ function Detail() {
                   href={`https://wa.me/?text=${encodeURIComponent(
                     locale === "bn"
                       ? `আসসালামু আলাইকুম, বাজার সদাই থেকে অর্ডারের (${order.orderNumber}) সঠিক ডেলিভারির জন্য অনুগ্রহ করে এই লিংকে ক্লিক করে বাসার লোকেশন পিন করুন: ${typeof window !== "undefined" ? window.location.origin : "https://bazarshodai.com"}/l/${order.locationToken}`
-                      : `Hello! Please click this link to pin our exact delivery location for our Bazar Shodai order (${order.orderNumber}): ${typeof window !== "undefined" ? window.location.origin : "https://bazarshodai.com"}/l/${order.locationToken}`
+                      : `Hello! Please click this link to pin our exact delivery location for our Bajar Shodai order (${order.orderNumber}): ${typeof window !== "undefined" ? window.location.origin : "https://bazarshodai.com"}/l/${order.locationToken}`
                   )}`}
                   target="_blank"
                   rel="noopener noreferrer"

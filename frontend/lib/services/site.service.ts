@@ -75,7 +75,7 @@ export interface MapsConfig {
 
 const FALLBACK: SiteSettings = {
   site: {
-    storeName: 'Bazar Shodai',
+    storeName: 'Bajar Shodai',
     tagline: 'Fresh daily needs, delivered to your door',
     logoUrl: null,
     contactEmail: null,

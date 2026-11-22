@@ -118,7 +118,7 @@ export function HomeHeader({
         style={styles.searchBar}
         className="bg-background border border-border"
         accessibilityRole="search"
-        accessibilityLabel="Search products in Bazar Shodai"
+        accessibilityLabel="Search products in Bajar Shodai"
       >
         <Icon name="Search" size={16} color="#64748b" style={styles.searchIcon} />
         <Text className="text-xs text-muted-foreground flex-1">

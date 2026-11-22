@@ -66,7 +66,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
         <div className={cn("flex shrink-0 border-b border-sidebar-border", compact ? "flex-col items-center gap-1 py-2" : "h-14 items-center justify-between gap-2 px-3")}>
           <NavLink to="/" className="flex min-w-0 items-center gap-2" onClick={onClose} title={tr("Dashboard")}>
             <span className="flex size-10 shrink-0 items-center justify-center rounded bg-white p-0.5">
-              <img src="/logo-mark.png" alt={tr("Bazar Shodai")} className="size-9 object-contain" />
+              <img src="/logo-mark.png" alt={tr("Bajar Shodai")} className="size-9 object-contain" />
             </span>
             {!compact && (
               <span className="min-w-0 leading-tight">

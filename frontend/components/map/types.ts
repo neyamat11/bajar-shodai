@@ -13,7 +13,7 @@ export interface MapViewProps {
   onMarkerChange?: (p: GeoPoint) => void;
   /** a grey circle around the pin: how exact the phone's fix was (metres) */
   accuracyM?: number | null;
-  /** the shop (Kalibari Bazar) */
+  /** the shop (Kalibari Bajar) */
   origin?: GeoPoint | null;
   originLabel?: string;
   /** the service area: a circle of this radius around radiusCenter (or the origin) */
@@ -32,7 +32,7 @@ export interface MapViewProps {
   onAuthError?: () => void;
 }
 
-/** Kalibari Bazar, Shahrasti: used to open the map when nothing else is known. */
+/** Kalibari Bajar, Shahrasti: used to open the map when nothing else is known. */
 export const DEFAULT_CENTER: GeoPoint = { lat: 23.2452, lng: 90.9422 };
 
 export const SATELLITE_TILES = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";

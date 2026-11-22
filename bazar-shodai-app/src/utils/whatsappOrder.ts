@@ -43,7 +43,7 @@ export function buildWhatsAppOrderMessage(params: BuildWhatsAppOrderParams): str
 
   const defaultTemplate = isBn
     ? 'আসসালামু আলাইকুম! আমি বাজার সদাই থেকে এই পণ্যটি অর্ডার করতে চাই:\n📦 পণ্য: {product_name}\n💰 মূল্য: {product_price}\n🔗 লিংক: {product_url}'
-    : 'Hello! I would like to order this product from Bazar Shodai:\n📦 Product: {product_name}\n💰 Price: {product_price}\n🔗 Link: {product_url}';
+    : 'Hello! I would like to order this product from Bajar Shodai:\n📦 Product: {product_name}\n💰 Price: {product_price}\n🔗 Link: {product_url}';
 
   const activeTemplate = template && template.trim().length > 0 ? template : defaultTemplate;
 

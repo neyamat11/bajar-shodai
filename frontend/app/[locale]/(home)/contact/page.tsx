@@ -88,7 +88,7 @@ export default function ContactPage() {
         </div>
 
         <aside className="space-y-3 rounded border border-border bg-muted p-6 text-sm text-foreground/80 h-fit">
-          <h2 className="font-outfit text-lg font-black text-foreground">{s?.storeName ?? "Bazar Shodai"}</h2>
+          <h2 className="font-outfit text-lg font-black text-foreground">{s?.storeName ?? "Bajar Shodai"}</h2>
           {s?.hotline && <p>{t("hotline")}<br /><a className="font-bold text-accent-text" href={`tel:${s.hotline.replace(/[^\d+]/g, "")}`}>{s.hotline}</a></p>}
           {s?.whatsapp && <p>{t("whatsapp")}<br /><b className="text-foreground">{s.whatsapp}</b></p>}
           {s?.contactEmail && <p>{t("emailLabel")}<br /><a className="font-bold text-accent-text" href={`mailto:${s.contactEmail}`}>{s.contactEmail}</a></p>}

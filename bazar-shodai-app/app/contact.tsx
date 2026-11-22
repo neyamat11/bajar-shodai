@@ -44,7 +44,7 @@ export default function ContactUsScreen() {
   const handleWhatsApp = () => {
     haptics.selection();
     const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
-      'Hello Bazar Shodai Support, I need help with...',
+      'Hello Bajar Shodai Support, I need help with...',
     )}`;
     Linking.openURL(url).catch(() => {
       toast.error('Error', 'WhatsApp is not installed on this device');

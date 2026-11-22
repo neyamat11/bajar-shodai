@@ -115,12 +115,12 @@ export class AdminAccountService {
       // Send OTP email
       const mailRes = await this.mail.send({
         to: user.email,
-        subject: 'Bazar Shodai Admin Security Code',
+        subject: 'Bajar Shodai Admin Security Code',
         text: `Your security verification code is: ${otp}. It will expire in 10 minutes. If you did not request this, please secure your account immediately.`,
         html: `
           <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
             <h2 style="color: #0f172a; margin-top: 0;">Admin Security Verification</h2>
-            <p style="color: #475569; font-size: 15px;">A login attempt was made for your Bazar Shodai admin account.</p>
+            <p style="color: #475569; font-size: 15px;">A login attempt was made for your Bajar Shodai admin account.</p>
             <div style="background: #f1f5f9; padding: 16px; border-radius: 6px; text-align: center; margin: 24px 0;">
               <span style="font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #0f172a;">${otp}</span>
             </div>

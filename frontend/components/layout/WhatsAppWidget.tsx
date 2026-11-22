@@ -51,7 +51,7 @@ export default function WhatsAppWidget() {
   const defaultMsg =
     locale === "bn"
       ? "আসসালামু আলাইকুম! বাজার সদাই থেকে অর্ডার বা তথ্য সংক্রান্ত সহায়তা চাই।"
-      : "Hello! I need assistance with an order on Bazar Shodai.";
+      : "Hello! I need assistance with an order on Bajar Shodai.";
 
   const whatsappHref = whatsappNumber
     ? `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(defaultMsg)}`

@@ -54,7 +54,7 @@ export default () => ({
     secure: process.env.MAIL_SECURE === 'true',
     user: process.env.MAIL_USER,
     pass: process.env.MAIL_PASS,
-    from: process.env.MAIL_FROM || 'Bazar Shodai <no-reply@example.com>',
+    from: process.env.MAIL_FROM || 'Bajar Shodai <no-reply@example.com>',
   },
 
   passwordReset: {

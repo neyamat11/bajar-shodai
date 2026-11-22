@@ -136,12 +136,12 @@ async function bootstrap() {
   // ========== SWAGGER DOCUMENTATION ==========
   if (swaggerEnabled) {
     const config = new DocumentBuilder()
-      .setTitle('Bazar Shodai API')
+      .setTitle('Bajar Shodai API')
       .setDescription(
-        'Bazar Shodai API: grocery and fresh-food delivery for Shahrasti, Chandpur',
+        'Bajar Shodai API: grocery and fresh-food delivery for Shahrasti, Chandpur',
       )
       .setVersion('1.0')
-      .addTag('Bazar Shodai')
+      .addTag('Bajar Shodai')
       .addApiKey(
         {
           type: 'apiKey',
@@ -172,7 +172,7 @@ async function bootstrap() {
         filter: true,
         showRequestDuration: true,
       },
-      customSiteTitle: 'Bazar Shodai API Documentation',
+      customSiteTitle: 'Bajar Shodai API Documentation',
       customfavIcon: 'https://nestjs.com/img/logo-small.svg',
       customCss: '.swagger-ui .topbar { display: none }',
     };

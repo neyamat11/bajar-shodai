@@ -109,7 +109,7 @@ export function AuthLayout() {
           <h2 className="font-heading text-3xl font-bold leading-tight tracking-tight sm:text-4xl lg:text-5xl">
             {tr("Welcome to")}
             <br />
-            <span className="text-fresh-300">{tr("Bazar Shodai")}</span>
+            <span className="text-fresh-300">{tr("Bajar Shodai")}</span>
           </h2>
           <p className="mt-3 max-w-sm text-sm leading-relaxed text-white/85 sm:text-base">{tr("Sign in to manage orders, stock, customers and everything your shop needs.")}</p>
         </section>
@@ -120,7 +120,7 @@ export function AuthLayout() {
         </section>
       </div>
 
-      <p className="relative mt-5 text-center text-xs text-white/75">© {new Date().getFullYear()} Bazar Shodai · Fresh daily needs, delivered</p>
+      <p className="relative mt-5 text-center text-xs text-white/75">© {new Date().getFullYear()} Bajar Shodai · Fresh daily needs, delivered</p>
     </div>
   );
 }

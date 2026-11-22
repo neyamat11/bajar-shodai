@@ -187,7 +187,7 @@ export default function LiveChatModal() {
             </div>
             <div>
               <h3 className="font-outfit text-sm font-bold text-foreground">
-                {locale === "bn" ? "বাজার সদাই সাপোর্ট" : "Bazar Shodai Support"}
+                {locale === "bn" ? "বাজার সদাই সাপোর্ট" : "Bajar Shodai Support"}
               </h3>
               <p className="flex items-center gap-1.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -233,7 +233,7 @@ export default function LiveChatModal() {
                 <ImageIcon className="h-6 w-6" />
               </div>
               <p className="text-sm font-semibold text-foreground">
-                {locale === "bn" ? "আসসালামু আলাইকুম!" : "Hello! Welcome to Bazar Shodai."}
+                {locale === "bn" ? "আসসালামু আলাইকুম!" : "Hello! Welcome to Bajar Shodai."}
               </p>
               <p className="text-xs leading-relaxed max-w-xs">
                 {locale === "bn"

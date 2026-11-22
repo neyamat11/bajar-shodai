@@ -34,7 +34,7 @@ const METHODS: MethodOpt[] = [
   },
   {
     id: 'WALLET',
-    label: 'Bazar Shodai Wallet',
+    label: 'Bajar Shodai Wallet',
     desc: 'Immediate store credits for your next grocery purchase',
     icon: 'CreditCard',
   },

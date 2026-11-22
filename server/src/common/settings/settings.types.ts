@@ -264,7 +264,7 @@ export interface SettingsMap {
 
 export const DEFAULT_SETTINGS: SettingsMap = {
   site: {
-    storeName: 'Bazar Shodai',
+    storeName: 'Bajar Shodai',
     tagline: '',
     logoUrl: null,
     faviconUrl: null,
@@ -362,7 +362,7 @@ export const DEFAULT_SETTINGS: SettingsMap = {
   },
   email: {
     provider: 'none',
-    fromName: 'Bazar Shodai',
+    fromName: 'Bajar Shodai',
     fromEmail: null,
     replyTo: null,
     smtpHost: null,

@@ -219,7 +219,7 @@ function QuickViewSheetContent({ product, onClose }: QuickViewSheetContentProps)
             ]}
             numberOfLines={1}
           >
-            {product.categoryName || product.category?.name || (isBn ? 'বাজার সদাই' : 'Bazar Shodai')}
+            {product.categoryName || product.category?.name || (isBn ? 'বাজার সদাই' : 'Bajar Shodai')}
             {product.brandName || product.brand?.name ? ` • ${product.brandName || product.brand?.name}` : ''}
           </Text>
         </View>
