@@ -521,10 +521,6 @@ export default function CheckoutScreen() {
   // Step 2 Validation & Next
   const handleContinueToPayment = () => {
     if (isAbroadOrder) {
-      if (!senderCountry.trim()) {
-        toast.warning('দেশ উল্লেখ করুন', 'অনুগ্রহ করে আপনার বর্তমান দেশ লিখুন (যেমন: সৌদি আরব, দুবাই)');
-        return;
-      }
       if (!senderContactNumber.trim()) {
         toast.warning('নম্বর আবশ্যক', 'অনুগ্রহ করে কান্ট্রি কোড সহ আপনার হোয়াটসঅ্যাপ/ইমো নম্বর দিন');
         return;
@@ -908,12 +904,12 @@ export default function CheckoutScreen() {
                 {isAbroadOrder && (
                   <View style={styles.abroadFields}>
                     <View style={styles.fieldGroup}>
-                      <Text style={styles.fieldLabel}>আপনার বর্তমান দেশ *</Text>
+                      <Text style={styles.fieldLabel}>আপনার বর্তমান দেশ (ঐচ্ছিক)</Text>
                       <TextInput
                         style={styles.input}
                         value={senderCountry}
                         onChangeText={setSenderCountry}
-                        placeholder="যেমন: সৌদি আরব, দুবাই, কাতার, মালয়েশিয়া"
+                        placeholder="যেমন: সৌদি আরব, দুবাই, কাতার, মালয়েশিয়া (ঐচ্ছিক)"
                         placeholderTextColor="#9ca3af"
                       />
                     </View>

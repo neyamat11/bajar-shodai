@@ -648,7 +648,7 @@
     "skipLocationActive": "Location set skipped. Delivery fee will be confirmed by store.",
     "abroadOrderTitle": "Ordering from abroad (প্রবাসী)",
     "abroadOrderDesc": "You can place this order without setting a location. Our team will verify delivery directly with your family in Shahrasti.",
-    "senderCountryLabel": "Your Country",
+    "senderCountryLabel": "Your Country (Optional)",
     "senderCountryPlaceholder": "e.g. Saudi Arabia, UAE, UK, USA",
     "senderContactMethodLabel": "Contact Method",
     "senderContactNumberLabel": "WhatsApp / IMO Number",

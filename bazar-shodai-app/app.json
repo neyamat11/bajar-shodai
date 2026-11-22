@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Bazar Shodai",
+    "name": " ",
     "slug": "bazar-shodai-app",
     "scheme": "bajarshodai",
     "version": "1.0.0",
@@ -21,6 +21,7 @@
       "buildNumber": "1",
       "jsEngine": "hermes",
       "infoPlist": {
+        "CFBundleDisplayName": "Bazar Shodai",
         "NSCameraUsageDescription": "Bazar Shodai needs camera access so you can take photos of damaged items for refund claims and upload medicine prescriptions.",
         "NSPhotoLibraryUsageDescription": "Bazar Shodai needs photo library access so you can upload medicine prescriptions, avatar pictures, and return evidence.",
         "NSLocationWhenInUseUsageDescription": "Bazar Shodai needs your location to deliver fresh groceries directly to your exact doorstep in Shahrasti.",

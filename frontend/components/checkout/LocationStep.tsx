@@ -67,7 +67,7 @@ export default function LocationStep({
     };
   }, []);
 
-  const isAbroadValid = !isAbroadOrder || (Boolean(senderCountry?.trim()) && Boolean(senderContactNumber?.trim()));
+  const isAbroadValid = !isAbroadOrder || Boolean(senderContactNumber?.trim());
   const ready = (skipLocation && isAbroadValid && !quoting) || (!!location && !!quote?.available && !quoting);
 
   function next() {

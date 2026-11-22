@@ -276,13 +276,13 @@ export default function LocationPicker({
           <div className="space-y-3 pt-3 mt-3 border-t border-border">
             <div>
               <label className="block text-xs font-semibold text-foreground mb-1">
-                {locale === "bn" ? "আপনার বর্তমান দেশ *" : "Your Country *"}
+                {locale === "bn" ? "আপনার বর্তমান দেশ (ঐচ্ছিক)" : "Your Country (Optional)"}
               </label>
               <input
                 type="text"
                 value={senderCountry}
                 onChange={(e) => onSenderCountryChange?.(e.target.value)}
-                placeholder={locale === "bn" ? "যেমন: সৌদি আরব, দুবাই, কাতার, মালয়েশিয়া" : "e.g. Saudi Arabia, UAE, Qatar, Oman, UK"}
+                placeholder={locale === "bn" ? "যেমন: সৌদি আরব, দুবাই, কাতার, মালয়েশিয়া (ঐচ্ছিক)" : "e.g. Saudi Arabia, UAE, Qatar, Oman, UK (Optional)"}
                 className="w-full rounded border border-border bg-background px-3 py-2 text-xs text-foreground focus:border-brand-fresh focus:outline-none"
               />
             </div>

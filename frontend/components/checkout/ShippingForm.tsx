@@ -122,7 +122,11 @@ export default function ShippingForm({
     if (f.fullName.trim().length < 2) e.fullName = t("errName");
     if (!/^(\+?88)?01[3-9]\d{8}$/.test(latinDigits(f.phone).replace(/[\s-]/g, ""))) e.phone = t("errPhone");
     if (!f.address.trim()) e.address = t("errAddress");
-    if (!skipLocation) {
+    if (isAbroadOrder) {
+      if (!senderContactNumber?.trim()) {
+        e.location = "অনুগ্রহ করে কান্ট্রি কোড সহ আপনার হোয়াটসঅ্যাপ/ইমো নম্বর দিন";
+      }
+    } else if (!skipLocation) {
       if (!location) e.location = t("errLocation");
       else if (quote?.block === "OUT_OF_AREA") e.location = t("errOutOfArea");
     }
