@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Keyboard,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
@@ -62,30 +63,95 @@ export function WriteReviewSheet({
     };
   }, []);
 
-  const handlePickImage = async () => {
-    if (images.length >= 5) {
-      toast.warning('Limit reached', 'You can attach up to 5 photos');
-      return;
-    }
-
+  const pickFromGallery = async () => {
     try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permission Required',
+          'Please allow photo gallery access in your device settings to attach review photos.',
+        );
+        return;
+      }
+
+      const remainingSlots = 5 - images.length;
       const res = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
-        allowsEditing: true,
-        aspect: [4, 3],
+        allowsMultipleSelection: true,
+        selectionLimit: remainingSlots > 0 ? remainingSlots : 1,
+        quality: 0.8,
+      });
+
+      if (!res.canceled && res.assets && res.assets.length > 0) {
+        const newUris = res.assets
+          .map((asset) => asset.uri)
+          .filter((uri): uri is string => Boolean(uri));
+        setImages((prev) => [...prev, ...newUris].slice(0, 5));
+        void haptics.selection().catch(() => {});
+      }
+    } catch (err: unknown) {
+      console.warn('Image picker error:', err);
+      Alert.alert('Gallery Error', 'Could not open image gallery. Please try again.');
+    }
+  };
+
+  const takeWithCamera = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permission Required',
+          'Please allow camera access in your device settings to take a review photo.',
+        );
+        return;
+      }
+
+      const res = await ImagePicker.launchCameraAsync({
         quality: 0.8,
       });
 
       if (!res.canceled && res.assets && res.assets.length > 0) {
         const uri = res.assets[0]?.uri;
         if (uri) {
-          setImages((prev) => [...prev, uri]);
+          setImages((prev) => [...prev, uri].slice(0, 5));
           void haptics.selection().catch(() => {});
         }
       }
-    } catch {
-      toast.error('Error', 'Could not open image gallery');
+    } catch (err: unknown) {
+      console.warn('Camera error:', err);
+      Alert.alert('Camera Error', 'Could not open camera. Please try again.');
     }
+  };
+
+  const handlePickImage = () => {
+    if (images.length >= 5) {
+      Alert.alert('Limit Reached', 'You can attach up to 5 photos per review.');
+      return;
+    }
+
+    Alert.alert(
+      'Add Photo',
+      'Choose how you would like to add a photo to your review:',
+      [
+        {
+          text: 'Take Photo',
+          onPress: () => {
+            void takeWithCamera();
+          },
+        },
+        {
+          text: 'Choose from Gallery',
+          onPress: () => {
+            void pickFromGallery();
+          },
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+      ],
+      { cancelable: true },
+    );
   };
 
   const handleRemoveImage = (index: number) => {
@@ -95,12 +161,15 @@ export function WriteReviewSheet({
 
   const handleSubmit = async () => {
     if (rating < 1) {
-      toast.warning('Rating required', 'Please select a star rating');
+      Alert.alert('Rating Required', 'Please select a star rating (1 to 5).');
       return;
     }
 
-    if (!comment.trim()) {
-      toast.warning('Review required', 'Please write a brief description of your experience');
+    if (!comment.trim() || comment.trim().length < 10) {
+      Alert.alert(
+        'Review Required',
+        'Please write at least 10 characters about your experience (quality, freshness, packaging).',
+      );
       return;
     }
 
@@ -122,7 +191,7 @@ export function WriteReviewSheet({
       onClose();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Could not submit review. Please try again.';
-      toast.error('Submission failed', msg);
+      Alert.alert('Submission Failed', msg);
     }
   };
 

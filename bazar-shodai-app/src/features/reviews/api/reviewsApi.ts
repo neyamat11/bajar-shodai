@@ -25,8 +25,41 @@ export interface CreateReviewPayload {
   productId: string;
   rating: number;
   title?: string;
-  comment?: string;
+  comment: string;
+  imageIds?: string[];
   images?: string[];
+}
+
+export interface UploadReviewImageResponse {
+  id: string;
+  key: string;
+  url: string;
+}
+
+export async function uploadReviewImageApi(fileUri: string): Promise<UploadReviewImageResponse> {
+  const formData = new FormData();
+  const filename = fileUri.split('/').pop() || 'review.jpg';
+  const match = /\.(\w+)$/.exec(filename);
+  const ext = match && match[1] ? match[1].toLowerCase() : 'jpg';
+  const type = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
+
+  formData.append('files', {
+    uri: fileUri,
+    name: filename,
+    type,
+  } as unknown as Blob);
+
+  const res = await api.post<UploadReviewImageResponse[]>('/customer/uploads/review-images', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+
+  const first = Array.isArray(res) && res.length > 0 ? res[0] : (res as any);
+  if (!first) {
+    throw new Error('Failed to upload review image');
+  }
+  return first;
 }
 
 export async function fetchProductReviewsApi(
@@ -42,7 +75,23 @@ export async function fetchProductReviewsApi(
 export async function createProductReviewApi(
   payload: CreateReviewPayload,
 ): Promise<ProductReviewItem> {
-  return api.post<ProductReviewItem>('/customer/reviews', payload);
+  let imageIds = payload.imageIds ? [...payload.imageIds] : [];
+
+  // Upload local images first if provided
+  if (payload.images && payload.images.length > 0) {
+    const uploadPromises = payload.images.map((uri) => uploadReviewImageApi(uri));
+    const results = await Promise.all(uploadPromises);
+    const uploadedIds = results.map((r) => r.id).filter(Boolean);
+    imageIds = [...imageIds, ...uploadedIds];
+  }
+
+  return api.post<ProductReviewItem>('/customer/reviews', {
+    productId: payload.productId,
+    rating: payload.rating,
+    title: payload.title?.trim() || undefined,
+    comment: payload.comment.trim(),
+    imageIds: imageIds.length > 0 ? imageIds : undefined,
+  });
 }
 
 export function useProductReviews(productId: string) {
