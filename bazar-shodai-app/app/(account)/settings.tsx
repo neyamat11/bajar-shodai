@@ -6,6 +6,7 @@ import * as LocalAuthentication from 'expo-local-authentication';
 import { Icon } from '@/components/ui/Icon';
 import { Radius } from '@/constants/layout';
 import { useAppTheme } from '@/components/theme/ThemeProvider';
+import { useSiteSettings } from '@/services/siteService';
 import { toast } from '@/store/useToastStore';
 import { haptics } from '@/services/haptics';
 import { storage } from '@/utils/storage';
@@ -16,6 +17,11 @@ export default function SettingsScreen() {
   const router = useRouter();
   const { isDark, toggleTheme } = useAppTheme();
   const { language: appLang, setLanguage } = useTranslation();
+  const { data: siteSettings } = useSiteSettings();
+
+  const showThemeToggle = Boolean(siteSettings?.site?.showThemeToggle);
+  const hotline = siteSettings?.site?.hotline || '+880 1700-000000';
+  const businessHours = siteSettings?.site?.businessHours || 'Daily 8 AM - 10 PM';
 
   const [biometricsAvailable, setBiometricsAvailable] = useState(false);
   const [biometricsEnabled, setBiometricsEnabled] = useState(
@@ -88,7 +94,7 @@ export default function SettingsScreen() {
         >
           <Icon name="ArrowLeft" size={22} color="#0b6234" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>App Settings</Text>
+        <Text style={styles.headerTitle}>App Settings & Biometrics</Text>
         <View style={styles.backBtn} />
       </View>
 
@@ -100,28 +106,32 @@ export default function SettingsScreen() {
         {/* Appearance & Language */}
         <Text style={styles.sectionHeader}>Preferences</Text>
         <View style={styles.card}>
-          <View style={styles.row}>
-            <View style={styles.iconCircle}>
-              <Icon name={isDark ? 'Moon' : 'Sun'} size={18} color="#0b6234" />
-            </View>
-            <View style={styles.rowText}>
-              <Text style={styles.rowTitle}>Dark Mode</Text>
-              <Text style={styles.rowSubtitle}>
-                {isDark ? 'Dark theme active' : 'Light theme active'}
-              </Text>
-            </View>
-            <Switch
-              value={isDark}
-              onValueChange={() => {
-                haptics.selection();
-                toggleTheme();
-              }}
-              trackColor={{ false: '#cbd5e1', true: '#0b6234' }}
-              thumbColor="#ffffff"
-            />
-          </View>
+          {showThemeToggle && (
+            <>
+              <View style={styles.row}>
+                <View style={styles.iconCircle}>
+                  <Icon name={isDark ? 'Moon' : 'Sun'} size={18} color="#0b6234" />
+                </View>
+                <View style={styles.rowText}>
+                  <Text style={styles.rowTitle}>Dark Mode</Text>
+                  <Text style={styles.rowSubtitle}>
+                    {isDark ? 'Dark theme active' : 'Light theme active'}
+                  </Text>
+                </View>
+                <Switch
+                  value={isDark}
+                  onValueChange={() => {
+                    haptics.selection();
+                    toggleTheme();
+                  }}
+                  trackColor={{ false: '#cbd5e1', true: '#0b6234' }}
+                  thumbColor="#ffffff"
+                />
+              </View>
 
-          <View style={styles.divider} />
+              <View style={styles.divider} />
+            </>
+          )}
 
           <View style={styles.row}>
             <View style={styles.iconCircle}>
@@ -253,7 +263,9 @@ export default function SettingsScreen() {
             </View>
             <View style={styles.rowText}>
               <Text style={styles.rowTitle}>Customer Care Hotline</Text>
-              <Text style={styles.rowSubtitle}>+880 1700-000000 (Daily 8 AM - 10 PM)</Text>
+              <Text style={styles.rowSubtitle}>
+                {hotline} ({businessHours})
+              </Text>
             </View>
             <Icon name="ChevronRight" size={18} color="#94a3b8" />
           </TouchableOpacity>

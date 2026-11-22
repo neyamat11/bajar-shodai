@@ -16,17 +16,22 @@ import { Icon } from '@/components/ui/Icon';
 import { Button } from '@/components/ui/Button';
 import { Radius } from '@/constants/layout';
 import { useSubmitContact } from '@/features/support/api/supportApi';
+import { useSiteSettings } from '@/services/siteService';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from '@/store/useToastStore';
 import { haptics } from '@/services/haptics';
-
-const HOTLINE_PHONE = '+8801834529197';
-const WHATSAPP_NUMBER = '8801834529197';
 
 export default function ContactUsScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
   const { mutate: submitContact, isPending } = useSubmitContact();
+  const { data: siteSettings } = useSiteSettings();
+
+  const storeName = siteSettings?.site?.storeName || 'Bajar Shodai';
+  const hotline = siteSettings?.site?.hotline || '+8801834529197';
+  const whatsapp = siteSettings?.site?.whatsapp || siteSettings?.site?.hotline || '8801834529197';
+  const businessHours = siteSettings?.site?.businessHours || '8:00 AM - 10:00 PM';
+  const address = siteSettings?.site?.address || 'Main Road, Shahrasti Bajar, Chandpur, Bangladesh';
 
   const [name, setName] = useState(user?.name || '');
   const [phone, setPhone] = useState(user?.phone || '');
@@ -36,15 +41,17 @@ export default function ContactUsScreen() {
 
   const handleCall = () => {
     haptics.selection();
-    Linking.openURL(`tel:${HOTLINE_PHONE}`).catch(() => {
+    const cleanPhone = hotline.replace(/[^\d+]/g, '');
+    Linking.openURL(`tel:${cleanPhone}`).catch(() => {
       toast.error('Error', 'Unable to initiate phone call');
     });
   };
 
   const handleWhatsApp = () => {
     haptics.selection();
-    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
-      'Hello Bajar Shodai Support, I need help with...',
+    const cleanWa = whatsapp.replace(/[^\d]/g, '');
+    const url = `https://wa.me/${cleanWa}?text=${encodeURIComponent(
+      `Hello ${storeName} Support, I need help with...`,
     )}`;
     Linking.openURL(url).catch(() => {
       toast.error('Error', 'WhatsApp is not installed on this device');
@@ -120,8 +127,8 @@ export default function ContactUsScreen() {
                 <Icon name="PhoneCall" size={24} color="#0b6234" />
               </View>
               <Text style={styles.channelTitle}>Call Hotline</Text>
-              <Text style={styles.channelSub}>+880 1700-000000</Text>
-              <Text style={styles.channelTime}>8:00 AM - 10:00 PM</Text>
+              <Text style={styles.channelSub}>{hotline}</Text>
+              <Text style={styles.channelTime}>{businessHours}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -133,7 +140,7 @@ export default function ContactUsScreen() {
                 <Icon name="MessageSquare" size={24} color="#16a34a" />
               </View>
               <Text style={styles.channelTitle}>WhatsApp Chat</Text>
-              <Text style={styles.channelSub}>Instant Support</Text>
+              <Text style={styles.channelSub}>{whatsapp}</Text>
               <Text style={styles.channelTime}>Typical reply: 5 mins</Text>
             </TouchableOpacity>
           </View>
@@ -143,10 +150,8 @@ export default function ContactUsScreen() {
             <View style={styles.infoRow}>
               <Icon name="MapPin" size={18} color="#0b6234" />
               <View style={styles.infoTextWrap}>
-                <Text style={styles.infoTitle}>Shahrasti Storefront & Warehouse</Text>
-                <Text style={styles.infoDesc}>
-                  Main Road, Shahrasti Bazar, Chandpur, Bangladesh
-                </Text>
+                <Text style={styles.infoTitle}>{storeName} Storefront & Warehouse</Text>
+                <Text style={styles.infoDesc}>{address}</Text>
               </View>
             </View>
 
@@ -155,10 +160,8 @@ export default function ContactUsScreen() {
             <View style={styles.infoRow}>
               <Icon name="Clock" size={18} color="#0b6234" />
               <View style={styles.infoTextWrap}>
-                <Text style={styles.infoTitle}>Delivery Hours</Text>
-                <Text style={styles.infoDesc}>
-                  7 Days a Week • Morning 7:30 AM to Night 10:30 PM
-                </Text>
+                <Text style={styles.infoTitle}>Business & Delivery Hours</Text>
+                <Text style={styles.infoDesc}>{businessHours}</Text>
               </View>
             </View>
           </View>

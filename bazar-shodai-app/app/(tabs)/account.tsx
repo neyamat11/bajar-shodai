@@ -16,14 +16,19 @@ import { haptics } from '@/services/haptics';
 import { toast } from '@/store/useToastStore';
 import { Radius } from '@/constants/layout';
 import { useTranslation } from '@/i18n';
+import { useSiteSettings } from '@/services/siteService';
 
 export default function AccountScreen() {
   const router = useRouter();
   const { isDark } = useAppTheme();
   const { isAuthenticated, user } = useAuthStore();
   const { isBengali, setLanguage } = useTranslation();
+  const { data: siteSettings } = useSiteSettings();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const hotline = siteSettings?.site?.hotline;
+  const businessHours = siteSettings?.site?.businessHours;
 
   // Background sync profile when authenticated
   useUserProfile();
@@ -275,7 +280,14 @@ export default function AccountScreen() {
             <View style={styles.menuIconBox}>
               <Icon name="PhoneCall" size={18} color="#0b6234" />
             </View>
-            <Text style={styles.menuTitle}>Contact & Hotline</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.menuTitle}>Contact & Hotline</Text>
+              {hotline ? (
+                <Text style={{ fontSize: 11, color: '#64748b', marginTop: 1 }}>
+                  {hotline} {businessHours ? `• ${businessHours}` : ''}
+                </Text>
+              ) : null}
+            </View>
             <Icon name="ChevronRight" size={16} color="#94a3b8" />
           </TouchableOpacity>
 
