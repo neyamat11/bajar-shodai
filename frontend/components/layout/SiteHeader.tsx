@@ -31,13 +31,17 @@ export default function SiteHeader() {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [showThemeToggle, setShowThemeToggle] = useState(false);
 
   useEffect(() => {
     let alive = true;
     getSiteSettings()
       .then((s) => {
-        if (alive && s?.site?.logoUrl) {
-          setLogoUrl(s.site.logoUrl);
+        if (alive) {
+          if (s?.site?.logoUrl) {
+            setLogoUrl(s.site.logoUrl);
+          }
+          setShowThemeToggle(Boolean(s?.site?.showThemeToggle));
         }
       })
       .catch(() => {});
@@ -388,7 +392,9 @@ export default function SiteHeader() {
               short
               className="hidden h-7 min-w-[34px] items-center justify-center rounded border border-border bg-card px-2 text-xs font-bold uppercase tracking-wider text-foreground shadow-2xs transition-colors hover:border-brand-fresh hover:text-accent-text sm:flex"
             />
-            <ThemeToggle className="!h-10 !w-10 max-sm:!hidden sm:!h-11 sm:!w-11" />
+            {showThemeToggle && (
+              <ThemeToggle className="!h-10 !w-10 max-sm:!hidden sm:!h-11 sm:!w-11" />
+            )}
 
             <Link href="/wishlist" aria-label={t("wishlist")} className={`${actionBtn} hidden sm:flex`}>
               <Heart className="h-[18px] w-[18px]" aria-hidden="true" />
@@ -442,7 +448,7 @@ export default function SiteHeader() {
           </div>
         </div>
       </div>
-      <MobileMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
+      <MobileMenu open={menuOpen} onClose={() => setMenuOpen(false)} showThemeToggle={showThemeToggle} />
     </header>
   );
 }

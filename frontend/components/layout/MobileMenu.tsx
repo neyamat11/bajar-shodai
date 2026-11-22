@@ -41,7 +41,15 @@ interface Item {
  * The phone menu (☰ in the header, below 640px): account, wishlist, orders, theme… — everything that lives
  * as icons in the header on bigger screens. Slides in from the right; ✕, the backdrop, Esc and any link close it.
  */
-export default function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
+export default function MobileMenu({
+  open,
+  onClose,
+  showThemeToggle = false,
+}: {
+  open: boolean;
+  onClose: () => void;
+  showThemeToggle?: boolean;
+}) {
   const t = useTranslations("Menu");
   const tNav = useTranslations("Nav");
   const { open: openBrowse } = useBrowse();
@@ -237,22 +245,24 @@ export default function MobileMenu({ open, onClose }: { open: boolean; onClose: 
           </div>
 
           {/* light / dark */}
-          <div data-menu-row className="mt-3 flex items-center justify-between rounded border border-border bg-card px-3.5 py-3">
-            <span className="flex items-center gap-3 text-sm font-semibold text-foreground">
-              {dark ? <Moon className="h-[18px] w-[18px] text-muted-foreground" aria-hidden="true" /> : <Sun className="h-[18px] w-[18px] text-muted-foreground" aria-hidden="true" />}
-              {dark ? t("darkMode") : t("lightMode")}
-            </span>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={dark}
-              aria-label={t("darkMode")}
-              onClick={() => setTheme(dark ? "light" : "dark")}
-              className={`relative h-7 w-12 rounded-full border transition-colors ${dark ? "border-brand-fresh bg-brand-fresh" : "border-border bg-secondary"}`}
-            >
-              <span className={`absolute top-0.5 h-5.5 w-5.5 rounded-full bg-white shadow transition-all ${dark ? "left-[1.35rem]" : "left-0.5"}`} />
-            </button>
-          </div>
+          {showThemeToggle && (
+            <div data-menu-row className="mt-3 flex items-center justify-between rounded border border-border bg-card px-3.5 py-3">
+              <span className="flex items-center gap-3 text-sm font-semibold text-foreground">
+                {dark ? <Moon className="h-[18px] w-[18px] text-muted-foreground" aria-hidden="true" /> : <Sun className="h-[18px] w-[18px] text-muted-foreground" aria-hidden="true" />}
+                {dark ? t("darkMode") : t("lightMode")}
+              </span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={dark}
+                aria-label={t("darkMode")}
+                onClick={() => setTheme(dark ? "light" : "dark")}
+                className={`relative h-7 w-12 rounded-full border transition-colors ${dark ? "border-brand-fresh bg-brand-fresh" : "border-border bg-secondary"}`}
+              >
+                <span className={`absolute top-0.5 h-5.5 w-5.5 rounded-full bg-white shadow transition-all ${dark ? "left-[1.35rem]" : "left-0.5"}`} />
+              </button>
+            </div>
+          )}
         </div>
 
         {user && (

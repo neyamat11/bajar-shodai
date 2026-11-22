@@ -38,6 +38,7 @@ function SiteForm({ v }: { v: S["site"] }) {
     whatsapp: v.whatsapp ?? "",
     messenger: v.messenger ?? "bajarshodai2",
     messengerEnabled: v.messengerEnabled ?? true,
+    showThemeToggle: v.showThemeToggle ?? false,
     address: v.address ?? "",
     businessHours: v.businessHours ?? "",
     metaTitle: v.metaTitle ?? "",
@@ -62,6 +63,7 @@ function SiteForm({ v }: { v: S["site"] }) {
       whatsapp: nz(f.whatsapp),
       messenger: nz(f.messenger),
       messengerEnabled: Boolean(f.messengerEnabled),
+      showThemeToggle: Boolean(f.showThemeToggle),
       address: nz(f.address),
       businessHours: nz(f.businessHours),
       currency: f.currency,
@@ -101,6 +103,22 @@ function SiteForm({ v }: { v: S["site"] }) {
               <option value="en">{tr("Always English")}</option>
             </Select>
           </Field>
+        </div>
+      </Section>
+      <Section title={tr("Appearance & Theme")} description={tr("Display preferences for storefront customers.")}>
+        <div className="space-y-3">
+          <label className="flex cursor-pointer items-start justify-between gap-4 py-2">
+            <span>
+              <span className="block text-[13px] font-medium">{tr("Show Dark/Light Mode Button")}</span>
+              <span className="block text-xs text-muted-foreground">
+                {tr("Show a theme toggle button on the storefront header so customers can switch between light and dark mode. Default is hidden.")}
+              </span>
+            </span>
+            <Switch
+              checked={f.showThemeToggle}
+              onCheckedChange={(checked) => setF({ ...f, showThemeToggle: checked })}
+            />
+          </label>
         </div>
       </Section>
       <Section title={tr("Home Hero Section")} description={tr("Display layout and slide rotation settings for the storefront hero section.")}>

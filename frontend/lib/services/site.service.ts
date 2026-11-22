@@ -25,6 +25,7 @@ export interface SiteSettings {
     businessHours: string | null;
     socialLinks: Record<string, string>;
     hero: HeroConfig;
+    showThemeToggle?: boolean;
   };
   payment: { methods: ('CASH_ON_DELIVERY' | 'BKASH' | 'NAGAD' | 'ROCKET')[]; bkash: MobileAccount | null; nagad: MobileAccount | null; rocket: MobileAccount | null };
   delivery: DeliveryConfig;
@@ -88,6 +89,7 @@ const FALLBACK: SiteSettings = {
     businessHours: null,
     socialLinks: {},
     hero: { layout: 'SLIDER_AND_SIDE', maxSlides: 5, autoplayIntervalSec: 6 },
+    showThemeToggle: false,
   },
   payment: { methods: ['CASH_ON_DELIVERY'], bkash: null, nagad: null, rocket: null },
   delivery: { enabled: true, shopOpen: true, openFrom: '08:00', openTo: '22:00', originSet: false, origin: null, serviceRadiusKm: 20, baseKm: 2, baseCharge: 20, perKmRate: 10, stepKm: 1, minOrderAmount: 0, freeDeliveryThreshold: null, slots: [], distanceCalculation: 'direct', routeFactor: 1.3 },

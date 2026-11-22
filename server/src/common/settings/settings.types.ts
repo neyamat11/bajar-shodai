@@ -60,6 +60,7 @@ export interface SiteSettings {
   socialLinks: SocialLinks;
   hero: HeroConfig;
   productNameLanguage?: 'auto' | 'bn' | 'en';
+  showThemeToggle?: boolean;
 }
 
 export type MobileBankingMethod = 'BKASH' | 'NAGAD' | 'ROCKET';
@@ -290,6 +291,7 @@ export const DEFAULT_SETTINGS: SettingsMap = {
       autoplayIntervalSec: 6,
     },
     productNameLanguage: 'auto',
+    showThemeToggle: false,
   },
   payment: {
     codEnabled: true,

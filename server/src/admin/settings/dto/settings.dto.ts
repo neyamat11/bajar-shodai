@@ -149,6 +149,11 @@ export class UpdateSiteSettingsDto {
   @IsOptional()
   @IsIn(['auto', 'bn', 'en'])
   productNameLanguage?: 'auto' | 'bn' | 'en';
+
+  @ApiPropertyOptional({ default: false })
+  @IsOptional()
+  @IsBoolean()
+  showThemeToggle?: boolean;
 }
 
 export class UpdatePaymentSettingsDto {

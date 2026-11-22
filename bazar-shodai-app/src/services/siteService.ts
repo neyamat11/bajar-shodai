@@ -88,6 +88,7 @@ export interface MobileSiteSettings {
     };
     contactEmail?: string | null;
     address?: string | null;
+    showThemeToggle?: boolean;
   };
   delivery?: DeliveryConfig;
   maps?: MapsConfig;

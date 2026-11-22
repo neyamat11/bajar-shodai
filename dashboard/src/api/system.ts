@@ -127,6 +127,7 @@ export interface Settings {
     socialLinks: Record<string, string>;
     hero?: HeroConfig;
     productNameLanguage?: "auto" | "bn" | "en";
+    showThemeToggle?: boolean;
   };
   payment: { codEnabled: boolean; bkashEnabled: boolean; bkashNumber: string | null; bkashAccountType: "personal" | "merchant" | "agent"; bkashInstructions: string | null; nagadEnabled: boolean; nagadNumber: string | null; nagadAccountType: "personal" | "merchant" | "agent"; nagadInstructions: string | null; rocketEnabled: boolean; rocketNumber: string | null; rocketAccountType: "personal" | "merchant" | "agent"; rocketInstructions: string | null };
   delivery: DeliverySettings;
