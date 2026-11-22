@@ -35,6 +35,7 @@ export default function StickyATCBar({
   const [visible, setVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
+  const barRef = useRef<HTMLDivElement>(null);
 
   const primaryImage =
     product.images.find((img) => img.isPrimary) ?? product.images[0];
@@ -56,9 +57,10 @@ export default function StickyATCBar({
         const isShown = !entry.isIntersecting;
         setVisible(isShown);
         if (typeof document !== "undefined") {
+          const height = barRef.current?.offsetHeight || 64;
           document.documentElement.style.setProperty(
             "--sticky-bar-offset",
-            isShown ? "64px" : "0px"
+            isShown ? `${height}px` : "0px"
           );
         }
       },
@@ -74,6 +76,19 @@ export default function StickyATCBar({
       }
     };
   }, [atcButtonRef]);
+
+  // Keep --sticky-bar-offset updated on window resize or orientation changes while visible
+  useEffect(() => {
+    if (!visible) return;
+    const updateHeight = () => {
+      if (barRef.current && typeof document !== "undefined") {
+        const height = barRef.current.offsetHeight || 64;
+        document.documentElement.style.setProperty("--sticky-bar-offset", `${height}px`);
+      }
+    };
+    window.addEventListener("resize", updateHeight);
+    return () => window.removeEventListener("resize", updateHeight);
+  }, [visible]);
 
   async function handleAddToCart() {
     if (isOutOfStock || loading) return;
@@ -108,6 +123,7 @@ export default function StickyATCBar({
 
   return (
     <div
+      ref={barRef}
       className="fixed bottom-0 left-0 right-0 z-[1000] transition-transform duration-300 ease-out"
       style={{
         transform: visible ? "translateY(0)" : "translateY(100%)",
