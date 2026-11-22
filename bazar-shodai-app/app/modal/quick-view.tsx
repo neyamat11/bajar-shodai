@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Platform } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Icon } from '@/components/ui/Icon';
 import { AppImage } from '@/components/ui/AppImage';
@@ -18,6 +18,7 @@ export default function QuickViewModalRoute() {
   const { colors, isDark } = useAppTheme();
   const { t } = useTranslation();
   const isBn = getAppLanguage() === 'bn';
+  const insets = useSafeAreaInsets();
 
   const { slug, name, nameBn, price, originalPrice, imageUrl, unit } = useLocalSearchParams<{
     slug?: string;
@@ -112,7 +113,13 @@ export default function QuickViewModalRoute() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: Math.max(insets.bottom, Platform.OS === 'android' ? 36 : 16) + 24 },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
         {imgUrl ? (
           <View style={styles.imageBox}>
             <AppImage source={imgUrl} aspectRatio={1.35} contentFit="contain" borderRadius={Radius.brand} />

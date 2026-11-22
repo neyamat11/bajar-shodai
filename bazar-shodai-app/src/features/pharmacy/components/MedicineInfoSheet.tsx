@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, Modal, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, Modal, TouchableOpacity, ScrollView, StyleSheet, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ui/Icon';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -30,6 +31,8 @@ export function MedicineInfoSheet({
   onViewFullDetails,
 }: MedicineInfoSheetProps) {
   const isRx = meta?.isPrescriptionRequired ?? false;
+  const insets = useSafeAreaInsets();
+  const bottomSafePadding = Math.max(insets.bottom, Platform.OS === 'android' ? 24 : 16);
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -144,7 +147,7 @@ export function MedicineInfoSheet({
           </ScrollView>
 
           {/* Footer Action */}
-          <View style={styles.footer}>
+          <View style={[styles.footer, { paddingBottom: bottomSafePadding }]}>
             {isRx ? (
               <Button
                 title="Upload Doctor Prescription"

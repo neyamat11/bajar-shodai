@@ -7,7 +7,9 @@ import {
   ScrollView,
   StyleSheet,
   Pressable,
+  Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ui/Icon';
 import { Radius, TouchTarget } from '@/constants/layout';
 import { formatBdt, toBengaliNumerals } from '@/utils/format';
@@ -150,11 +152,16 @@ export function MedicinePurchaseSheet({
   const displayName = product.nameBn || product.name;
   const isMinStripOnly =
     (product.discountEligibility || globalDiscountEligibility) === 'MIN_STRIP_ONLY';
+  const insets = useSafeAreaInsets();
+  const bottomSafePadding = Math.max(insets.bottom, Platform.OS === 'android' ? 24 : 12);
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={styles.sheetContainer} onPress={(e) => e.stopPropagation()}>
+        <Pressable
+          style={[styles.sheetContainer, { paddingBottom: bottomSafePadding }]}
+          onPress={(e) => e.stopPropagation()}
+        >
           {/* Sheet Handle */}
           <View style={styles.handleWrap}>
             <View style={styles.handleBar} />

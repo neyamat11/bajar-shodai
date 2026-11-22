@@ -10,6 +10,7 @@ import {
   Platform,
   BackHandler,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { AppImage } from '@/components/ui/AppImage';
 import { Icon } from '@/components/ui/Icon';
@@ -40,6 +41,8 @@ function QuickViewSheetContent({ product, onClose }: QuickViewSheetContentProps)
   const { colors, isDark } = useAppTheme();
   const { t } = useTranslation();
   const isBn = getAppLanguage() === 'bn';
+  const insets = useSafeAreaInsets();
+  const bottomSafePadding = Math.max(insets.bottom, Platform.OS === 'android' ? 32 : 16);
 
   const addItem = useCartStore((s) => s.addItem);
   const { data: wishlist = [] } = useWishlist();
@@ -195,7 +198,10 @@ function QuickViewSheetContent({ product, onClose }: QuickViewSheetContentProps)
     <View
       style={[
         styles.sheetCard,
-        { backgroundColor: isDark ? colors.card : '#ffffff' },
+        {
+          backgroundColor: isDark ? colors.card : '#ffffff',
+          paddingBottom: bottomSafePadding,
+        },
         Shadows.lg,
       ]}
     >
@@ -242,7 +248,10 @@ function QuickViewSheetContent({ product, onClose }: QuickViewSheetContentProps)
       <ScrollView
         showsVerticalScrollIndicator={false}
         bounces={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: 28 },
+        ]}
       >
         {/* Product Image Box */}
         <View
