@@ -163,13 +163,14 @@ export default function CheckoutScreen() {
     if (items.length === 0) return;
     try {
       setIsSummaryLoading(true);
+      const effectiveSkip = !gpsLocation || skipLocation;
       const res = await fetchCheckoutSummaryApi({
         couponCode: activeCoupon || undefined,
-        lat: skipLocation ? undefined : gpsLocation?.lat,
-        lng: skipLocation ? undefined : gpsLocation?.lng,
+        lat: effectiveSkip ? undefined : gpsLocation?.lat,
+        lng: effectiveSkip ? undefined : gpsLocation?.lng,
         phone: phone.trim() || undefined,
         redeemPoints: usePoints ? 999999 : undefined,
-        skipLocation,
+        skipLocation: effectiveSkip,
         isAbroadOrder,
       });
       setServerSummary(res);
@@ -529,15 +530,12 @@ export default function CheckoutScreen() {
         toast.warning('নম্বর আবশ্যক', 'অনুগ্রহ করে কান্ট্রি কোড সহ আপনার হোয়াটসঅ্যাপ/ইমো নম্বর দিন');
         return;
       }
-    } else {
-      if (!gpsLocation) {
-        toast.warning('লোকেশন আবশ্যক', 'আপনার বর্তমান লোকেশন দিন অথবা প্রবাসী হলে বক্সে টিক দিন।');
-        return;
-      }
-      if (locationBlock === 'OUT_OF_AREA') {
-        toast.error('ডেলিভারি সীমার বাইরে', 'আপনার নির্বাচিত অবস্থান আমাদের ডেলিভারি সীমার বাইরে।');
-        return;
-      }
+    } else if (gpsLocation && locationBlock === 'OUT_OF_AREA' && !skipLocation) {
+      toast.error('ডেলিভারি সীমার বাইরে', 'আপনার নির্বাচিত অবস্থান আমাদের ডেলিভারি সীমার বাইরে।');
+      return;
+    } else if (!gpsLocation) {
+      // Setting a location pin is optional: proceed with skipLocation: true
+      setSkipLocation(true);
     }
 
     haptics.selection();
@@ -622,7 +620,7 @@ export default function CheckoutScreen() {
           bkashTransactionId: trxId.trim() || undefined,
         } : {}),
         redeemPoints: usePoints ? (serverSummary?.loyalty?.pointsRedeemed || 0) : undefined,
-        skipLocation,
+        skipLocation: !gpsLocation || skipLocation,
         isAbroadOrder,
         senderCountry: isAbroadOrder ? senderCountry.trim() : undefined,
         senderContactMethod: isAbroadOrder ? senderContactMethod : undefined,
@@ -817,7 +815,7 @@ export default function CheckoutScreen() {
                 <Text style={styles.stepTitle}>ডেলিভারি লোকেশন (Delivery Location)</Text>
               </View>
               <Text style={styles.stepSubtitle}>
-                ম্যাপে আপনার সঠিক বাড়ি নির্বাচন করুন যাতে লাইভ দূরত্বের ভিত্তিতে সঠিক ডেলিভারি চার্জ নির্ধারিত হয়।
+                ম্যাপে আপনার সঠিক বাড়ি নির্বাচন করুন যাতে লাইভ দূরত্বের ভিত্তিতে সঠিক ডেলিভারি চার্জ নির্ধারিত হয়। লোকেশন নির্বাচন করা ঐচ্ছিক—লোকেশন সেট না করলেও সরাসরি অর্ডার করতে পারবেন।
               </Text>
 
               {/* Interactive Map View */}

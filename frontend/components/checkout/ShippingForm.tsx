@@ -4,7 +4,8 @@ import { useAuth } from "@/lib/hooks/use-auth";
 import { latinDigits } from "@/lib/format";
 import type { SavedAddress } from "@/lib/services/addresses.service";
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import type { Locale } from "@/lib/locale";
 import type { DeliveryQuote, PickedLocation } from "@/lib/types";
 import LocationPicker from "@/components/location/LocationPicker";
 import { MapPin, Plus, CheckCircle2 } from "lucide-react";
@@ -93,6 +94,7 @@ export default function ShippingForm({
   onQuote,
 }: ShippingFormProps) {
   const t = useTranslations("Checkout");
+  const locale = useLocale() as Locale;
   const { user } = useAuth();
   const [f, setF] = useState<DeliveryDetails>({
     fullName: initialData?.fullName ?? user?.name ?? "",
@@ -126,9 +128,8 @@ export default function ShippingForm({
       if (!senderContactNumber?.trim()) {
         e.location = "অনুগ্রহ করে কান্ট্রি কোড সহ আপনার হোয়াটসঅ্যাপ/ইমো নম্বর দিন";
       }
-    } else if (!skipLocation) {
-      if (!location) e.location = t("errLocation");
-      else if (quote?.block === "OUT_OF_AREA") e.location = t("errOutOfArea");
+    } else if (location && quote?.block === "OUT_OF_AREA" && !skipLocation) {
+      e.location = t("errOutOfArea");
     }
     return e;
   }
@@ -139,6 +140,9 @@ export default function ShippingForm({
     if (Object.keys(e).length) {
       setErrors(e);
       return;
+    }
+    if (!location && !skipLocation) {
+      onSkipLocationChange?.(true);
     }
     onSubmit(
       { fullName: f.fullName.trim(), phone: latinDigits(f.phone).replace(/[\s-]/g, ""), address: f.address.trim(), landmark: f.landmark.trim() },
@@ -223,7 +227,9 @@ export default function ShippingForm({
         <div className="flex items-center justify-between gap-2">
           <label className="block text-sm font-semibold text-foreground shrink-0">
             {t("stepLocation")}
-            <span className="text-accent-text ml-0.5" aria-hidden="true">*</span>
+            <span className="text-muted-foreground font-normal text-xs ml-1.5">
+              ({locale === "bn" ? "ঐচ্ছিক" : "Optional"})
+            </span>
           </label>
           {f.address.trim() ? (
             <span className="text-xs text-brand-fresh font-medium flex items-center gap-1 truncate max-w-[280px]">
@@ -263,6 +269,16 @@ export default function ShippingForm({
             }
           }}
         />
+        {!location && !skipLocation && (
+          <p className="text-xs text-muted-foreground flex items-center gap-1.5 pt-1">
+            <MapPin className="h-3.5 w-3.5 text-brand-fresh shrink-0" />
+            <span>
+              {locale === "bn"
+                ? "ম্যাপে লোকেশন চিহ্নিত করা ঐচ্ছিক। লোকেশন সেট না করলেও অর্ডার করতে পারবেন—অর্ডারের পর লিংক দিয়ে লোকেশন শেয়ার করা যাবে এবং দোকান থেকে ডেলিভারি চার্জ নিশ্চিত করা হবে।"
+                : "Setting a map pin is optional. You can order without setting a location pin—a link will be provided after ordering to share the location, and the store will confirm the delivery charge."}
+            </span>
+          </p>
+        )}
         {errors.location && (
           <p role="alert" className="mt-1.5 text-xs text-red-500 dark:text-red-400 font-semibold">
             {errors.location}

@@ -114,6 +114,8 @@ function Checkout() {
   const lat = location?.lat;
   const lng = location?.lng;
   const phone = details?.phone;
+  const effectiveSkip = skipLocation || !location;
+
   const refresh = useCallback(async () => {
     const mine = ++summarySeq.current;
     setSummaryLoading(true);
@@ -121,11 +123,11 @@ function Checkout() {
     try {
       const s = await getCheckoutSummary({
         couponCode: coupon || undefined,
-        lat: skipLocation ? undefined : lat,
-        lng: skipLocation ? undefined : lng,
+        lat: effectiveSkip ? undefined : lat,
+        lng: effectiveSkip ? undefined : lng,
         phone: phone || undefined,
         redeemPoints: usePoints ? 999999 : undefined,
-        skipLocation,
+        skipLocation: effectiveSkip,
         isAbroadOrder,
       });
       if (mine === summarySeq.current) setSummary(s);
@@ -140,7 +142,7 @@ function Checkout() {
     } finally {
       if (mine === summarySeq.current) setSummaryLoading(false);
     }
-  }, [coupon, lat, lng, phone, usePoints, skipLocation, isAbroadOrder]);
+  }, [coupon, lat, lng, phone, usePoints, effectiveSkip, isAbroadOrder]);
 
   useEffect(() => {
     if (cartLoading || cartCount === 0) return;
@@ -149,11 +151,11 @@ function Checkout() {
 
   async function handleApply(code: string) {
     const s = await applyCoupon(code, {
-      lat: skipLocation ? undefined : lat,
-      lng: skipLocation ? undefined : lng,
+      lat: effectiveSkip ? undefined : lat,
+      lng: effectiveSkip ? undefined : lng,
       phone: phone || undefined,
       redeemPoints: usePoints ? 999999 : undefined,
-      skipLocation,
+      skipLocation: effectiveSkip,
       isAbroadOrder,
     });
     setSummary(s);
@@ -167,11 +169,11 @@ function Checkout() {
     try {
       const s = await getCheckoutSummary({
         couponCode: coupon || undefined,
-        lat: skipLocation ? undefined : lat,
-        lng: skipLocation ? undefined : lng,
+        lat: effectiveSkip ? undefined : lat,
+        lng: effectiveSkip ? undefined : lng,
         phone: phone || undefined,
         redeemPoints: apply ? (summary?.loyalty?.userPoints ?? 999999) : undefined,
-        skipLocation,
+        skipLocation: effectiveSkip,
         isAbroadOrder,
       });
       setSummary(s);
@@ -195,7 +197,7 @@ function Checkout() {
         ...details,
         email: "",
         location,
-        skipLocation,
+        skipLocation: effectiveSkip,
         isAbroadOrder,
         senderCountry: senderCountry || undefined,
         senderContactMethod,
@@ -266,6 +268,9 @@ function Checkout() {
               onQuote={onQuote}
               onSubmit={async (d, saveToBook) => {
                 setDetails(d);
+                if (!location) {
+                  setSkipLocation(true);
+                }
                 if (saveToBook && user && location) {
                   try {
                     const newAddr = await createAddress({
