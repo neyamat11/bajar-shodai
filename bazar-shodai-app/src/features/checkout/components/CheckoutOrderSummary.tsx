@@ -16,6 +16,7 @@ export interface CheckoutSummaryData {
   coupon?: {
     code: string;
     discount: number;
+    shippingDiscount?: number;
     description?: string;
   } | null;
   loyalty?: {
@@ -229,6 +230,13 @@ export function CheckoutOrderSummary({
           <View style={styles.line}>
             <Text style={styles.discountLabel}>কুপন ছাড় ({summary.coupon.code})</Text>
             <Text style={styles.discountValue}>-৳{summary.coupon.discount.toFixed(0)}</Text>
+          </View>
+        ) : null}
+
+        {summary.coupon?.shippingDiscount && summary.coupon.shippingDiscount > 0 ? (
+          <View style={styles.line}>
+            <Text style={styles.discountLabel}>ডেলিভারি ছাড় ({summary.coupon.code})</Text>
+            <Text style={styles.discountValue}>-৳{summary.coupon.shippingDiscount.toFixed(0)}</Text>
           </View>
         ) : null}
 

@@ -123,6 +123,8 @@ enum DiscountType {
   FIXED_AMOUNT
   FREE_SHIPPING
   BUY_X_GET_Y
+  DELIVERY_FIXED
+  DELIVERY_PERCENTAGE
 }
 
 enum CouponType {

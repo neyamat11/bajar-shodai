@@ -24,8 +24,13 @@ import { useUrlState } from "@/hooks/useUrlState";
 import { dateOnly, dateTime, fromLocalInput, money, toLocalInput, titleCase } from "@/lib/format";
 import { tr } from "@/i18n";
 
-const label = (c: Pick<Coupon, "discountType" | "discountValue">) =>
-  c.discountType === "PERCENTAGE" ? `${Number(c.discountValue)}% off` : c.discountType === "FREE_SHIPPING" ? tr("Free shipping") : `${money(c.discountValue)} off`;
+const label = (c: Pick<Coupon, "discountType" | "discountValue">) => {
+  if (c.discountType === "PERCENTAGE") return `${Number(c.discountValue)}% off items`;
+  if (c.discountType === "FREE_SHIPPING") return tr("Free delivery");
+  if (c.discountType === "DELIVERY_FIXED") return `${money(c.discountValue)} off delivery`;
+  if (c.discountType === "DELIVERY_PERCENTAGE") return `${Number(c.discountValue)}% off delivery`;
+  return `${money(c.discountValue)} off items`;
+};
 
 function Rules({ f, set }: { f: Form; set: (p: Partial<Form>) => void }) {
   const cats = useQuery({ queryKey: ["categories"], queryFn: categoriesApi.list });
@@ -34,11 +39,34 @@ function Rules({ f, set }: { f: Form; set: (p: Partial<Form>) => void }) {
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label={tr("Discount type")}>
           <Select value={f.discountType} onChange={(e) => set({ discountType: e.target.value as DiscountType })}>
-            <option value="PERCENTAGE">{tr("Percentage")}</option><option value="FIXED_AMOUNT">{tr("Fixed amount (৳)")}</option><option value="FREE_SHIPPING">{tr("Free shipping")}</option>
+            <option value="PERCENTAGE">{tr("Percentage (% off items)")}</option>
+            <option value="FIXED_AMOUNT">{tr("Fixed amount (৳ off items)")}</option>
+            <option value="DELIVERY_FIXED">{tr("Delivery discount (Fixed ৳ off delivery)")}</option>
+            <option value="DELIVERY_PERCENTAGE">{tr("Delivery discount (% off delivery)")}</option>
+            <option value="FREE_SHIPPING">{tr("Free delivery (100% off delivery)")}</option>
           </Select>
         </Field>
-        {f.discountType !== "FREE_SHIPPING" && <Field label={f.discountType === "PERCENTAGE" ? tr("Percent") : tr("Amount ৳")} required><Input type="number" min={0} value={f.discountValue} onChange={(e) => set({ discountValue: e.target.value })} /></Field>}
-        {f.discountType === "PERCENTAGE" && <Field label={tr("Max discount ৳")} hint={tr("Optional cap")}><Input type="number" min={0} value={f.maxDiscount} onChange={(e) => set({ maxDiscount: e.target.value })} /></Field>}
+        {f.discountType !== "FREE_SHIPPING" && (
+          <Field
+            label={
+              f.discountType === "PERCENTAGE"
+                ? tr("Percent (%)")
+                : f.discountType === "DELIVERY_PERCENTAGE"
+                ? tr("Delivery percent (%)")
+                : f.discountType === "DELIVERY_FIXED"
+                ? tr("Delivery discount (৳)")
+                : tr("Amount (৳)")
+            }
+            required
+          >
+            <Input type="number" min={0} value={f.discountValue} onChange={(e) => set({ discountValue: e.target.value })} />
+          </Field>
+        )}
+        {(f.discountType === "PERCENTAGE" || f.discountType === "DELIVERY_PERCENTAGE") && (
+          <Field label={tr("Max discount ৳")} hint={tr("Optional cap")}>
+            <Input type="number" min={0} value={f.maxDiscount} onChange={(e) => set({ maxDiscount: e.target.value })} />
+          </Field>
+        )}
         <Field label={tr("Minimum order ৳")} hint={tr("Optional")}><Input type="number" min={0} value={f.minOrderAmount} onChange={(e) => set({ minOrderAmount: e.target.value })} placeholder="0" /></Field>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
@@ -83,7 +111,10 @@ const defaults = (): Form => ({ code: "", description: "", discountType: "PERCEN
 const rules = (f: Form): CouponInput => ({
   discountType: f.discountType,
   discountValue: f.discountType === "FREE_SHIPPING" ? 0 : Number(f.discountValue),
-  maxDiscount: f.discountType === "PERCENTAGE" && f.maxDiscount !== "" ? Number(f.maxDiscount) : null,
+  maxDiscount:
+    (f.discountType === "PERCENTAGE" || f.discountType === "DELIVERY_PERCENTAGE") && f.maxDiscount !== ""
+      ? Number(f.maxDiscount)
+      : null,
   minOrderAmount: f.minOrderAmount !== "" ? Number(f.minOrderAmount) : null,
   validFrom: fromLocalInput(f.validFrom) ?? undefined, validTo: fromLocalInput(f.validTo) ?? undefined,
   firstOrderOnly: f.firstOrderOnly, appliesToAllProducts: f.all,
@@ -92,7 +123,7 @@ const rules = (f: Form): CouponInput => ({
 });
 const rulesError = (f: Form) => {
   if (f.discountType !== "FREE_SHIPPING" && !(Number(f.discountValue) > 0)) return "Enter the discount";
-  if (f.discountType === "PERCENTAGE" && Number(f.discountValue) > 100) return "A percentage cannot be above 100";
+  if ((f.discountType === "PERCENTAGE" || f.discountType === "DELIVERY_PERCENTAGE") && Number(f.discountValue) > 100) return "A percentage cannot be above 100";
   if (!f.validFrom || !f.validTo || new Date(f.validTo) <= new Date(f.validFrom)) return "The end must be after the start";
   if (!f.all && !f.categories.length && !f.products.length) return "Pick categories or products, or apply to every product";
   return null;

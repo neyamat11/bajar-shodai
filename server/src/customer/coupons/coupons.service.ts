@@ -179,6 +179,25 @@ export class CouponsService {
         }
         shippingDiscount = ctx.shippingCost;
         break;
+      case 'DELIVERY_FIXED':
+        if (ctx.shippingCost <= 0) {
+          return fail('Shipping is already free for this order');
+        }
+        discountAmount = 0;
+        shippingDiscount = Math.min(value, ctx.shippingCost);
+        break;
+      case 'DELIVERY_PERCENTAGE': {
+        if (ctx.shippingCost <= 0) {
+          return fail('Shipping is already free for this order');
+        }
+        discountAmount = 0;
+        let disc = (ctx.shippingCost * value) / 100;
+        if (coupon.maxDiscount !== null) {
+          disc = Math.min(disc, Number(coupon.maxDiscount));
+        }
+        shippingDiscount = Math.min(disc, ctx.shippingCost);
+        break;
+      }
     }
 
     return {

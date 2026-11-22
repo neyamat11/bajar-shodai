@@ -20,7 +20,8 @@ export interface CartItem {
 export interface AppliedCoupon {
   code: string;
   discount: number;
-  type?: 'PERCENTAGE' | 'FIXED';
+  type?: 'PERCENTAGE' | 'FIXED' | 'DELIVERY_FIXED' | 'DELIVERY_PERCENTAGE' | 'FREE_SHIPPING';
+  shippingDiscount?: number;
 }
 
 interface CartState {

@@ -377,8 +377,12 @@ export class OrderEditService {
         const coupon = await tx.coupon.findFirst({
           where: { code: { equals: order.couponCode, mode: 'insensitive' } },
         });
-        if (coupon?.discountType === 'FREE_SHIPPING') {
-          // nothing depends on the items: the shipping stays free
+        if (
+          coupon?.discountType === 'FREE_SHIPPING' ||
+          coupon?.discountType === 'DELIVERY_FIXED' ||
+          coupon?.discountType === 'DELIVERY_PERCENTAGE'
+        ) {
+          // Delivery discount applies to shipping charge, not product subtotal
         } else if (subtotal !== Number(order.subtotal)) {
           const prods = await tx.product.findMany({
             where: { id: { in: lines.map((l) => l.productId) } },

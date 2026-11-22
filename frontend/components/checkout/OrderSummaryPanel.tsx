@@ -222,6 +222,15 @@ export default function OrderSummaryPanel({
               )}
             </dd>
           </div>
+          {!!summary?.coupon?.applied && summary.coupon.shippingDiscount > 0 && (
+            <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-medium text-xs">
+              <dt>
+                {locale === 'bn' ? 'ডেলিভারি চার্জ ছাড়' : 'Delivery Discount'}
+                {summary.coupon.code ? ` (${summary.coupon.code})` : ''}
+              </dt>
+              <dd className="font-semibold">− {money(summary.coupon.shippingDiscount)}</dd>
+            </div>
+          )}
           {summary && summary.shipping.available && summary.shippingCost > 0 && summary.shipping.amountForFreeDelivery ? (
             <p className="text-xs text-accent-text">{t("addForFree", { amount: money(summary.shipping.amountForFreeDelivery) })}</p>
           ) : null}

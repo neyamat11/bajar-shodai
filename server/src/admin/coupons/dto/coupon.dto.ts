@@ -51,11 +51,7 @@ export class CreateCouponDto {
   type?: CouponType;
 
   @ApiPropertyOptional({
-    enum: [
-      DiscountType.PERCENTAGE,
-      DiscountType.FIXED_AMOUNT,
-      DiscountType.FREE_SHIPPING,
-    ],
+    enum: DiscountType,
     default: 'PERCENTAGE',
   })
   @IsOptional()
@@ -64,7 +60,7 @@ export class CreateCouponDto {
 
   @ApiProperty({
     description:
-      'Percent (10 = 10%) or fixed amount in BDT. Use 0 for FREE_SHIPPING.',
+      'Percent (10 = 10%) or fixed amount in BDT. For DELIVERY_FIXED, BDT discount on delivery. For DELIVERY_PERCENTAGE, percent discount on delivery. Use 0 for FREE_SHIPPING.',
   })
   @Type(() => Number)
   @IsNumber()

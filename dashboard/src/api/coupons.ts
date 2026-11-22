@@ -1,6 +1,11 @@
 import { api, clean, type Paged } from "./client";
 
-export type DiscountType = "PERCENTAGE" | "FIXED_AMOUNT" | "FREE_SHIPPING";
+export type DiscountType =
+  | "PERCENTAGE"
+  | "FIXED_AMOUNT"
+  | "FREE_SHIPPING"
+  | "DELIVERY_FIXED"
+  | "DELIVERY_PERCENTAGE";
 export interface Coupon {
   id: string;
   code: string;

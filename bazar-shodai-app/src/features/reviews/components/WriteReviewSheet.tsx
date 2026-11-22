@@ -10,7 +10,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Keyboard,
-  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
@@ -67,7 +66,7 @@ export function WriteReviewSheet({
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert(
+        toast.warning(
           'Permission Required',
           'Please allow photo gallery access in your device settings to attach review photos.',
         );
@@ -91,7 +90,7 @@ export function WriteReviewSheet({
       }
     } catch (err: unknown) {
       console.warn('Image picker error:', err);
-      Alert.alert('Gallery Error', 'Could not open image gallery. Please try again.');
+      toast.error('Gallery Error', 'Could not open image gallery. Please try again.');
     }
   };
 
@@ -99,7 +98,7 @@ export function WriteReviewSheet({
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert(
+        toast.warning(
           'Permission Required',
           'Please allow camera access in your device settings to take a review photo.',
         );
@@ -119,39 +118,8 @@ export function WriteReviewSheet({
       }
     } catch (err: unknown) {
       console.warn('Camera error:', err);
-      Alert.alert('Camera Error', 'Could not open camera. Please try again.');
+      toast.error('Camera Error', 'Could not open camera. Please try again.');
     }
-  };
-
-  const handlePickImage = () => {
-    if (images.length >= 5) {
-      Alert.alert('Limit Reached', 'You can attach up to 5 photos per review.');
-      return;
-    }
-
-    Alert.alert(
-      'Add Photo',
-      'Choose how you would like to add a photo to your review:',
-      [
-        {
-          text: 'Take Photo',
-          onPress: () => {
-            void takeWithCamera();
-          },
-        },
-        {
-          text: 'Choose from Gallery',
-          onPress: () => {
-            void pickFromGallery();
-          },
-        },
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-      ],
-      { cancelable: true },
-    );
   };
 
   const handleRemoveImage = (index: number) => {
@@ -161,12 +129,12 @@ export function WriteReviewSheet({
 
   const handleSubmit = async () => {
     if (rating < 1) {
-      Alert.alert('Rating Required', 'Please select a star rating (1 to 5).');
+      toast.warning('Rating Required', 'Please select a star rating (1 to 5).');
       return;
     }
 
     if (!comment.trim() || comment.trim().length < 10) {
-      Alert.alert(
+      toast.warning(
         'Review Required',
         'Please write at least 10 characters about your experience (quality, freshness, packaging).',
       );
@@ -191,18 +159,24 @@ export function WriteReviewSheet({
       onClose();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Could not submit review. Please try again.';
-      Alert.alert('Submission Failed', msg);
+      toast.error('Submission Failed', msg);
     }
   };
 
   const bottomSafePadding = isKeyboardVisible
-    ? 8
-    : Math.max(insets.bottom, Platform.OS === 'android' ? 32 : 16);
+    ? 12
+    : Math.max(insets.bottom, Platform.OS === 'android' ? 56 : 16) + 16;
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent
+      onRequestClose={onClose}
+      statusBarTranslucent
+    >
       <KeyboardAvoidingView
-        behavior="padding"
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.keyboardAvoid}
       >
         {/* Backdrop tap to dismiss */}
@@ -272,6 +246,7 @@ export function WriteReviewSheet({
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
             showsVerticalScrollIndicator={false}
+            automaticallyAdjustKeyboardInsets={true}
           >
             {/* Star Picker */}
             <View style={styles.ratingSection}>
@@ -371,7 +346,7 @@ export function WriteReviewSheet({
                 onFocus={() => {
                   setTimeout(() => {
                     scrollViewRef.current?.scrollToEnd({ animated: true });
-                  }, 120);
+                  }, 250);
                 }}
               />
               <Text
@@ -410,28 +385,57 @@ export function WriteReviewSheet({
                 ))}
 
                 {images.length < 5 && (
-                  <TouchableOpacity
-                    onPress={handlePickImage}
-                    style={[
-                      styles.addPhotoBtn,
-                      {
-                        backgroundColor: isDark ? 'rgba(6, 78, 59, 0.2)' : '#f0fdf4',
-                        borderColor: isDark ? '#059669' : '#0b6234',
-                      },
-                    ]}
-                    accessibilityRole="button"
-                    accessibilityLabel="Upload review image"
-                  >
-                    <Icon name="Camera" size={20} color={isDark ? '#34d399' : '#0b6234'} />
-                    <Text
+                  <View style={styles.addPhotoButtonsRow}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        void pickFromGallery();
+                      }}
                       style={[
-                        styles.addPhotoText,
-                        { color: isDark ? '#34d399' : '#0b6234' },
+                        styles.addPhotoBtn,
+                        {
+                          backgroundColor: isDark ? 'rgba(6, 78, 59, 0.2)' : '#f0fdf4',
+                          borderColor: isDark ? '#059669' : '#0b6234',
+                        },
                       ]}
+                      accessibilityRole="button"
+                      accessibilityLabel="Choose photo from gallery"
                     >
-                      Add Photo
-                    </Text>
-                  </TouchableOpacity>
+                      <Icon name="Image" size={18} color={isDark ? '#34d399' : '#0b6234'} />
+                      <Text
+                        style={[
+                          styles.addPhotoText,
+                          { color: isDark ? '#34d399' : '#0b6234' },
+                        ]}
+                      >
+                        Gallery
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      onPress={() => {
+                        void takeWithCamera();
+                      }}
+                      style={[
+                        styles.addPhotoBtn,
+                        {
+                          backgroundColor: isDark ? 'rgba(6, 78, 59, 0.2)' : '#f0fdf4',
+                          borderColor: isDark ? '#059669' : '#0b6234',
+                        },
+                      ]}
+                      accessibilityRole="button"
+                      accessibilityLabel="Take photo with camera"
+                    >
+                      <Icon name="Camera" size={18} color={isDark ? '#34d399' : '#0b6234'} />
+                      <Text
+                        style={[
+                          styles.addPhotoText,
+                          { color: isDark ? '#34d399' : '#0b6234' },
+                        ]}
+                      >
+                        Camera
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
                 )}
               </View>
             </View>
@@ -565,8 +569,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  addPhotoButtonsRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
   addPhotoBtn: {
-    width: 64,
+    width: 68,
     height: 64,
     borderRadius: Radius.md,
     borderWidth: 1,
@@ -576,11 +584,13 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   addPhotoText: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '600',
   },
   footer: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 4,
     borderTopWidth: 1,
   },
 });

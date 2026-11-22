@@ -228,10 +228,12 @@ export default function CheckoutScreen() {
     coupon: serverSummary?.coupon?.applied ? {
       code: serverSummary.coupon.code,
       discount: serverSummary.coupon.discount,
+      shippingDiscount: serverSummary.coupon.shippingDiscount,
       description: serverSummary.coupon.description || undefined,
     } : coupon ? {
       code: coupon.code,
       discount: coupon.discount,
+      shippingDiscount: coupon.shippingDiscount,
     } : null,
     loyalty: serverSummary?.loyalty ? {
       enabled: serverSummary.loyalty.enabled,
@@ -574,8 +576,16 @@ export default function CheckoutScreen() {
     setServerSummary(res);
     setActiveCoupon(code);
     if (res.coupon?.applied) {
-      setCoupon({ code, discount: res.coupon.discount });
-      toast.success('কুপন প্রযোজ্য হয়েছে', `${code} কুপনে ৳${res.coupon.discount} ছাড় পেয়েছেন!`);
+      setCoupon({
+        code,
+        discount: res.coupon.discount,
+        shippingDiscount: res.coupon.shippingDiscount,
+      });
+      const discMsg =
+        res.coupon.shippingDiscount > 0
+          ? `${code} কুপনে ডেলিভারি চার্জে ৳${res.coupon.shippingDiscount} ছাড় পেয়েছেন!`
+          : `${code} কুপনে ৳${res.coupon.discount} ছাড় পেয়েছেন!`;
+      toast.success('কুপন প্রযোজ্য হয়েছে', discMsg);
     }
   };
 

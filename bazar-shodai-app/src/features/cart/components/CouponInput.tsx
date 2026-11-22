@@ -58,7 +58,9 @@ export function CouponInput() {
           <View>
             <Text style={styles.appliedCode}>{coupon.code}</Text>
             <Text style={styles.appliedDiscount}>
-              -৳{coupon.discount.toFixed(0)} Discount Applied
+              {coupon.shippingDiscount && coupon.shippingDiscount > 0
+                ? `-৳${coupon.shippingDiscount.toFixed(0)} ডেলিভারি ছাড় (Delivery Discount)`
+                : `-৳${coupon.discount.toFixed(0)} Discount Applied`}
             </Text>
           </View>
         </View>
