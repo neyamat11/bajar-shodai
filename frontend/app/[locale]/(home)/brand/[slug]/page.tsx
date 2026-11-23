@@ -11,7 +11,7 @@ import type { Locale } from "@/lib/locale";
 
 export const revalidate = 3600;
 
-// no pages are built ahead of time; each one is built on its first visit and then kept (and refreshed on demand or every hour)
+// no pages are built ahead of times; each one is built on its first visit and fdfd then kept (and refreshed on demand or every hour)
 export function generateStaticParams() {
   return [];
 }
