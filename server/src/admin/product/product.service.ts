@@ -1264,8 +1264,10 @@ export class ProductService {
       throw new NotFoundException('Category not found');
     }
 
+    const rows = await loadTreeRows(this.prisma);
+    const categoryIds = descendantIds(rows, dto.categoryId);
     const existing = await this.prisma.product.findMany({
-      where: { categoryId: dto.categoryId },
+      where: { categoryId: { in: categoryIds } },
       select: { id: true },
     });
     const knownIds = new Set(existing.map((p) => p.id));

@@ -38,13 +38,13 @@ export function CategoryReorderDialog({
   const { format: formatName } = useProductNameDisplay();
   const [items, setItems] = useState<ProductRow[]>([]);
 
-  // Fetch all products in this category (up to 200 for ordering)
-  const { data, isLoading } = useQuery({
+  // Fetch all products in this category (up to 300 for ordering)
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["admin-category-products-reorder", categoryId],
     queryFn: () =>
       productsApi.list({
         categoryId,
-        limit: 200,
+        limit: 300,
         sortBy: "newest", // default backend ordering
       }),
     enabled: open && Boolean(categoryId),
@@ -108,6 +108,13 @@ export function CategoryReorderDialog({
             <div className="flex flex-col items-center justify-center py-12 gap-2 text-muted-foreground">
               <Loader2 className="size-6 animate-spin text-primary" />
               <p className="text-xs">{tr("Loading products...")}</p>
+            </div>
+          ) : isError ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
+              <p className="text-sm text-destructive">{errorMessage(error)}</p>
+              <Button size="sm" variant="outline" onClick={() => refetch()}>
+                {tr("Retry")}
+              </Button>
             </div>
           ) : items.length === 0 ? (
             <EmptyState
