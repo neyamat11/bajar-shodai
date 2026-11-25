@@ -6,7 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { formatNumber } from "@/lib/format";
 import type { Locale } from "@/lib/locale";
 
-type SortOption = "popular" | "newest" | "price-asc" | "price-desc" | "rating" | "name";
+type SortOption = "featured" | "popular" | "newest" | "price-asc" | "price-desc" | "rating" | "name";
 
 interface SortBarProps {
   resultCount: number;
@@ -21,7 +21,7 @@ interface SortBarProps {
   onViewModeChange?: (mode: "list" | "grid") => void;
 }
 
-const SORT_VALUES: SortOption[] = ["popular", "newest", "price-asc", "price-desc", "rating"];
+const SORT_VALUES: SortOption[] = ["featured", "popular", "newest", "price-asc", "price-desc", "rating"];
 
 export default function SortBar({
   resultCount,

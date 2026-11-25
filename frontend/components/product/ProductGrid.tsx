@@ -115,7 +115,7 @@ export default function ProductGrid({
     inStockOnly: !!start?.inStock,
   };
   const [filters, setFilters] = useState<FilterState>(base);
-  const [sortBy, setSortBy] = useState<SortOption>(start?.sortBy ?? "popular");
+  const [sortBy, setSortBy] = useState<SortOption>(start?.sortBy ?? "featured");
   const [onSale, setOnSale] = useState(!!start?.onSale);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
@@ -535,6 +535,14 @@ function sortLocal(list: Product[], sort: SortOption): Product[] {
   if (sort === "price-asc") l.sort((a, b) => a.price - b.price);
   else if (sort === "price-desc") l.sort((a, b) => b.price - a.price);
   else if (sort === "newest") l.sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
+  else if (sort === "featured") l.sort((a, b) => {
+    const ao = (a as any).displayOrder ?? null;
+    const bo = (b as any).displayOrder ?? null;
+    if (ao !== null && bo !== null) return ao - bo;
+    if (ao !== null) return -1;
+    if (bo !== null) return 1;
+    return +new Date(b.createdAt) - +new Date(a.createdAt);
+  });
   else l.sort((a, b) => b.soldLast24h - a.soldLast24h);
   return l;
 }

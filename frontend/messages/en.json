@@ -329,6 +329,7 @@
       "showResults": "Show results"
     },
     "sort": {
+      "featured": "Featured",
       "popular": "Most Popular",
       "newest": "Newest",
       "price-asc": "Price: Low → High",

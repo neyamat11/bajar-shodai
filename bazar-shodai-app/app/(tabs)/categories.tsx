@@ -24,9 +24,10 @@ import { haptics } from '@/services/haptics';
 import { assetUrl } from '@/utils/format';
 import { useHardwareBack } from '@/hooks/useHardwareBack';
 
-type SortOption = 'popular' | 'newest' | 'price_asc' | 'price_desc';
+type SortOption = 'featured' | 'popular' | 'newest' | 'price_asc' | 'price_desc';
 
 const SORT_OPTIONS: { id: SortOption; label: string; icon: string }[] = [
+  { id: 'featured', label: 'বাছাইকৃত', icon: 'Star' },
   { id: 'popular', label: 'জনপ্রিয়', icon: 'Flame' },
   { id: 'newest', label: 'নতুন', icon: 'Sparkles' },
   { id: 'price_asc', label: 'কম দাম', icon: 'ArrowDown' },
@@ -66,7 +67,7 @@ export default function ShopScreen() {
   const [selectedSubCategorySlug, setSelectedSubCategorySlug] = useState<string | null>(
     params.sub || null,
   );
-  const [sortBy, setSortBy] = useState<SortOption>('popular');
+  const [sortBy, setSortBy] = useState<SortOption>('featured');
   const [onlyInStock, setOnlyInStock] = useState(false);
   const [onlyOnSale, setOnlyOnSale] = useState(false);
 

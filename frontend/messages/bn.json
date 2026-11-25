@@ -329,6 +329,7 @@
       "showResults": "ফলাফল দেখুন"
     },
     "sort": {
+      "featured": "বাছাইকৃত",
       "popular": "সবচেয়ে জনপ্রিয়",
       "newest": "নতুন",
       "price-asc": "দাম: কম → বেশি",

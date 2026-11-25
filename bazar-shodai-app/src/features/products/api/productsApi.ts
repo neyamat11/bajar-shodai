@@ -52,7 +52,7 @@ export async function fetchProductsApi(
   if (params.minPrice !== undefined) queryParts.push(`minPrice=${params.minPrice}`);
   if (params.maxPrice !== undefined) queryParts.push(`maxPrice=${params.maxPrice}`);
   if (params.inStock !== undefined) queryParts.push(`inStock=${params.inStock}`);
-  if (params.sortBy) queryParts.push(`sortBy=${encodeURIComponent(params.sortBy)}`);
+  if (params.sortBy && params.sortBy !== 'featured') queryParts.push(`sortBy=${encodeURIComponent(params.sortBy)}`);
   if (params.excludeMedicine) queryParts.push('excludeMedicine=true');
 
   const qs = queryParts.length > 0 ? `?${queryParts.join('&')}` : '';

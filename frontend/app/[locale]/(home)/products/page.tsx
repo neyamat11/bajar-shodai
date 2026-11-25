@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return { title: t("allProductsMeta"), description: t("allProductsDesc") };
 }
 
-const SORTS: SortOption[] = ["popular", "newest", "price-asc", "price-desc", "rating", "name"];
+const SORTS: SortOption[] = ["featured", "popular", "newest", "price-asc", "price-desc", "rating", "name"];
 
 type Search = { sortBy?: string; onSale?: string; inStock?: string; category?: string; brand?: string; sub?: string };
 
@@ -42,7 +42,7 @@ export default async function ProductsPage({
 
 async function ProductsContent({ sp, locale }: { sp: Search; locale: Locale }) {
   const t = await getTranslations({ locale, namespace: "Pages" });
-  const sortBy = SORTS.includes(sp.sortBy as SortOption) ? (sp.sortBy as SortOption) : undefined;
+  const sortBy = SORTS.includes(sp.sortBy as SortOption) ? (sp.sortBy as SortOption) : "featured";
   const start = { sortBy, onSale: sp.onSale === "true", inStock: sp.inStock === "true", category: sp.category || undefined, brand: sp.brand || undefined, sub: sp.sub || undefined };
 
   const [initial, categories, facets] = await Promise.all([

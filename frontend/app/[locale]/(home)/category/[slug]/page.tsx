@@ -81,7 +81,7 @@ async function CategoryContent({
         search: initialSearch,
         brand: brand ? [brand] : undefined,
         generic: generic ? [generic] : undefined,
-        sortBy: "popular",
+        sortBy: "featured",
         excludeMedicine: !isMedicine,
       },
       locale,

@@ -4,7 +4,7 @@ import { Icon } from '@/components/ui/Icon';
 import { Radius } from '@/constants/layout';
 import { haptics } from '@/services/haptics';
 
-export type SortOptionValue = 'popular' | 'price_asc' | 'price_desc' | 'rating' | 'newest';
+export type SortOptionValue = 'featured' | 'popular' | 'price_asc' | 'price_desc' | 'rating' | 'newest';
 
 export interface SortOptionItem {
   label: string;
@@ -12,6 +12,7 @@ export interface SortOptionItem {
 }
 
 const SORT_OPTIONS: SortOptionItem[] = [
+  { label: 'Featured', value: 'featured' },
   { label: 'Popular & Best Selling', value: 'popular' },
   { label: 'Price: Low to High (৳ → ৳৳৳)', value: 'price_asc' },
   { label: 'Price: High to Low (৳৳৳ → ৳)', value: 'price_desc' },

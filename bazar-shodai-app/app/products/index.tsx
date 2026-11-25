@@ -33,7 +33,7 @@ export default function ProductListingScreen() {
   const addItem = useCartStore((s) => s.addItem);
   const cartItems = useCartStore((s) => s.items);
 
-  const [sortBy, setSortBy] = useState<SortOptionValue>('popular');
+  const [sortBy, setSortBy] = useState<SortOptionValue>('featured');
   const [showSortSheet, setShowSortSheet] = useState(false);
   const [showFilterSheet, setShowFilterSheet] = useState(false);
   const [filters, setFilters] = useState<FilterState>({

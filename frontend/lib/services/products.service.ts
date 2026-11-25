@@ -4,7 +4,7 @@ import { mapProduct } from '../api/mappers';
 import type { Product, ProductFilters } from '../types/index';
 import { clientLocale, pick, type Locale } from '../locale';
 
-export type SortOption = 'newest' | 'price-asc' | 'price-desc' | 'popular' | 'rating' | 'name';
+export type SortOption = 'featured' | 'newest' | 'price-asc' | 'price-desc' | 'popular' | 'rating' | 'name';
 
 export interface ProductQuery {
   category?: string;
@@ -43,7 +43,11 @@ export interface ProductPage {
 }
 
 export async function listProducts(q: ProductQuery = {}, locale: Locale = clientLocale()): Promise<ProductPage> {
-  const res = await api.get<Paged<any>>(`/customer/products${qs({ limit: 24, ...q })}`);
+  // 'featured' means "use admin's display order" — don't send sortBy at all so the server
+  // falls through to its default: displayOrder ASC NULLS LAST → createdAt DESC
+  const { sortBy, ...rest } = q;
+  const serverSortBy = sortBy === 'featured' || sortBy === undefined ? undefined : sortBy;
+  const res = await api.get<Paged<any>>(`/customer/products${qs({ limit: 24, ...rest, ...(serverSortBy ? { sortBy: serverSortBy } : {}) })}`);
   return { products: res.data.map((p) => mapProduct(p, locale)), meta: res.meta };
 }
 
