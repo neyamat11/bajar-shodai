@@ -26,6 +26,7 @@ export interface ProductRow {
   lowStockThreshold: number;
   soldCount: number;
   isFeatured: boolean;
+  displayOrder: number | null;
   createdAt: string;
   mainImage: string | null;
   stockState: "in" | "low" | "out";
@@ -162,6 +163,7 @@ export interface ProductInput {
   width?: number;
   height?: number;
   isFeatured?: boolean;
+  displayOrder?: number | null;
   isNew?: boolean;
   isHot?: boolean;
   isBestSeller?: boolean;
@@ -208,6 +210,13 @@ export const productsApi = {
   tags: () => api.get<{ tag: string; products: number }[]>("/admin/products/tags").then((r) => r.data),
   dailySheet: (rows: { id: string; sellingPrice?: number; stock?: number; status?: "ACTIVE" | "INACTIVE"; trackStock?: boolean }[]) =>
     api.put<{ saved: number; failed: number; results: { id: string; name?: string; ok: boolean; error?: string }[] }>("/admin/products/daily-sheet", { rows }).then((r) => r.data),
+  reorder: (categoryId: string, ids: string[]) =>
+    api
+      .put<{ success: boolean; count: number; ids: string[] }>(
+        "/admin/products/reorder",
+        { categoryId, ids },
+      )
+      .then((r) => r.data),
   // variants
   addVariant: (id: string, body: VariantInput) => api.post<ProductVariant>(`/admin/products/${id}/variants`, body).then((r) => r.data),
   updateVariant: (id: string, variantId: string, body: Partial<VariantInput>) => api.patch<ProductVariant>(`/admin/products/${id}/variants/${variantId}`, body).then((r) => r.data),

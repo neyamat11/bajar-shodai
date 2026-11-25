@@ -35,6 +35,7 @@ interface Form {
   trackStock: boolean; stock: string; lowStockThreshold: string; freeShipping: boolean;
   weight: string; length: string; width: string; height: string;
   isFeatured: boolean; isNew: boolean; isHot: boolean; isBestSeller: boolean; isLimitedStock: boolean;
+  displayOrder: string;
   metaTitle: string; metaDescription: string; metaKeywords: string;
   tags: string;
   attrs: { name: string; value: string }[];
@@ -47,6 +48,7 @@ const blank: Form = {
   shortDescription: "", shortDescriptionBn: "", description: "", descriptionBn: "", buyingPrice: "", regularPrice: "", sellingPrice: "",
   discountPrice: "", discountStart: "", discountEnd: "", discountLabel: "", trackStock: true, stock: "0", lowStockThreshold: "5", freeShipping: false,
   weight: "", length: "", width: "", height: "", isFeatured: false, isNew: false, isHot: false, isBestSeller: false, isLimitedStock: false,
+  displayOrder: "",
   metaTitle: "", metaDescription: "", metaKeywords: "", tags: "", attrs: [],
   medicineMeta: null,
 };
@@ -61,6 +63,7 @@ const toForm = (p: ProductDetail): Form => ({
   trackStock: p.trackStock ?? true, stock: String(p.stock), lowStockThreshold: String(p.lowStockThreshold), freeShipping: p.freeShipping,
   weight: n(p.weight), length: n(p.length), width: n(p.width), height: n(p.height),
   isFeatured: p.isFeatured, isNew: p.isNew, isHot: p.isHot, isBestSeller: p.isBestSeller, isLimitedStock: p.isLimitedStock,
+  displayOrder: p.displayOrder != null ? String(p.displayOrder) : "",
   metaTitle: p.metaTitle ?? "", metaDescription: p.metaDescription ?? "", metaKeywords: p.metaKeywords ?? "",
   tags: p.tags.join(", "),
   attrs: p.attributes.map((a) => ({ name: a.name, value: a.value })),
@@ -285,6 +288,7 @@ function ProductForm({ id, p }: { id?: string; p?: ProductDetail }) {
       lowStockThreshold: f.trackStock ? Number(f.lowStockThreshold || 0) : 0, freeShipping: f.freeShipping,
       weight: num(f.weight), length: num(f.length), width: num(f.width), height: num(f.height),
       isFeatured: f.isFeatured, isNew: f.isNew, isHot: f.isHot, isBestSeller: f.isBestSeller, isLimitedStock: f.isLimitedStock,
+      displayOrder: f.displayOrder.trim() === "" ? null : Number(f.displayOrder),
       metaTitle: f.metaTitle || undefined, metaDescription: f.metaDescription || undefined, metaKeywords: f.metaKeywords || undefined,
       tags: f.tags.split(",").map((s) => s.trim()).filter(Boolean),
       attributes: f.attrs.filter((a) => a.name.trim() && a.value.trim()),
@@ -369,7 +373,7 @@ function ProductForm({ id, p }: { id?: string; p?: ProductDetail }) {
                 <Field label={tr("Product code / SKU")}><Input value={f.productCode} onChange={(e) => set("productCode", e.target.value)} /></Field>
                 <Field label={tr("Barcode")}><Input value={f.barcode} onChange={(e) => set("barcode", e.target.value)} /></Field>
               </div>
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <Field label={tr("Category")} required error={errs.categoryId} hint={tr("Pick the most exact one")}>
                   <Select value={f.categoryId} onChange={(e) => set("categoryId", e.target.value)}>
                     <option value="">{tr("Choose…")}</option>
@@ -386,6 +390,15 @@ function ProductForm({ id, p }: { id?: string; p?: ProductDetail }) {
                   <Select value={f.status} onChange={(e) => set("status", e.target.value as ProductStatus)}>
                     {["ACTIVE", "DRAFT", "INACTIVE", "OUT_OF_STOCK", "DISCONTINUED"].map((s) => <option key={s} value={s}>{titleCase(s)}</option>)}
                   </Select>
+                </Field>
+                <Field label={tr("Display Order")} hint={tr("Slot in category (e.g. 1 for top). Leave empty for auto.")}>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={f.displayOrder}
+                    onChange={(e) => set("displayOrder", e.target.value)}
+                    placeholder={tr("Automatic")}
+                  />
                 </Field>
               </div>
             </div>

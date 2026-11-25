@@ -531,6 +531,15 @@ export class CreateProductDto {
   @IsBoolean()
   isLimitedStock?: boolean;
 
+  @ApiPropertyOptional({
+    description: 'Display order priority in category (1 = first). Null = automatic.',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  displayOrder?: number;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()

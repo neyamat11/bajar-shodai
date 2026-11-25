@@ -44,6 +44,7 @@ import {
   ProductVariantInputDto,
 } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { ReorderProductsDto } from './dto/reorder-products.dto';
 import {
   AdminProductQueryDto,
   DailySheetDto,
@@ -113,6 +114,15 @@ export class ProductController {
   })
   dailySheet(@Body() dto: DailySheetDto, @CurrentUser() admin: User) {
     return this.products.dailySheet(dto, admin.id);
+  }
+
+  @Put('reorder')
+  @ApiOperation({
+    summary:
+      'Set the display order of products within a category (drag-and-drop)',
+  })
+  reorder(@Body() dto: ReorderProductsDto, @CurrentUser() admin: User) {
+    return this.products.reorderCategory(dto, admin.id);
   }
 
   @Post('bulk-delete')

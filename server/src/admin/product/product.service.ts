@@ -19,6 +19,7 @@ import {
 } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { AdminProductQueryDto, DailySheetDto } from './dto/product-admin.dto';
+import { ReorderProductsDto } from './dto/reorder-products.dto';
 import { computePricing, validatePricing } from './product-pricing';
 
 const num = (d: Prisma.Decimal | number | null | undefined) =>
@@ -192,6 +193,7 @@ export class ProductService {
           lowStockThreshold: true,
           soldCount: true,
           isFeatured: true,
+          displayOrder: true,
           createdAt: true,
           updatedAt: true,
           medicineMeta: true,
@@ -339,6 +341,7 @@ export class ProductService {
             isHot: dto.isHot ?? false,
             isBestSeller: dto.isBestSeller ?? false,
             isLimitedStock: dto.isLimitedStock ?? false,
+            displayOrder: dto.displayOrder ?? null,
             metaTitle: dto.metaTitle,
             metaDescription: dto.metaDescription,
             metaKeywords: dto.metaKeywords,
@@ -577,6 +580,7 @@ export class ProductService {
       'isHot',
       'isBestSeller',
       'isLimitedStock',
+      'displayOrder',
       'metaTitle',
       'metaDescription',
       'metaKeywords',
@@ -1249,6 +1253,48 @@ export class ProductService {
       name = `${base} ${n}`;
     }
     return name;
+  }
+
+  async reorderCategory(dto: ReorderProductsDto, adminId: string) {
+    const category = await this.prisma.category.findUnique({
+      where: { id: dto.categoryId },
+      select: { id: true, name: true },
+    });
+    if (!category) {
+      throw new NotFoundException('Category not found');
+    }
+
+    const existing = await this.prisma.product.findMany({
+      where: { categoryId: dto.categoryId },
+      select: { id: true },
+    });
+    const knownIds = new Set(existing.map((p) => p.id));
+    const unknown = dto.ids.filter((id) => !knownIds.has(id));
+    if (unknown.length) {
+      throw new BadRequestException(
+        `Some products do not belong to this category: ${unknown.slice(0, 5).join(', ')}`,
+      );
+    }
+
+    await this.prisma.$transaction(
+      dto.ids.map((id, index) =>
+        this.prisma.product.update({
+          where: { id },
+          data: { displayOrder: index + 1 },
+        }),
+      ),
+    );
+
+    this.cache.delByPrefix('products:');
+    await writeAudit(this.prisma, {
+      adminId,
+      action: 'PRODUCT_UPDATED',
+      entity: 'Category',
+      entityId: dto.categoryId,
+      newValue: { count: dto.ids.length, ids: dto.ids },
+    });
+
+    return { success: true, count: dto.ids.length, ids: dto.ids };
   }
 }
 

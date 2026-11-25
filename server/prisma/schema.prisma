@@ -622,6 +622,7 @@ model Product {
   isDiscounted   Boolean @default(false)
   isBestSeller   Boolean @default(false)
   isLimitedStock Boolean @default(false)
+  displayOrder   Int?
 
   // Tax
   taxRate Decimal? @default(0) @db.Decimal(5, 2)
@@ -673,6 +674,8 @@ model Product {
   @@index([avgRating])
   @@index([totalSales])
   @@index([categoryId, status])
+  @@index([categoryId, displayOrder])
+  @@index([displayOrder])
 }
 
 model MedicineMeta {

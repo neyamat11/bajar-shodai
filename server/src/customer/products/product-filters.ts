@@ -206,7 +206,11 @@ export function buildOrderBy(
     case 'name':
       return [{ name: 'asc' }];
     default:
-      return [{ createdAt: 'desc' }, { id: 'asc' }];
+      return [
+        { displayOrder: { sort: 'asc', nulls: 'last' } },
+        { createdAt: 'desc' },
+        { id: 'asc' },
+      ];
   }
 }
 

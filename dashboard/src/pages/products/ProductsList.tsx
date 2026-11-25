@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Copy, MoreHorizontal, Pencil, PlusCircle, Trash2, X } from "lucide-react";
+import { Copy, MoreHorizontal, Pencil, PlusCircle, Trash2, X, ArrowUpDown } from "lucide-react";
+import { CategoryReorderDialog } from "./components/CategoryReorderDialog";
 import { productsApi, type ProductRow, type ProductStatus } from "@/api/products";
 import { errorMessage } from "@/api/client";
 import { QuickStatus, type QuickOption } from "@/components/shared/QuickStatus";
@@ -63,6 +64,7 @@ export default function ProductsList() {
   });
   const [sel, setSel] = useState<string[]>([]);
   const [bulkDelOpen, setBulkDelOpen] = useState(false);
+  const [reorderOpen, setReorderOpen] = useState(false);
   const bulkStatus = useMutation({
     mutationFn: (status: ProductStatus) => Promise.all(sel.map((id) => productsApi.update(id, { status }))).then(() => status),
     onSuccess: (status) => {
@@ -142,6 +144,20 @@ export default function ProductsList() {
           onPick={(status) => setStatus.mutate({ id: p.id, status: status as ProductStatus })}
         />
       ),
+    },
+    {
+      key: "displayOrder",
+      header: tr("Order"),
+      align: "center",
+      sk: "badge",
+      cell: (p) =>
+        p.displayOrder != null ? (
+          <Badge variant="neutral" className="font-mono text-xs">
+            #{p.displayOrder}
+          </Badge>
+        ) : (
+          <span className="text-muted-foreground text-xs">—</span>
+        ),
     },
     {
       key: "price",
@@ -224,6 +240,19 @@ export default function ProductsList() {
             <SearchInput value={f.search} onChange={(v) => setF({ search: v })} placeholder={tr("Name, code, SKU, barcode…")} />
             <FilterSelect value={f.status} onChange={(v) => setF({ status: v, visibility: "" })} all={tr("All statuses")} options={["ACTIVE", "DRAFT", "INACTIVE", "OUT_OF_STOCK", "DISCONTINUED"].map((s) => ({ value: s, label: titleCase(s) }))} />
             <FilterSelect value={f.categoryId} onChange={(v) => setF({ categoryId: v })} all={tr("All categories")} options={flattenCategoryTree(buildCategoryTree(cats.data ?? [])).map((o) => ({ value: o.node.id, label: `${"— ".repeat(o.depth)}${o.node.name}` }))} />
+            {f.categoryId && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setReorderOpen(true)}
+                className="gap-1.5"
+                title={tr("Reorder products in this category")}
+              >
+                <ArrowUpDown className="size-3.5" />
+                {tr("Reorder")}
+              </Button>
+            )}
             <FilterSelect value={f.brandId} onChange={(v) => setF({ brandId: v })} all={tr("All brands")} options={(brands.data ?? []).map((b) => ({ value: b.id, label: b.name }))} />
             <FilterSelect value={f.stock} onChange={(v) => setF({ stock: v })} all={tr("Any stock")} options={[{ value: "low", label: tr("Low stock") }, { value: "out", label: tr("Out of stock") }, { value: "in", label: tr("In stock") }]} />
             <FilterSelect value={f.sortBy} onChange={(v) => setF({ sortBy: v })} all={null} options={[{ value: "newest", label: tr("Newest") }, { value: "oldest", label: tr("Oldest") }, { value: "name", label: tr("Name A–Z") }, { value: "price-asc", label: tr("Price: low to high") }, { value: "price-desc", label: tr("Price: high to low") }, { value: "stock-asc", label: tr("Stock: low first") }, { value: "sold", label: tr("Best selling") }]} />
@@ -261,6 +290,14 @@ export default function ProductsList() {
         loading={remove.isPending}
         onConfirm={() => del && remove.mutate(del.id)}
       />
+      {f.categoryId && (
+        <CategoryReorderDialog
+          open={reorderOpen}
+          onOpenChange={setReorderOpen}
+          categoryId={f.categoryId}
+          categoryName={cats.data?.find((c) => c.id === f.categoryId)?.name}
+        />
+      )}
     </div>
   );
 }
